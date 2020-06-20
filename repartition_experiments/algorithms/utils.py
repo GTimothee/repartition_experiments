@@ -207,7 +207,7 @@ def get_named_volumes(blocks_partition, block_shape):
                 tr_corner = (block_shape[0] * (i+1),
                              block_shape[1] * (j+1),
                              block_shape[2] * (k+1))   
-                index = _3d_to_numeric_pos((i, j, k), blocks_partition, order='F')
+                index = _3d_to_numeric_pos((i, j, k), blocks_partition, order='C')
                 d[index] = Volume(index, bl_corner, tr_corner)
     logger.debug("Indices of names volumes found: %s", d.keys())
     logger.debug("End\n")
@@ -307,7 +307,6 @@ def numeric_to_3d_pos(numeric_pos, blocks_partition, order):
     if order == 'C':
         nb_blocks_per_row = blocks_partition[2]
         nb_blocks_per_slice = blocks_partition[1] * blocks_partition[2]
-        print(nb_blocks_per_row, nb_blocks_per_slice)
     else:
         raise ValueError("unsupported")
 
@@ -328,7 +327,6 @@ def _3d_to_numeric_pos(_3d_pos, blocks_partition, order):
     if order == 'C':
         nb_blocks_per_row = blocks_partition[2]
         nb_blocks_per_slice = blocks_partition[1] * blocks_partition[2]
-        print(nb_blocks_per_row, nb_blocks_per_slice)
     else:
         raise ValueError("unsupported")
 

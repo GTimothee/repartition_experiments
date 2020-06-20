@@ -1,5 +1,8 @@
-import atexit, os, h5py
+import atexit, os, h5py, glob, logging
 import numpy as np
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 SOURCE_FILES = list() # opened files to be closed after processing
 
@@ -14,7 +17,7 @@ def clean_files():
 
 class HDF5_manager:
     def __init__(self):
-        pass
+        self.filename_regex = "[0-9]*_[0-9]*_[0-9]*.hdf5"
 
 
     def clean_directory(self, dirpath):
@@ -22,7 +25,7 @@ class HDF5_manager:
         """
         workdir = os.getcwd()
         os.chdir(dirpath)
-        for filename in glob.glob("[0-9]*_[0-9]*_[0-9]*.hdf5"):
+        for filename in glob.glob(self.filename_regex):
             os.remove(filename)
         os.chdir(workdir)
     
@@ -33,21 +36,27 @@ class HDF5_manager:
         workdir = os.getcwd()
         os.chdir(input_dirpath)
         infiles = list()
-        for filename in glob.glob("[0-9]*_[0-9]*_[0-9]*.hdf5"):
+        for filename in glob.glob(self.filename_regex):
             infiles.append(os.path.join(input_dirpath, filename))
         os.chdir(workdir)
         return infiles
 
 
-    def write_data(self, i, j, k, outdir_path, data, s2):
+    def write_data(self, i, j, k, outdir_path, data, s2, O):
         """ File must not exist
         """
         out_filename = f'{i}_{j}_{k}.hdf5'
         outfilepath = os.path.join(outdir_path, out_filename)
-        with h5py.File(outfilepath, 'r+') as f:
+
+        if os.path.isfile(outfilepath):
+            mode = 'r+'
+        else:
+            mode = 'w'
+
+        with h5py.File(outfilepath, mode) as f:
 
             # if no datasets, create one
-            print("KEYS", list(f.keys()))
+            # print("KEYS", list(f.keys()))
             if not "/data" in f.keys():
                 # print('[debug] No dataset, creating dataset')
                 null_arr = np.zeros(O)
@@ -59,13 +68,13 @@ class HDF5_manager:
             outdset[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
 
 
-    def test_write(self, outfile_path, s2, data):
+    def test_write(self, outfile_path, s, subarr_data):
         with h5py.File(outfile_path, 'r') as f:
-            stored = f['/data'][s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]]
-            if np.allclose(stored, data):
-                print("[success] data successfully stored.")
+            stored = f['/data'][s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]]
+            if np.allclose(stored, subarr_data):
+                logger.debug("[success] data successfully stored.")
             else:
-                print("[error] in data storage")
+                logger.debug("[error] in data storage")
 
 
     def close_infiles(self):

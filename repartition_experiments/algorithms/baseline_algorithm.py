@@ -1,11 +1,13 @@
-import os, glob, h5py
+import os, glob, h5py, time, logging
 import numpy as np
-import time
 
-from utils import get_blocks_shape, get_named_volumes, hypercubes_overlap, _3d_to_numeric_pos, numeric_to_3d_pos, Volume
-from file_formats.hdf5 import HDF5_manager
+from .utils import get_blocks_shape, get_named_volumes, hypercubes_overlap, _3d_to_numeric_pos, numeric_to_3d_pos, Volume
+from ..file_formats.hdf5 import HDF5_manager
 
-DEBUG = False
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+DEBUG_LOCAL = False
 
 def write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager):
     """ Write intersection of input file and output file into output file.
@@ -36,19 +38,19 @@ def write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path,
         (lowcorner[1]-offset_out[1], upcorner[1]-offset_out[1]), 
         (lowcorner[2]-offset_out[2], upcorner[2]-offset_out[2])]
 
-    if DEBUG:
-        print(f"[debug] extracting {s[0][0]}:{s[0][1]}, {s[1][0]}:{s[1][1]}, {s[2][0]}:{s[2][1]} from input file")
-        print(f"[debug] inserting {s2[0][0]}:{s2[0][1]}, {s2[1][0]}:{s2[1][1]}, {s2[2][0]}:{s2[2][1]} into output file {out_filename}")
+    if DEBUG_LOCAL:
+        logger.debug(f"[debug] extracting {s[0][0]}:{s[0][1]}, {s[1][0]}:{s[1][1]}, {s[2][0]}:{s[2][1]} from input file")
+        logger.debug(f"[debug] inserting {s2[0][0]}:{s2[0][1]}, {s2[1][0]}:{s2[1][1]}, {s2[2][0]}:{s2[2][1]} into output file {out_filename}")
 
     s = slices_in_infile
     subarr_data = data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]]  # extract subarr from input file's data 
 
-    _3d_pos = numeric_to_3d_pos(outvolume.index, outfiles_partition, order='F')
+    _3d_pos = numeric_to_3d_pos(outvolume.index, outfiles_partition, order='C')
     i, j, k = _3d_pos
-    file_manager.write_data(i, j, k, outdir_path, subarr_data, slices_in_outfile)
+    file_manager.write_data(i, j, k, outdir_path, subarr_data, slices_in_outfile, O)
     
-    if DEBUG: 
-        test_write(outfile_path, slices_in_outfile, subarr_data)
+    if DEBUG_LOCAL: 
+        file_manager.test_write(outfile_path, slices_in_outfile, subarr_data)
 
 
 def get_volume(infilepath, infiles_volumes, infiles_partition):
@@ -64,7 +66,7 @@ def get_volume(infilepath, infiles_volumes, infiles_partition):
     pos = filename.split('_')
     pos[-1] = pos[-1].split('.')[0]
     pos = tuple(list(map(lambda s: int(s), pos)))
-    numeric_pos = _3d_to_numeric_pos(pos, infiles_partition, order='F')
+    numeric_pos = _3d_to_numeric_pos(pos, infiles_partition, order='C')
     return infiles_volumes[numeric_pos]
 
 
@@ -98,7 +100,7 @@ def get_overlap_subarray(hypercube1, hypercube2):
     return (subarray_lowercorner, subarray_uppercorner)
 
 
-def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format):
+def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=False):
     """ Naive rechunk implementation in plain python.
     The input directory is supposed to contain the input files (output of the split process).
     Only cleans the output directory after use.
@@ -107,8 +109,10 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format):
     --------
         processing time
     """
+    DEBUG_LOCAL = True if debug_mode else False
+
     if file_format == "HDF5":
-        file_manager = HDF5_manager
+        file_manager = HDF5_manager()
     else:
         print("File format not supported yet. Aborting...")
         return None
