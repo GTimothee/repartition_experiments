@@ -1,6 +1,5 @@
+import operator, logging, math
 from enum import Enum
-import operator
-import logging 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -301,11 +300,9 @@ def apply_merge(volume, volumes, merge_directions):
 
 def numeric_to_3d_pos(numeric_pos, blocks_partition, order):
     if order == 'C':
-        nb_blocks_per_row = blocks_partition[0]
-        nb_blocks_per_slice = blocks_partition[0] * blocks_partition[1]
-    elif order == 'F':
         nb_blocks_per_row = blocks_partition[2]
         nb_blocks_per_slice = blocks_partition[1] * blocks_partition[2]
+        print(nb_blocks_per_row, nb_blocks_per_slice)
     else:
         raise ValueError("unsupported")
 
@@ -319,11 +316,9 @@ def numeric_to_3d_pos(numeric_pos, blocks_partition, order):
 
 def _3d_to_numeric_pos(_3d_pos, blocks_partition, order):
     if order == 'C':
-        nb_blocks_per_row = blocks_partition[0]
-        nb_blocks_per_slice = blocks_partition[0] * blocks_partition[1]
-    elif order == 'F':
         nb_blocks_per_row = blocks_partition[2]
         nb_blocks_per_slice = blocks_partition[1] * blocks_partition[2]
+        print(nb_blocks_per_row, nb_blocks_per_slice)
     else:
         raise ValueError("unsupported")
 
