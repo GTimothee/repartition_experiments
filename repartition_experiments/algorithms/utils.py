@@ -299,6 +299,11 @@ def apply_merge(volume, volumes, merge_directions):
 
 
 def numeric_to_3d_pos(numeric_pos, blocks_partition, order):
+    """ Convert numeric block position into its 3d position in the array in a given storage order.
+    See also: 
+    --------
+        get_partition
+    """
     if order == 'C':
         nb_blocks_per_row = blocks_partition[2]
         nb_blocks_per_slice = blocks_partition[1] * blocks_partition[2]
@@ -315,6 +320,11 @@ def numeric_to_3d_pos(numeric_pos, blocks_partition, order):
 
 
 def _3d_to_numeric_pos(_3d_pos, blocks_partition, order):
+    """ Convert 3d block position into its numeric position in a given storage order.
+    See also: 
+    --------
+        get_partition
+    """
     if order == 'C':
         nb_blocks_per_row = blocks_partition[2]
         nb_blocks_per_slice = blocks_partition[1] * blocks_partition[2]
@@ -324,3 +334,23 @@ def _3d_to_numeric_pos(_3d_pos, blocks_partition, order):
 
     return (_3d_pos[0] * nb_blocks_per_slice) + \
         (_3d_pos[1] * nb_blocks_per_row) + _3d_pos[2]
+
+
+def get_partition(array_shape, chunk_shape):
+    """ Returns partition of array by chunks. 
+    Arguments:
+    ----------
+        array_shape: shape of input array
+        chunk_shape: shape of one chunk
+    Returns: 
+    --------
+        the partition as a tuple
+    """
+    chunks = chunk_shape 
+    logger.debug(f'Chunks for get_array_block_dims: {chunks}')
+    if not len(array_shape) == len(chunks):
+        raise ValueError(
+            "chunks and shape should have the same dimension",
+            array_shape,
+            chunks)
+    return tuple([int(s / c) for s, c in zip(array_shape, chunks)])
