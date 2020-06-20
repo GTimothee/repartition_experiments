@@ -22,3 +22,16 @@ def create_input_chunks(cs, data_dir, file_format):
             for k in range(cs[2]):
                 data = np.random.normal(size=cs)
                 file_manager.write_data(i, j, k, data_dir, data, _slices, cs)
+
+
+def create_empty_dir(dir_path):
+    """
+    dir exists => erase content
+    dir does not exist => creates dir
+    """
+    if os.path.isdir(dir_path):
+        shutil.rmtree(dir_path)
+
+    os.mkdir(dir_path)
+    if not os.path.isdir(dir_path):
+        raise OSError()

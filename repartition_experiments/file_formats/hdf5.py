@@ -2,7 +2,7 @@ import atexit, os, h5py, glob, logging
 import numpy as np
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__ + 'hdf5_filemanager')
 
 SOURCE_FILES = list() # opened files to be closed after processing
 
@@ -42,7 +42,7 @@ class HDF5_manager:
         return infiles
 
 
-    def write_data(self, i, j, k, outdir_path, data, s2, O):
+    def write_data(self, i, j, k, outdir_path, data, s2, O): # TODO ad dtype to arguments
         """ File must not exist
         """
         out_filename = f'{i}_{j}_{k}.hdf5'

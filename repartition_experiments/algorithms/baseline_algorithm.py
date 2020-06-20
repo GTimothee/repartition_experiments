@@ -5,7 +5,7 @@ from .utils import get_blocks_shape, get_named_volumes, hypercubes_overlap, _3d_
 from ..file_formats.hdf5 import HDF5_manager
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__ + 'baseline')
 
 DEBUG_LOCAL = False
 
