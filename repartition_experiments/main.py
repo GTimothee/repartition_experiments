@@ -1,2 +1,0 @@
-def flush_cache():
-    os.system('sync; echo 3 | sudo tee /proc/sys/vm/drop_caches') 

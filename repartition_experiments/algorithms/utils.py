@@ -1,8 +1,5 @@
 from enum import Enum
 import operator
-
-from dask_io.optimizer.utils.utils import _3d_to_numeric_pos
-
 import logging 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -302,13 +299,13 @@ def apply_merge(volume, volumes, merge_directions):
     return new_volume
 
 
-def numeric_to_3d_pos(numeric_pos, blocks_shape, order):
+def numeric_to_3d_pos(numeric_pos, blocks_partition, order):
     if order == 'C':
-        nb_blocks_per_row = blocks_shape[0]
-        nb_blocks_per_slice = blocks_shape[0] * blocks_shape[1]
+        nb_blocks_per_row = blocks_partition[0]
+        nb_blocks_per_slice = blocks_partition[0] * blocks_partition[1]
     elif order == 'F':
-        nb_blocks_per_row = blocks_shape[2]
-        nb_blocks_per_slice = blocks_shape[1] * blocks_shape[2]
+        nb_blocks_per_row = blocks_partition[2]
+        nb_blocks_per_slice = blocks_partition[1] * blocks_partition[2]
     else:
         raise ValueError("unsupported")
 
@@ -320,13 +317,13 @@ def numeric_to_3d_pos(numeric_pos, blocks_shape, order):
     return (i, j, k)
 
 
-def _3d_to_numeric_pos(_3d_pos, shape, order):
+def _3d_to_numeric_pos(_3d_pos, blocks_partition, order):
     if order == 'C':
-        nb_blocks_per_row = shape[0]
-        nb_blocks_per_slice = shape[0] * shape[1]
+        nb_blocks_per_row = blocks_partition[0]
+        nb_blocks_per_slice = blocks_partition[0] * blocks_partition[1]
     elif order == 'F':
-        nb_blocks_per_row = shape[2]
-        nb_blocks_per_slice = shape[1] * shape[2]
+        nb_blocks_per_row = blocks_partition[2]
+        nb_blocks_per_slice = blocks_partition[1] * blocks_partition[2]
     else:
         raise ValueError("unsupported")
 
