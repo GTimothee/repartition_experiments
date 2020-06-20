@@ -70,9 +70,6 @@ def hypercubes_overlap(hypercube1, hypercube2):
     
     nb_matching_dims = 0
     for i in range(nb_dims):
-        # if not uppercorner1[i] > lowercorner2[i] or \
-        #     not uppercorner2[i] > lowercorner1[i]:
-        #     return False
         if uppercorner1[i] <= lowercorner2[i] or \
             uppercorner2[i] <= lowercorner1[i]:
             return False
