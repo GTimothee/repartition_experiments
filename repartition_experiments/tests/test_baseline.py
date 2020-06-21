@@ -1,4 +1,4 @@
-import os, pytest, shutil
+import pytest
 
 from ..algorithms.baseline_algorithm import baseline_rechunk
 from ..exp_utils import create_input_chunks, create_empty_dir
