@@ -81,6 +81,13 @@ class HDF5_manager:
         clean_files()
 
 
+    def read_all(self, filepath):
+        f = h5py.File(filepath, 'r') 
+        if not file_in_list(f, SOURCE_FILES):
+            SOURCE_FILES.append(f)
+        return f["/data"][()]
+
+
     def read(self, input_file):
         return self.get_dataset(input_file, '/data')
 
