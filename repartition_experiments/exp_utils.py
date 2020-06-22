@@ -39,7 +39,8 @@ def create_empty_dir(dir_path):
 
 
 def verify_results(outdir_path, original_array_path, R, O, file_format):
-    """ Compare content of each output file against expected subarrays from original array
+    """ Compare content of each output file against expected subarrays from original array.
+    WARNING: this function opens all output files + the original array
     """
 
     if file_format == "HDF5":
@@ -68,4 +69,6 @@ def verify_results(outdir_path, original_array_path, R, O, file_format):
                     print("data_stored", data_stored)
                     print("ground_truth", ground_truth)
                     all_true = False  # do not return here to see all failures
+
+    file_manager.close_infiles()  # close all files
     return all_true
