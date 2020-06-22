@@ -120,9 +120,20 @@ def compute_buffers(buffer_mem_size, strategy, origarr_size, cs, block_size, blo
     return buffers
 
 
+def read_buffer(arr, file_manager, buffer):
+    p1, p2 = buffer.corners
+    return arr[p1[0]: p2[0], p1[1], p2[1], p1[2], p2[2]]
+    
+
+def write_splits(file_manager, buffer_data):
+    
+
+
 def clustered_writes(R, cs, bpv, m, ff):
     """ Implementation of the clustered strategy for splitting a 3D array.
 
+    Arguments: 
+    ----------
         R: original array shape
         m: memory available for the buffer
         cs: chunk shape
@@ -145,6 +156,7 @@ def clustered_writes(R, cs, bpv, m, ff):
     origarr_size = R[0] * R[1] * R[2] * bytes_per_voxel
     buffers = compute_buffers(m, strategy, origarr_size, cs, block_size, block_row_size, block_slice_size, partition, R, bpv)
 
+    origarr = file_manager.read(origarr_filepath)
     for buffer in buffers:
-        buffer_data = file_manager.read(buffer)  
-        file_manager.write_splits(buffer_data)
+        buffer_data = read_buffer(origarr, file_manager, buffer)
+        write_splits(file_manager, buffer_data)
