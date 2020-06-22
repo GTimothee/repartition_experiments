@@ -1,8 +1,7 @@
 import os, glob, h5py, time, logging
 import numpy as np
 
-from .utils import get_blocks_shape, get_named_volumes, hypercubes_overlap, _3d_to_numeric_pos, numeric_to_3d_pos, Volume
-from ..file_formats.hdf5 import HDF5_manager
+from .utils import get_blocks_shape, get_named_volumes, hypercubes_overlap, _3d_to_numeric_pos, numeric_to_3d_pos, Volume, get_file_manager
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__ + 'baseline')
@@ -111,12 +110,8 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=F
     """
     DEBUG_LOCAL = True if debug_mode else False
 
-    if file_format == "HDF5":
-        file_manager = HDF5_manager()
-    else:
-        print("File format not supported yet. Aborting...")
-        return None
-    
+    file_manager = get_file_manager(file_format)
+
     infiles_partition = get_blocks_shape(R, I)
     infiles_volumes = get_named_volumes(infiles_partition, I)
     outfiles_partition = get_blocks_shape(R, O)

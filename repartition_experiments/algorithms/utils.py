@@ -1,7 +1,11 @@
 import operator, logging, math
 from enum import Enum
+
+from ..file_formats.hdf5 import HDF5_manager
+
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
 
 class Axes(Enum):
     i = 0
@@ -352,3 +356,11 @@ def get_partition(array_shape, chunk_shape):
             array_shape,
             chunks)
     return tuple([int(s / c) for s, c in zip(array_shape, chunks)])
+
+
+def get_file_manager(file_format):
+    if file_format == "HDF5":
+        file_manager = HDF5_manager()
+    else:
+        print("File format not supported yet. Aborting...")
+        return None

@@ -1,5 +1,7 @@
 import math
-from .utils import Volume
+from .utils import Volume, get_file_manager, get_blocks_shape
+from ..file_formats.hdf5 import HDF5_manager
+
 
 def get_entity_sizes(cs, bytes_per_voxel, partition):
     bs = cs[0] * cs[1]  * cs[2] * bytes_per_voxel  # block size
@@ -56,7 +58,7 @@ def compute_buffers(buffer_mem_size, strategy, origarr_size, cs, block_size, blo
         if prev_buff.p2[0] != (R[0]):
             buffers[nb_plain_buffers] = Volume(nb_plain_buffers,
                                             (nb_plain_buffers * buffer_shape[0], 0, 0),
-                                                R)  # coords du dernier slab jusqua la fin de R 
+                                                R)  
 
     elif strategy == 1:
         nb_block_slices = partition[0]
@@ -76,7 +78,7 @@ def compute_buffers(buffer_mem_size, strategy, origarr_size, cs, block_size, blo
             if prev_buff.p2[1] != (R[1]):
                 buffers[index] = Volume(index, 
                                         (i * cs[0], nb_buffers_per_slice * cs[1], 0),
-                                        ((i + 1) * cs[0], R[1], R[2]))  # add last block rows 
+                                        ((i + 1) * cs[0], R[1], R[2])) 
                 index += 1
 
     elif strategy == 0:
@@ -118,17 +120,31 @@ def compute_buffers(buffer_mem_size, strategy, origarr_size, cs, block_size, blo
     return buffers
 
 
-def clustered_writes():
+def clustered_writes(R, cs, bpv, m, ff):
+    """ Implementation of the clustered strategy for splitting a 3D array.
+
+        R: original array shape
+        m: memory available for the buffer
+        cs: chunk shape
+        bpv: number of bytes per voxel
+        ff: file_format
+    """
+
     strategies = {
         0: "blocks",
         1: "block_rows",
         2: "block_slices"
     }
     
-    bs, brs, bss = get_entity_sizes(cs, bytes_per_voxel, partition)
+    file_manager = get_file_manager(ff)
+
+    partition = get_blocks_shape(R, cs)
+    bs, brs, bss = get_entity_sizes(cs, bpv, partition)
     strategy = get_strategy(m, bs, brs, bss)
-    buffers = compute_buffers(m, strategy, origarr_size, cs, block_size, block_row_size, block_slice_size, partition, R, bytes_per_voxel)
+
+    origarr_size = R[0] * R[1] * R[2] * bytes_per_voxel
+    buffers = compute_buffers(m, strategy, origarr_size, cs, block_size, block_row_size, block_slice_size, partition, R, bpv)
 
     for buffer in buffers:
-        buffer_data = read(buffer)  
-        write_splits(buffer_data)
+        buffer_data = file_manager.read(buffer)  
+        file_manager.write_splits(buffer_data)
