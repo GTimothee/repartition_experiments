@@ -27,7 +27,7 @@ def get_strategy(buffer_mem_size, block_size, block_row_size, block_slice_size):
             return 0
 
 
-def compute_buffers(strategy, origarr_size, block_size, block_row_size, block_slice_size):
+def compute_buffers(buffer_mem_size, strategy, origarr_size, cs, block_size, block_row_size, block_slice_size, partition, R, bytes_per_voxel):
     """
         partition: partition tuple of R by O = nb chunks per dimension
     """
@@ -35,6 +35,7 @@ def compute_buffers(strategy, origarr_size, block_size, block_row_size, block_sl
         return
 
     buffers = dict()
+    index = 0
 
     if strategy == 2:
         slices_per_buffer = math.floor(buffer_mem_size / block_slice_size)
@@ -51,18 +52,19 @@ def compute_buffers(strategy, origarr_size, block_size, block_row_size, block_sl
                             lowcorner,
                             upcorner)
 
-        buffers[nb_plain_buffers] = Volume(nb_plain_buffers,
-                                           (nb_plain_buffers * buffer_shape[0], 0, 0),
-                                            R)  # coords du dernier slab jusqua la fin de R 
+        prev_buff = buffers[nb_plain_buffers-1]
+        if prev_buff.p2[0] != (R[0]):
+            buffers[nb_plain_buffers] = Volume(nb_plain_buffers,
+                                            (nb_plain_buffers * buffer_shape[0], 0, 0),
+                                                R)  # coords du dernier slab jusqua la fin de R 
 
     elif strategy == 1:
         nb_block_slices = partition[0]
         nb_block_rows_per_buffer = math.floor(buffer_mem_size/block_row_size)
         buffer_size = nb_block_rows_per_buffer * block_row_size
 
-        index = 0
         for i in range(nb_block_slices):
-            nb_buffers_per_slice = block_slice_size / buffer_size
+            nb_buffers_per_slice = math.floor(block_slice_size / buffer_size)
             
             for j in range(nb_buffers_per_slice):
                 lowcorner =(i*cs[0], j * nb_block_rows_per_buffer * cs[1], 0)
@@ -70,28 +72,45 @@ def compute_buffers(strategy, origarr_size, block_size, block_row_size, block_sl
                 buffers[index] = Volume(index, lowcorner, upcorner)
                 index += 1
             
-            buffers[index] = Volume(index, 
-                                    (i * cs[0], nb_buffers_per_slice * cs[1], 0),
-                                    ((i + 1) * cs[0], R[1], R[2]))  # add last block rows 
-            index += 1
+            prev_buff = buffers[index-1]
+            if prev_buff.p2[1] != (R[1]):
+                buffers[index] = Volume(index, 
+                                        (i * cs[0], nb_buffers_per_slice * cs[1], 0),
+                                        ((i + 1) * cs[0], R[1], R[2]))  # add last block rows 
+                index += 1
 
     elif strategy == 0:
-        index = 0
+
         for i in range(partition[0]): 
+            start_i, end_i = i*cs[0], (i+1)*cs[0]
+
             for j in range(partition[1]): 
-                nb_blocks = math.floor(buffer_mem_size/block_size)
+                start_j, end_j = j*cs[1], (j+1)*cs[1]
 
-                buffer_volume = Volume(index,
-                                       (i*cs[0], j*cs[1], 0),
-                                       ((i+1)*cs[0], (j+1)*cs[1]), nb_blocks*cs[2])
-                buffers[index] = buffer_volume
-                index += 1
+                nb_blocks_per_buff = math.floor(buffer_mem_size/block_size)
+                buffer_size = nb_blocks_per_buff * block_size
+                nb_buffer_per_row = math.floor(block_row_size / buffer_size)
 
-                last_buffer = Volume(index,
-                                     (i*cs[0], j*cs[1], nb_blocks*cs[2]),
-                                     ((i+1)*cs[0], (j+1)*cs[1]), R[2])
-                buffers[index] = last_buffer
-                index += 1
+                for k in range(nb_buffer_per_row):
+                    if k == 0:
+                        start_k = 0
+                    else:
+                        start_k = buffers[index-1].p2[2]
+                    end_k = (k+1) * nb_blocks_per_buff * cs[2]
+
+                    buffer_volume = Volume(index,
+                                        (start_i, start_j, start_k),
+                                        (end_i, end_j, end_k))
+                    buffers[index] = buffer_volume
+                    index += 1
+
+                prev_buff = buffers[index-1]
+                if prev_buff.p2[2] != (R[2]):
+                    last_buffer = Volume(index,
+                                        (start_i, start_j, prev_buff.p2[2]),
+                                        (end_i, end_j, R[2]))
+                    buffers[index] = last_buffer
+                    index += 1
 
     else:
         raise ValueError("Strategy does not exist")
@@ -108,7 +127,7 @@ def clustered_writes():
     
     bs, brs, bss = get_entity_sizes(cs, bytes_per_voxel, partition)
     strategy = get_strategy(m, bs, brs, bss)
-    buffers = compute_buffers(strategy, origarr_size)
+    buffers = compute_buffers(m, strategy, origarr_size, cs, block_size, block_row_size, block_slice_size, partition, R, bytes_per_voxel)
 
     for buffer in buffers:
         buffer_data = read(buffer)  
