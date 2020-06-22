@@ -72,3 +72,16 @@ def verify_results(outdir_path, original_array_path, R, O, file_format):
 
     file_manager.close_infiles()  # close all files
     return all_true
+
+
+def get_case_arguments():
+    if case == 1:
+        R, O, I = tuple(run["R"]), tuple(run["O"]), tuple(run["I"])
+        lambd = get_input_aggregate(O, I)
+        B, volumestokeep = (lambd[0], lambd[1], lambd[2]), list(range(1, 8))
+    elif case == 2:
+        R, O, I, B, volumestokeep = tuple(run["R"]), tuple(run["O"]), tuple(run["I"]), tuple(run["B"]), run["volumestokeep"]
+    else:
+        raise ValueError("Case index does not exist")
+
+    return R, O, I, B, volumestokeep

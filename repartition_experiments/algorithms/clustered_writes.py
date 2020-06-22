@@ -159,6 +159,7 @@ def write_splits(file_manager, buffer, buffer_data, cs, outdir_path):
 def clustered_writes(origarr_filepath, R, cs, bpv, m, ff, outdir_path):
     """ Implementation of the clustered strategy for splitting a 3D array.
     Output file names are following the following regex: outdir_path/{i}_{j}_{k}.extension
+    WARNING: this implementation loads the whole input array in RAM. We had 250GB of RAM for our experiments so we decided to use it.
 
     Arguments: 
     ----------
