@@ -121,16 +121,38 @@ def compute_buffers(buffer_mem_size, strategy, origarr_size, cs, block_size, blo
 
 
 def read_buffer(arr, file_manager, buffer):
-    p1, p2 = buffer.corners
+    p1, p2 = buffer.get_corners()
     return arr[p1[0]: p2[0], p1[1], p2[1], p1[2], p2[2]]
     
 
-def write_splits(file_manager, buffer_data):
-    
+def write_splits(file_manager, buffer, buffer_data, cs, outdir_path):
+    p1, p2 = buffer.get_corners()
+    first_index = (p1[0]/cs[0], p1[1]/cs[1], p1[2]/cs[2])
+    buffer_shape = (p2[0]-p1[0], p2[1]-p1[1], p2[2]-p1[2])
+    buff_partition = get_blocks_shape(buffer_shape, cs)
+
+    _3d_index = first_index
+    for i in buff_partition[0]:
+        for j in buff_partition[1]:
+            for k in buff_partition[2]:
+                split_data = buffer_data[ \
+                    i * cs[0]:(i+1) * cs[0], \ 
+                    j * cs[1]:(j+1) * cs[1], \ 
+                    k * cs[2]:(k+1) * cs[2]]
+
+                region = ((0, cs[0]), (0, cs[1]), (0, cs[2]))
+                write_data(_3d_index[0] + i, \ 
+                    _3d_index[1] + j, \ 
+                    _3d_index[2] + k, \ 
+                    outdir_path, \ 
+                    split_data, \ 
+                    region, \ 
+                    cs)
 
 
-def clustered_writes(R, cs, bpv, m, ff):
+def clustered_writes(R, cs, bpv, m, ff, outdir_path):
     """ Implementation of the clustered strategy for splitting a 3D array.
+    Output file names are following the following regex: outdir_path/{i}_{j}_{k}.extension
 
     Arguments: 
     ----------
@@ -139,6 +161,7 @@ def clustered_writes(R, cs, bpv, m, ff):
         cs: chunk shape
         bpv: number of bytes per voxel
         ff: file_format
+        outdir_path: where to write the splits
     """
 
     strategies = {

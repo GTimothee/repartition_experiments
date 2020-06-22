@@ -30,6 +30,7 @@ def test_get_strategy():
         5*2*3*5*3: 2, # 1 slice 
         5*2*3*5*3*3: 2, # 3 slices 
         5*2*3*5*3*4: 2, # whole img
+        5*2*3*5*3*7: 2, # whole img (more mem than necessary)
     }
 
     for buffer_mem_size, expected in test_case.items():
@@ -54,6 +55,7 @@ def test_compute_buffers():
         5*2*3*5*3: 4, # 1 slice 
         5*2*3*5*3*3: 2, # 3 slices 
         5*2*3*5*3*4: 1, # whole img
+        5*2*3*5*3*7: 1, # whole img (more mem than necessary)
     }
 
     for buffer_mem_size, expected in test_case.items():

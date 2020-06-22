@@ -42,7 +42,7 @@ class HDF5_manager:
         return infiles
 
 
-    def write_data(self, i, j, k, outdir_path, data, s2, O): # TODO ad dtype to arguments
+    def write_data(self, i, j, k, outdir_path, data, s2, O, dtype=np.float16): # TODO ad dtype to arguments
         """ File must not exist
         """
         out_filename = f'{i}_{j}_{k}.hdf5'
@@ -60,7 +60,7 @@ class HDF5_manager:
             if not "/data" in f.keys():
                 # print('[debug] No dataset, creating dataset')
                 null_arr = np.zeros(O)
-                outdset = f.create_dataset("/data", O, data=null_arr, dtype=np.float16)  # initialize an empty dataset
+                outdset = f.create_dataset("/data", O, data=null_arr, dtype=dtype)  # initialize an empty dataset
             else:
                 # print('[debug] Dataset exists')
                 outdset = f["/data"]
