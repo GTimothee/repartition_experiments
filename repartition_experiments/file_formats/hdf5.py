@@ -1,5 +1,6 @@
 import atexit, os, h5py, glob, logging
 import numpy as np
+from h5py import Dataset
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__ + 'hdf5_filemanager')
@@ -13,6 +14,16 @@ def clean_files():
     """
     for f in SOURCE_FILES:
         f.close()
+
+
+def file_in_list(file_pointer, file_list):
+    """ Check if a file pointer points to the same file than another file pointer in the file_list.
+    """
+    for fp in file_list:
+        if file_pointer == fp:
+            return True 
+
+    return False
 
 
 class HDF5_manager:
@@ -42,7 +53,7 @@ class HDF5_manager:
         return infiles
 
 
-    def write_data(self, i, j, k, outdir_path, data, s2, O, dtype=np.float16): # TODO ad dtype to arguments
+    def write_data(self, i, j, k, outdir_path, data, s2, O, dtype=np.float16):
         """ File must not exist
         """
         out_filename = f'{i}_{j}_{k}.hdf5'
@@ -66,6 +77,29 @@ class HDF5_manager:
                 outdset = f["/data"]
 
             outdset[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
+
+
+    def write(self, outfilepath, data, cs, _slices=None, dtype=np.float16): 
+        """ Write arr into a file.
+        File must not exist
+        """
+        if os.path.isfile(outfilepath):
+            mode = 'r+'
+        else:
+            mode = 'w'
+
+        with h5py.File(outfilepath, mode) as f:
+
+            if _slices != None:
+                if not "/data" in f.keys():
+                    null_arr = np.zeros(cs)
+                    outdset = f.create_dataset("/data", cs, data=null_arr, dtype=dtype) 
+                else:
+                    outdset = f["/data"]
+
+                outdset[_slices[0][0]:_slices[0][1],_slices[1][0]:_slices[1][1],_slices[2][0]:_slices[2][1]] = data
+            else:
+                f.create_dataset("/data", cs, data=data, dtype=dtype)            
 
 
     def test_write(self, outfile_path, s, subarr_data):
@@ -131,6 +165,6 @@ class HDF5_manager:
             SOURCE_FILES.append(f)
 
         print("Loading file...")
-        inspect_h5py_file(f)
+        self.inspect_h5py_file(f)
 
         return f[dataset_key]

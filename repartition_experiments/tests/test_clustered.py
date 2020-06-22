@@ -1,4 +1,8 @@
+import os, glob
+import numpy as np
+
 from ..algorithms.clustered_writes import *
+from ..exp_utils import create_empty_dir
 
 
 def test_get_entity_sizes():
@@ -65,3 +69,45 @@ def test_compute_buffers():
         # test number of buffers
         nb_buffers = len(buffers.values())
         assert nb_buffers == expected
+
+
+def test_clustered_writes():
+    bpv = 1
+    R = (20,9,10)
+    cs = (5,3,2)
+    ff = 'HDF5'
+    outdir_path = './outdir'
+
+    test_case = [
+        5*3*2, # 1 block 
+        5*3*2*4, # 4 blocks 
+        5*3*2*5, # 1 row 
+        5*3*2*5*2, # 2 rows
+        5*3*2*5*3, # 1 slice 
+        5*3*2*5*3*3, # 3 slices 
+        5*3*2*5*3*4, # whole img
+        5*3*2*5*3*7, # whole img (more mem than necessary)
+    ]
+
+    nb_chunks = 4*3*5
+
+    # create input array
+    origarr_filepath = './original_array.hdf5'
+    data = np.random.normal(size=R)
+    fm = get_file_manager(ff)
+    fm.write(origarr_filepath, data, R, _slices=None)
+    
+    for m in test_case:
+        create_empty_dir(outdir_path)
+        clustered_writes(origarr_filepath, R, cs, bpv, m, ff, outdir_path)
+
+        workdir = os.getcwd()
+        os.chdir(outdir_path)
+        filenames = list()
+        for filename in glob.glob("*.hdf5"):
+            arr = fm.read_all(filename)
+            assert arr.shape == cs
+            filenames.append(filename)
+
+        assert len(filenames) == nb_chunks
+        os.chdir(workdir)

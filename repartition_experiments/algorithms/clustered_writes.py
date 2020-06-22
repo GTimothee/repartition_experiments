@@ -54,11 +54,16 @@ def compute_buffers(buffer_mem_size, strategy, origarr_size, cs, block_size, blo
                             lowcorner,
                             upcorner)
 
-        prev_buff = buffers[nb_plain_buffers-1]
-        if prev_buff.p2[0] != (R[0]):
+        if nb_plain_buffers > 0:
+            prev_buff = buffers[nb_plain_buffers-1]
+            if prev_buff.p2[0] != (R[0]):
+                buffers[nb_plain_buffers] = Volume(nb_plain_buffers,
+                                                (nb_plain_buffers * buffer_shape[0], 0, 0),
+                                                    R)  
+        else:
             buffers[nb_plain_buffers] = Volume(nb_plain_buffers,
-                                            (nb_plain_buffers * buffer_shape[0], 0, 0),
-                                                R)  
+                                               (nb_plain_buffers * buffer_shape[0], 0, 0),
+                                               R)  
 
     elif strategy == 1:
         nb_block_slices = partition[0]
@@ -68,7 +73,7 @@ def compute_buffers(buffer_mem_size, strategy, origarr_size, cs, block_size, blo
         for i in range(nb_block_slices):
             nb_buffers_per_slice = math.floor(block_slice_size / buffer_size)
             
-            for j in range(nb_buffers_per_slice):
+            for j in range(nb_buffers_per_slice): # a buffer is one or more block rows here
                 lowcorner =(i*cs[0], j * nb_block_rows_per_buffer * cs[1], 0)
                 upcorner = ((i+1)*cs[0], (j+1) * nb_block_rows_per_buffer * cs[1], R[2])
                 buffers[index] = Volume(index, lowcorner, upcorner)
@@ -122,7 +127,8 @@ def compute_buffers(buffer_mem_size, strategy, origarr_size, cs, block_size, blo
 
 def read_buffer(arr, file_manager, buffer):
     p1, p2 = buffer.get_corners()
-    return arr[p1[0]: p2[0], p1[1], p2[1], p1[2], p2[2]]
+    # print("reading slices:", p1[0], p2[0], p1[1], p2[1], p1[2], p2[2])
+    return arr[p1[0]: p2[0], p1[1]: p2[1], p1[2]: p2[2]]
     
 
 def write_splits(file_manager, buffer, buffer_data, cs, outdir_path):
@@ -132,25 +138,25 @@ def write_splits(file_manager, buffer, buffer_data, cs, outdir_path):
     buff_partition = get_blocks_shape(buffer_shape, cs)
 
     _3d_index = first_index
-    for i in buff_partition[0]:
-        for j in buff_partition[1]:
-            for k in buff_partition[2]:
-                split_data = buffer_data[ \
-                    i * cs[0]:(i+1) * cs[0], \ 
-                    j * cs[1]:(j+1) * cs[1], \ 
+    for i in range(buff_partition[0]):
+        for j in range(buff_partition[1]):
+            for k in range(buff_partition[2]):
+                split_data = buffer_data[
+                    i * cs[0]:(i+1) * cs[0], 
+                    j * cs[1]:(j+1) * cs[1], 
                     k * cs[2]:(k+1) * cs[2]]
 
                 region = ((0, cs[0]), (0, cs[1]), (0, cs[2]))
-                write_data(_3d_index[0] + i, \ 
-                    _3d_index[1] + j, \ 
-                    _3d_index[2] + k, \ 
-                    outdir_path, \ 
-                    split_data, \ 
-                    region, \ 
-                    cs)
+                file_manager.write_data(int(_3d_index[0] + i), 
+                                        int(_3d_index[1] + j), 
+                                        int(_3d_index[2] + k), 
+                                        outdir_path, 
+                                        split_data, 
+                                        region, 
+                                        cs)
 
 
-def clustered_writes(R, cs, bpv, m, ff, outdir_path):
+def clustered_writes(origarr_filepath, R, cs, bpv, m, ff, outdir_path):
     """ Implementation of the clustered strategy for splitting a 3D array.
     Output file names are following the following regex: outdir_path/{i}_{j}_{k}.extension
 
@@ -176,10 +182,11 @@ def clustered_writes(R, cs, bpv, m, ff, outdir_path):
     bs, brs, bss = get_entity_sizes(cs, bpv, partition)
     strategy = get_strategy(m, bs, brs, bss)
 
-    origarr_size = R[0] * R[1] * R[2] * bytes_per_voxel
-    buffers = compute_buffers(m, strategy, origarr_size, cs, block_size, block_row_size, block_slice_size, partition, R, bpv)
+    origarr_size = R[0] * R[1] * R[2] * bpv
+    buffers = compute_buffers(m, strategy, origarr_size, cs, bs, brs, bss, partition, R, bpv)
 
     origarr = file_manager.read(origarr_filepath)
-    for buffer in buffers:
+    for buffer_index in range(len(buffers.values())):
+        buffer = buffers[buffer_index]
         buffer_data = read_buffer(origarr, file_manager, buffer)
-        write_splits(file_manager, buffer_data)
+        write_splits(file_manager, buffer, buffer_data, cs, outdir_path)

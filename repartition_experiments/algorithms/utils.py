@@ -360,7 +360,7 @@ def get_partition(array_shape, chunk_shape):
 
 def get_file_manager(file_format):
     if file_format == "HDF5":
-        file_manager = HDF5_manager()
+        return HDF5_manager()
     else:
         print("File format not supported yet. Aborting...")
-        return None
+        raise ValueError()
