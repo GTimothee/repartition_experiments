@@ -99,10 +99,10 @@ def get_overlap_subarray(hypercube1, hypercube2):
     return (subarray_lowercorner, subarray_uppercorner)
 
 
-def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=False):
+def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=False, clean_out_dir=False):
     """ Naive rechunk implementation in plain python.
     The input directory is supposed to contain the input files (output of the split process).
-    Only cleans the output directory after use.
+    WARNING: Does not clean the output directory after use by default.
 
     Returns: 
     --------
@@ -133,7 +133,9 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=F
             file_manager.close_infiles()
 
         t = time.time() - t
-        file_manager.clean_directory(outdir_path)
+
+        if clean_out_dir:
+            file_manager.clean_directory(outdir_path)
         return t
 
     except Exception as e:

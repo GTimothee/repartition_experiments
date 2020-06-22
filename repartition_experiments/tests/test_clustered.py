@@ -1,6 +1,7 @@
 import os, glob
 import numpy as np
 
+from ..algorithms.utils import get_file_manager
 from ..algorithms.clustered_writes import *
 from ..exp_utils import create_empty_dir
 
