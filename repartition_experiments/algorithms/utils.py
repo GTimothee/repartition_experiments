@@ -185,6 +185,36 @@ def clean_arrays_dict(arrays_dict):
         arrays_dict[k] = [convert_Volume_to_slices(v) for v in volumes_list]
 
 
+def get_overlap_subarray(hypercube1, hypercube2):
+    """ Find the intersection of both files.
+    Refactor of hypercubes_overlap to return the overlap subarray
+
+    Returns: 
+    --------
+        pair of corners of the subarray
+    See also:
+    ---------
+        utils.hypercubes_overlap
+    """
+
+    if not isinstance(hypercube1, Volume) or \
+        not isinstance(hypercube2, Volume):
+        raise TypeError()
+
+    lowercorner1, uppercorner1 = hypercube1.get_corners()
+    lowercorner2, uppercorner2 = hypercube2.get_corners()
+    nb_dims = len(uppercorner1)
+    
+    subarray_lowercorner = list()
+    subarray_uppercorner = list()
+    for i in range(nb_dims):
+        subarray_lowercorner.append(max(lowercorner1[i], lowercorner2[i]))
+        subarray_uppercorner.append(min(uppercorner1[i], uppercorner2[i]))
+
+    print(f"Overlap subarray : {subarray_lowercorner[0]}:{subarray_uppercorner[0]}, {subarray_lowercorner[1]}:{subarray_uppercorner[1]}, {subarray_lowercorner[2]}:{subarray_uppercorner[2]}")
+    return (subarray_lowercorner, subarray_uppercorner)
+
+
 def get_named_volumes(blocks_partition, block_shape):
     """ Return the coordinates of all entities of shape block shape in the reconstructed image.
     The first entity is placed at the origin of the base.

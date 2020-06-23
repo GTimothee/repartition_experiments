@@ -21,7 +21,7 @@ def write_in_outfile(from_cache):
         remove(cache, v, outvolume.index)
         
 
-def get_buffers(R, B):
+def get_volumes(R, B):
     """ Returns a dictionary mapping each buffer (numeric) index to a Volume object containing its coordinates in R.
 
     Arguments: 
@@ -33,15 +33,34 @@ def get_buffers(R, B):
     return get_named_volumes(buffers_partition, B)
 
 
+def get_buffer_to_infiles(buffers, involumes):
+    """ Returns a dictionary mapping each buffer (numeric) index to the list of input files from which it needs to load data.
+    """
+    buffer_to_infiles = dict()
+
+    for buffer_index, buffer_volume in buffer.items():
+        buffer_to_infiles[buffer_index] = list()
+        for involume in involumes.values():
+            if hypercubes_overlap(buffer_volume, involume):
+                buffer_to_infiles[buffer_index] = involume.index
+
+    return buffer_to_infiles
+
+
 def keep_algorithm(R, O, I, B, volumestokeep):
     arrays_dict, regions_dict, buffer_to_outfiles = compute_zones(B, O, R, volumestokeep)
-    buffers = get_buffers(R, B)
+    buffers = get_volumes(R, B)
+    involumes = get_volumes(R, I)
+    outvolumes = get_volumes(R, O)
+    buffer_to_infiles = get_buffer_to_infiles(buffers, involumes)
 
     for buffer in buffers:
         data = read(buffer)
         buff_vols = _break(data)
 
-        for outvolume in buffer_to_outfiles[buffer_index]:
+        for outvolume_index in buffer_to_outfiles[buffer_index]:
+            outvolume = outvolumes[outvolume_index]
+
             for v in arrays_dict[outvolume.index]:
                 for bv in buff_vols:
                     if intersection(v, bv) == 'complete':      
