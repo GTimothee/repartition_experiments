@@ -101,8 +101,35 @@ def test_equals():
     assert not equals(v1, v3)
 
 
-# def test_add_to_cache():
-#     add_to_cache(cache, vol_to_write, buff_volume, data_part, outvolume_index)
+def test_add_to_cache():
+    cache = {
+        2: [(Volume(0, (0,0,0), (5,5,5)), np.zeros((5,5,5)))]
+    }
+    buff_volume = Volume(0, (5,5,5), (15,15,15))
+    data_part = np.random.uniform(size=(10,10,10))
+
+    vol_to_write = Volume(0, (0,0,0), (20,20,20))
+
+    outvolume_index = 3
+    add_to_cache(cache, vol_to_write, buff_volume, data_part, outvolume_index)
+    assert len(cache.keys()) == 2
+    l = cache[3]
+    assert len(l) == 1
+    e = l[0]
+    vol, data = e
+    assert equals(vol, vol_to_write)
+    assert data.shape == (20,20,20)
+    assert np.allclose(data[5:15, 5:15, 5:15], data_part)
+    assert np.allclose(data[0:5, 0:5, 0:5], np.zeros(shape=(5,5,5)))
+
+    cache = {
+        2: [(Volume(0, (0,0,0), (5,5,5)), np.zeros((5,5,5)))]
+    }
+    outvolume_index = 2
+    add_to_cache(cache, vol_to_write, buff_volume, data_part, outvolume_index)
+    assert len(cache.keys()) == 1
+    l = cache[2]
+    assert len(l) == 2
 
 
 # def test_keep_algorithm():
