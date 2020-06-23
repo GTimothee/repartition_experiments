@@ -53,6 +53,18 @@ class HDF5_manager:
         return infiles
 
 
+    def read_data(self, i, j, k, dirpath, slices):
+        """ Read data from chunk
+        """
+        filename = f'{i}_{j}_{k}.hdf5'
+        input_file = os.path.join(dirpath, filename)
+        s = slices
+        with h5py.File(input_file, 'r') as f:
+            dset = f['/data']
+            data = dset[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] 
+        return data
+
+
     def write_data(self, i, j, k, outdir_path, data, s2, O, dtype=np.float16):
         """ File must not exist
         """
