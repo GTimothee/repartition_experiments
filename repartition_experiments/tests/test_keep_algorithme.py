@@ -93,8 +93,12 @@ def test_read_buffer():
     assert np.allclose(verif[3], d3)
 
 
-# def test_equals():
-#     equals(vol_to_write, buff_volume)
+def test_equals():
+    v1 = Volume(0, (5,5,5), (10,10,10))
+    v2 = Volume(5, (5,5,5), (10,10,10))
+    v3 = Volume(5, (5,5,5), (10,9,10))
+    assert equals(v1, v2)
+    assert not equals(v1, v3)
 
 
 # def test_add_to_cache():

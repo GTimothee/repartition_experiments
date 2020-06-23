@@ -134,7 +134,10 @@ def equals(vol_to_write, buff_volume):
     """ See if a buffer's volume is a complete volume to write;
     If not, then some data is missing so we will store the volume read into a cache for later use.
     """
-    overlap = get_overlap_subarray(vol_to_write, buff_volume)
+    pair = get_overlap_subarray(vol_to_write, buff_volume)
+    p1, p2 = tuple(pair[0]), tuple(pair[1])
+    overlap = Volume(0, p1, p2)
+
     vol_to_write_shape = (vol_to_write.p2[0] - vol_to_write.p1[0], vol_to_write.p2[1] - vol_to_write.p1[1], vol_to_write.p2[2] - vol_to_write.p1[2])
     overlap_shape = (overlap.p2[0] - overlap.p1[0], overlap.p2[1] - overlap.p1[1], overlap.p2[2] - overlap.p1[2])
 
@@ -167,7 +170,10 @@ def add_to_cache(cache, vol_to_write, buff_volume, data_part, outvolume_index):
     # if reached, vol_to_write not in cache -> add to cache
     shape = (vol_to_write.p2[0] - vol_to_write.p1[0], vol_to_write.p2[1] - vol_to_write.p1[1], vol_to_write.p2[2] - vol_to_write.p1[2])
     array = np.zeros(shape)
-    p1, p2 = get_overlap_subarray(vol_to_write, buff_volume)
+
+    pair = get_overlap_subarray(vol_to_write, buff_volume)
+    p1, p2 = tuple(pair[0]), tuple(pair[1])
+
     offset = ((-1) * vol_to_write.p1[0], (-1) * vol_to_write.p1[1], (-1) * vol_to_write.p1[2])
     overlap_volume = Volume(0, p1, p2)
     overlap_volume.add_offset(offset)
