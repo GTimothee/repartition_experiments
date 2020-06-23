@@ -71,9 +71,11 @@ def get_arrays_dict(buff_to_vols, buffers_volumes, outfiles_volumes, outfiles_pa
     """
     print("== Function == get_arrays_dict")
     array_dict = dict()
+    buffer_to_outfiles = dict()
 
     for buffer_index, volumes_in_buffer in buff_to_vols.items():
         buffer_of_interest = buffers_volumes[buffer_index]
+        buffer_to_outfiles[buffer_index] = list()  # initialization
         # crossed_outfiles = get_crossed_outfiles(buffer_of_interest, outfiles_volumes) # refine search
 
         for volume_in_buffer in volumes_in_buffer:
@@ -82,6 +84,7 @@ def get_arrays_dict(buff_to_vols, buffers_volumes, outfiles_volumes, outfiles_pa
                 if included_in(volume_in_buffer, outfile_volume):
                     add_to_array_dict(array_dict, outfile_volume, volume_in_buffer)
                     crossed=True
+                    buffer_to_outfiles[buffer_index].append(outfile_volume.index)
                     break # a volume can belong to only one output file
             if not crossed:
                 print("volume miss:")
@@ -98,7 +101,7 @@ def get_arrays_dict(buff_to_vols, buffers_volumes, outfiles_volumes, outfiles_pa
         print(f'len(outfileskeys): {len(outfileskeys)}')
         print(f'nb missing keys: {len(missing_keys)}')
         raise ValueError("Something is wrong, not all output files will be written")
-    return array_dict
+    return array_dict, buffer_to_outfiles
 
 
 def merge_cached_volumes(arrays_dict, volumestokeep):
@@ -430,7 +433,7 @@ def compute_zones(B, O, R, volumestokeep):
 
     # B/ Create arrays dict from buff_to_vols
     # arrays_dict associate each output file to parts of it to be stored at a time
-    arrays_dict = get_arrays_dict(buff_to_vols, buffers_volumes, outfiles_volumes, outfiles_partititon) 
+    arrays_dict, buffer_to_outfiles = get_arrays_dict(buff_to_vols, buffers_volumes, outfiles_volumes, outfiles_partititon) 
     merge_cached_volumes(arrays_dict, volumestokeep)
 
     if DEBUG_LOCAL:
@@ -465,4 +468,4 @@ def compute_zones(B, O, R, volumestokeep):
         logger.debug("---\n")
 
     logger.debug("-----------------End Compute zones-----------------")
-    return arrays_dict, regions_dict
+    return arrays_dict, regions_dict, buffer_to_outfiles

@@ -1,4 +1,6 @@
+import math
 from .policy import compute_zones
+from .utils import get_partition, get_named_volumes
 
 
 def get_input_aggregate(O, I):
@@ -19,9 +21,21 @@ def write_in_outfile(from_cache):
         remove(cache, v, outvolume.index)
         
 
+def get_buffers(R, B):
+    """ Returns a dictionary mapping each buffer (numeric) index to a Volume object containing its coordinates in R.
+
+    Arguments: 
+    ----------
+        R: original array
+        B: buffer shape
+    """
+    buffers_partition = get_partition(R, B)
+    return get_named_volumes(buffers_partition, B)
+
+
 def keep_algorithm(R, O, I, B, volumestokeep):
     arrays_dict, regions_dict, buffer_to_outfiles = compute_zones(B, O, R, volumestokeep)
-    buffers = get_buffers(B, buffer_partition)
+    buffers = get_buffers(R, B)
 
     for buffer in buffers:
         data = read(buffer)
