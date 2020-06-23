@@ -66,7 +66,7 @@ class HDF5_manager:
 
 
     def write_data(self, i, j, k, outdir_path, data, s2, O, dtype=np.float16):
-        """ File must not exist
+        """ 
         """
         out_filename = f'{i}_{j}_{k}.hdf5'
         outfilepath = os.path.join(outdir_path, out_filename)
@@ -93,7 +93,6 @@ class HDF5_manager:
 
     def write(self, outfilepath, data, cs, _slices=None, dtype=np.float16): 
         """ Write arr into a file.
-        File must not exist
         """
         if os.path.isfile(outfilepath):
             mode = 'r+'
