@@ -1,7 +1,7 @@
 import math
 import numpy as np
 from .policy import compute_zones
-from .utils import get_partition, get_named_volumes, get_overlap_subarray, get_file_manager
+from .utils import get_partition, get_named_volumes, get_overlap_subarray, get_file_manager, numeric_to_3d_pos, Volume
 
 
 def get_input_aggregate(O, I):
@@ -21,6 +21,8 @@ def remove_from_cache(cache, outfile_index, volume_to_write):
     for i, e in enumerate(volumes_in_cache):
         v, d = e
         p1, p2 = v.get_corners()
+        print(p1, p2)
+        print(volume_to_write.p1, volume_to_write.p2)
         if p1 == volume_to_write.p1 and p2 == volume_to_write.p2:
             target = i
             break
@@ -44,10 +46,11 @@ def write_in_outfile(data_part, vol_to_write, file_manager, outdir_path, outvolu
     """
     # find coordinates into the output file
     offset = ((-1) * outvolume.p1[0], (-1) * outvolume.p1[1], (-1) * outvolume.p1[2])
-    vol_to_write.add_offset(offset)
+    vol_to_write_O_basis = Volume(vol_to_write.index, vol_to_write.p1, vol_to_write.p2)
+    vol_to_write_O_basis.add_offset(offset)
 
     # get region in output file to write into
-    p1, p2 = vol_to_write.corners(), 
+    p1, p2 = vol_to_write_O_basis.get_corners()
     slices = ((p1[0], p2[0]), (p1[1], p2[1]), (p1[2], p2[2]))
 
     # write
@@ -55,7 +58,7 @@ def write_in_outfile(data_part, vol_to_write, file_manager, outdir_path, outvolu
     file_manager.write_data(i, j, k, outdir_path, data_part, slices, outfile_shape, dtype=np.float16)
 
     if from_cache:
-        remove_from_cache(cache, outvolume.index, v)
+        remove_from_cache(cache, outvolume.index, vol_to_write)
         
 
 def get_volumes(R, B):
