@@ -88,6 +88,8 @@ class HDF5_manager:
                 # print('[debug] Dataset exists')
                 outdset = f["/data"]
 
+            print("writing data of shape ", data.shape)
+            print("into region ", s2)
             outdset[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
 
 
