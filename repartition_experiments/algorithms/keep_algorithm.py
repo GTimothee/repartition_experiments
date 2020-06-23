@@ -1,8 +1,7 @@
 import math
 import numpy as np
 from .policy import compute_zones
-from .utils import get_partition, get_named_volumes, get_overlap_subarray
-from ..exp_utils import get_file_manager
+from .utils import get_partition, get_named_volumes, get_overlap_subarray, get_file_manager
 
 
 def get_input_aggregate(O, I):
