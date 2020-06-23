@@ -5,7 +5,7 @@ from .file_formats.hdf5 import HDF5_manager
 from .algorithms.utils import get_blocks_shape
 
 
-def create_input_chunks(cs, data_dir, file_format):
+def create_input_chunks(cs, partition, data_dir, file_format):
     """
         cs: chunk shape
         file_format: file format
@@ -18,9 +18,9 @@ def create_input_chunks(cs, data_dir, file_format):
         sys.exit(1)
 
     _slices = ((0,cs[0]), (0,cs[1]), (0,cs[2]))
-    for i in range(cs[0]):
-        for j in range(cs[1]):
-            for k in range(cs[2]):
+    for i in range(partition[0]):
+        for j in range(partition[1]):
+            for k in range(partition[2]):
                 data = np.random.normal(size=cs)
                 file_manager.write_data(i, j, k, data_dir, data, _slices, cs)
 

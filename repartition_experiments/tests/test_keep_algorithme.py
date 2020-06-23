@@ -2,8 +2,8 @@ import numpy as np
 import os 
 
 from ..algorithms.keep_algorithm import *
-from ..algorithms.utils import Volume, get_file_manager
-from ..exp_utils import create_empty_dir
+from ..algorithms.utils import Volume, get_file_manager, get_named_volumes
+from ..exp_utils import create_empty_dir, create_input_chunks
 
 
 def test_remove_from_cache():
@@ -56,15 +56,41 @@ def test_write_in_outfile():
     assert np.allclose(written, data_part)
 
 
-# def test_read_buffer():
-#     file_manager = get_file_manager('HDF5')
-#     data_0 = np.random.normal()
-#     data_1 = np.random.normal()
-#     data_2 = np.random.normal()
-#     data_3 = np.random.normal()
-#     file_manager.write(os.path.join('./indir', '0_0_0.hdf5'), data, cs, _slices=None, dtype=np.float16)
+def test_read_buffer():
+    file_manager = get_file_manager('HDF5')
 
-#     read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpath)
+    # create 4 input chunks
+    indir = './indir'
+    create_empty_dir(indir)
+    partition = (1,2,2)
+    cs = (10,10,10)
+    create_input_chunks(cs, partition, indir, 'HDF5')
+
+    buffer = Volume(0, (0,5,5), (10,15,15))
+    buffers_to_infiles = {
+        0: [0,1,2,3]
+    }
+    involumes = get_named_volumes(partition, cs)
+    data = read_buffer(buffer, buffers_to_infiles, involumes, file_manager, indir, (20,20,20), cs)
+
+    # verification
+    arr0 = file_manager.read_all(os.path.join(indir, "0_0_0.hdf5"))
+    arr1 = file_manager.read_all(os.path.join(indir, "0_0_1.hdf5"))
+    arr2 = file_manager.read_all(os.path.join(indir, "0_1_0.hdf5"))
+    arr3 = file_manager.read_all(os.path.join(indir, "0_1_1.hdf5"))
+
+    d0 = arr0[0:10, 5:10, 5:10]
+    d1 = arr1[0:10, 5:10, 0:5]
+    d2 = arr2[0:10, 0:5, 5:10]
+    d3 = arr3[0:10, 0:5, 0:5]
+
+    verif = dict()
+    for k, v in data.items():
+        verif[k.index] = v
+    assert np.allclose(verif[0], d0)
+    assert np.allclose(verif[1], d1)
+    assert np.allclose(verif[2], d2)
+    assert np.allclose(verif[3], d3)
 
 
 # def test_equals():

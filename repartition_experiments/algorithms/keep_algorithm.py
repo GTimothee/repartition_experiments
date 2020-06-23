@@ -87,7 +87,7 @@ def get_buffers_to_infiles(buffers, involumes):
     return buffers_to_infiles
 
 
-def read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpath):
+def read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpath, R, I):
     """ Read a buffer from several input files.
 
     Arguments: 
@@ -111,7 +111,8 @@ def read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpa
 
     for involume_index in involumes_list:
         involume = involumes[involume_index]
-        p1, p2 = get_overlap_subarray(buffer, involume)
+        pair = get_overlap_subarray(buffer, involume)
+        p1, p2 = tuple(pair[0]), tuple(pair[1])
 
         # create Volume for intersection in basis of input file for reading
         intersection = Volume(involume.index, p1, p2)
