@@ -21,7 +21,7 @@ def create_input_chunks(cs, partition, data_dir, file_format):
     for i in range(partition[0]):
         for j in range(partition[1]):
             for k in range(partition[2]):
-                data = np.random.normal(size=cs)
+                data = np.random.uniform(size=cs)
                 file_manager.write_data(i, j, k, data_dir, data, _slices, cs)
 
 
