@@ -398,7 +398,7 @@ def get_buff_to_vols(R, B, O, buffers_volumes, buffers_partition):
     return buff_to_vols
 
 
-def compute_zones(B, O, R, volumestokeep):
+def compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partititon, buffers_volumes, outfiles_volumes):
     """ Main function of the module. Compute the "arrays" and "regions" dictionary for the resplit case.
 
     Arguments:
@@ -409,14 +409,6 @@ def compute_zones(B, O, R, volumestokeep):
         volumestokeep: volumes to be kept by keep strategy
     """
     logger.debug("\n\n-----------------Compute zones [main file function]-----------------\n\n")
-    logger.debug("Getting buffer partitions and buffer volumes")
-    buffers_partition = get_blocks_shape(R, B)
-    buffers_volumes = get_named_volumes(buffers_partition, B)
-
-    logger.debug("Getting output files partitions and buffer volumes")
-
-    outfiles_partititon = get_blocks_shape(R, O)
-    outfiles_volumes = get_named_volumes(outfiles_partititon, O)
 
     if DEBUG_LOCAL:
         print(f'Buffers found:')
@@ -428,11 +420,7 @@ def compute_zones(B, O, R, volumestokeep):
         print(f'buffers partition: {buffers_partition}')
         print(f'outfiles partition: {outfiles_partititon}')
 
-    # A/ associate each buffer to volumes contained in it
     buff_to_vols = get_buff_to_vols(R, B, O, buffers_volumes, buffers_partition)
-
-    # B/ Create arrays dict from buff_to_vols
-    # arrays_dict associate each output file to parts of it to be stored at a time
     arrays_dict, buffer_to_outfiles = get_arrays_dict(buff_to_vols, buffers_volumes, outfiles_volumes, outfiles_partititon) 
     merge_cached_volumes(arrays_dict, volumestokeep)
 
@@ -444,17 +432,6 @@ def compute_zones(B, O, R, volumestokeep):
             for e in v:
                 e.print()
         logger.debug("---\n")
-
-    # clean_arrays_dict(arrays_dict)
-
-    # if DEBUG_LOCAL:
-    #     logger.debug("Arrays dict after clean:")
-    #     for k in sorted(list(arrays_dict.keys())):
-    #         v = arrays_dict[k]
-    #         logger.debug("key %s", k)
-    #         for e in v:
-    #             logger.debug("\t%s", e)
-    #     logger.debug("---\n")
 
     logger.debug("-----------------End Compute zones-----------------")
     return arrays_dict, buffer_to_outfiles

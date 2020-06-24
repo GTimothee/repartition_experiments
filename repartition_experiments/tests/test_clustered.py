@@ -96,6 +96,8 @@ def test_clustered_writes():
     origarr_filepath = './original_array.hdf5'
     data = np.random.normal(size=R)
     fm = get_file_manager(ff)
+    if os.path.isfile(origarr_filepath):
+        os.remove(origarr_filepath)
     fm.write(origarr_filepath, data, R, _slices=None)
     
     for m in test_case:
@@ -112,3 +114,5 @@ def test_clustered_writes():
 
         assert len(filenames) == nb_chunks
         os.chdir(workdir)
+
+    

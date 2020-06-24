@@ -32,7 +32,8 @@ class HDF5_manager:
 
 
     def clean_directory(self, dirpath):
-        """ Remove intermediary files from split/rechunk.
+        """ Remove intermediary files from split/rechunk from a directory (matching chunks regex).
+        See __init__ for regex
         """
         workdir = os.getcwd()
         os.chdir(dirpath)
@@ -42,7 +43,8 @@ class HDF5_manager:
     
 
     def get_input_files(self, input_dirpath):
-        """ Return a list of input files paths
+        """ Return a list of input files paths matching chunks regex
+        See __init__ for regex
         """
         workdir = os.getcwd()
         os.chdir(input_dirpath)
@@ -54,7 +56,7 @@ class HDF5_manager:
 
 
     def read_data(self, i, j, k, dirpath, slices):
-        """ Read data from chunk
+        """ Read part of a chunk
         """
         filename = f'{i}_{j}_{k}.hdf5'
         input_file = os.path.join(dirpath, filename)
@@ -66,7 +68,8 @@ class HDF5_manager:
 
 
     def write_data(self, i, j, k, outdir_path, data, s2, O, dtype=np.float16):
-        """ 
+        """ Write data at region _slices in outfilepath
+        Used to create a file of shape O and write data into a part of that file
         """
         out_filename = f'{i}_{j}_{k}.hdf5'
         outfilepath = os.path.join(outdir_path, out_filename)
@@ -92,7 +95,8 @@ class HDF5_manager:
 
 
     def write(self, outfilepath, data, cs, _slices=None, dtype=np.float16): 
-        """ Write arr into a file.
+        """ Write data in file, data.shape == file.shape
+        Used to write original array or complete file
         """
         if os.path.isfile(outfilepath):
             mode = 'r+'
@@ -114,6 +118,8 @@ class HDF5_manager:
 
 
     def test_write(self, outfile_path, s, subarr_data):
+        """ Used in baseline for verifying subarray writing
+        """
         with h5py.File(outfile_path, 'r') as f:
             stored = f['/data'][s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]]
             if np.allclose(stored, subarr_data):
@@ -127,17 +133,15 @@ class HDF5_manager:
 
 
     def read_all(self, filepath):
-        f = h5py.File(filepath, 'r') 
-        if not file_in_list(f, SOURCE_FILES):
-            SOURCE_FILES.append(f)
-        return f["/data"][()]
-
-
-    def read(self, input_file):
-        return self.get_dataset(input_file, '/data')
+        """ Read all the file and return the whole array
+        """
+        dset = self.get_dataset(filepath, '/data')
+        return dset[()]
 
 
     def inspect_h5py_file(self, f):
+        """ Get information about an HDF5 file
+        """
         print(f'Inspecting h5py file...')
         for k, v in f.items():
             print(f'\tFound object {v.name} at key {k}')

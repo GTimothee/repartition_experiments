@@ -1,7 +1,7 @@
 import os, h5py, time, logging
 import numpy as np
 
-from .utils import *
+from .utils import _3d_to_numeric_pos, get_file_manager, get_blocks_shape, get_named_volumes, hypercubes_overlap, get_overlap_subarray, numeric_to_3d_pos
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__ + 'baseline')
@@ -89,25 +89,28 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=F
     outfiles_volumes = outfiles_volumes.values()
     input_files = file_manager.get_input_files(indir_path)
 
-    try:
-        t = time.time()
-        for input_file in input_files:
-            involume = get_volume(input_file, infiles_volumes, infiles_partition)
-            
-            data = file_manager.read(input_file)
-            
-            for outvolume in outfiles_volumes:
-                if hypercubes_overlap(involume, outvolume):
-                    write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager)
-            
-            file_manager.close_infiles()
+    # try:
+    t = time.time()
+    for input_file in input_files:
+        involume = get_volume(input_file, infiles_volumes, infiles_partition)
+        
+        data = file_manager.read_all(input_file)
+        
+        for outvolume in outfiles_volumes:
+            if hypercubes_overlap(involume, outvolume):
+                write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager)
+        
+        file_manager.close_infiles()
 
-        t = time.time() - t
+    t = time.time() - t
 
-        if clean_out_dir:
-            file_manager.clean_directory(outdir_path)
-        return t
+    if clean_out_dir:
+        print("Cleaning output directory")
+        file_manager.clean_directory(outdir_path)
 
-    except Exception as e:
-        print(e)
-        return None
+    return t
+    #     return t
+
+    # except Exception as e:
+    #     print(e)
+    #     return None

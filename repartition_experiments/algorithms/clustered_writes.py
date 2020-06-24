@@ -186,7 +186,7 @@ def clustered_writes(origarr_filepath, R, cs, bpv, m, ff, outdir_path):
     origarr_size = R[0] * R[1] * R[2] * bpv
     buffers = compute_buffers(m, strategy, origarr_size, cs, bs, brs, bss, partition, R, bpv)
 
-    origarr = file_manager.read(origarr_filepath)
+    origarr = file_manager.read_all(origarr_filepath)
     for buffer_index in range(len(buffers.values())):
         buffer = buffers[buffer_index]
         buffer_data = read_buffer(origarr, file_manager, buffer)

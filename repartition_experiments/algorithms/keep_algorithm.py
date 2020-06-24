@@ -255,10 +255,11 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
         'disable_existing_loggers': True,
     })
 
-    arrays_dict, buffer_to_outfiles = compute_zones(B, O, R, volumestokeep)
     buffers_partition, buffers = get_volumes(R, B)
     infiles_partition, involumes = get_volumes(R, I)
     outfiles_partition, outvolumes = get_volumes(R, O)
+
+    arrays_dict, buffer_to_outfiles = compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partition, buffers, outvolumes)
     buffers_to_infiles = get_buffers_to_infiles(buffers, involumes)
     file_manager = get_file_manager(file_format)
     cache = dict()
