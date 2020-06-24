@@ -1,14 +1,14 @@
 import numpy as np
-import os 
+import os, pytest
 
 from ..algorithms.keep_algorithm import *
 from ..algorithms.utils import Volume, get_file_manager, get_named_volumes
 from ..exp_utils import create_empty_dir, create_input_chunks
-
+from ..algorithms.clustered_writes import clustered_writes
 
 def test_remove_from_cache():
     cache = {
-        2: [(Volume(0, (0,0,0), (5,5,5)), np.zeros((5,5,5)))]
+        2: [(Volume(0, (0,0,0), (5,5,5)), np.zeros((5,5,5)), dict())]
     }
     outfile_index = 2
     volume_to_write = Volume(0, (0,0,0), (5,5,5))
@@ -31,7 +31,7 @@ def test_write_in_outfile():
 
     outvolume = Volume(2, (0,15,0), (15,30,15))
     cache = {
-        2: [(Volume(0, (5,20,5), (15,30,15)), data_part)]
+        2: [(Volume(0, (5,20,5), (15,30,15)), data_part, dict())]
     }
 
     write_in_outfile(data_part, vol_to_write, file_manager, outdir_path, outvolume, O, (2,2,2), cache, False)
@@ -103,7 +103,7 @@ def test_equals():
 
 def test_add_to_cache():
     cache = {
-        2: [(Volume(0, (0,0,0), (5,5,5)), np.zeros((5,5,5)))]
+        2: [(Volume(0, (0,0,0), (5,5,5)), np.zeros((5,5,5)), dict())]
     }
     buff_volume = Volume(0, (5,5,5), (15,15,15))
     data_part = np.random.uniform(size=(10,10,10))
@@ -116,14 +116,14 @@ def test_add_to_cache():
     l = cache[3]
     assert len(l) == 1
     e = l[0]
-    vol, data = e
+    vol, data, tracker = e
     assert equals(vol, vol_to_write)
     assert data.shape == (20,20,20)
     assert np.allclose(data[5:15, 5:15, 5:15], data_part)
     assert np.allclose(data[0:5, 0:5, 0:5], np.zeros(shape=(5,5,5)))
 
     cache = {
-        2: [(Volume(0, (0,0,0), (5,5,5)), np.zeros((5,5,5)))]
+        2: [(Volume(0, (0,0,0), (5,5,5)), np.zeros((5,5,5)), dict())]
     }
     outvolume_index = 2
     add_to_cache(cache, vol_to_write, buff_volume, data_part, outvolume_index)
@@ -132,5 +132,35 @@ def test_add_to_cache():
     assert len(l) == 2
 
 
-# def test_keep_algorithm():
-#     keep_algorithm(R, O, I, B, volumestokeep, file_format)
+# different test cases 
+@pytest.fixture(params=[
+    ((1,12,12), (1,6,6), (1,4,4)), 
+])
+def case(request):
+    return request.param 
+
+
+def test_keep_algorithm(case):
+    R, I, O = case
+    lambd = get_input_aggregate(O, I)
+    B = (lambd[0],lambd[1],lambd[2])
+    volumestokeep = [1,2,3]
+
+    indir_path, outdir_path, file_format = './input_dir', './output_dir', 'HDF5'
+    create_empty_dir(indir_path)
+    create_empty_dir(outdir_path)
+
+    # create input array
+    origarr_filepath = './original_array.hdf5'
+    if os.path.isfile(origarr_filepath):
+        os.remove(origarr_filepath)
+    data = np.random.normal(size=R)
+    fm = get_file_manager(file_format)
+    fm.write(origarr_filepath, data, R, _slices=None)
+
+    # split before resplit
+    bpv = 2 # bytes per voxel
+    R_size = R[0]*R[1]*R[2]*bpv
+    clustered_writes(origarr_filepath, R, I, bpv, R_size, file_format, indir_path)
+
+    keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, indir_path)

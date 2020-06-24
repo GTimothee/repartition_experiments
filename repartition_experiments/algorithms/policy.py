@@ -1,5 +1,5 @@
 import math, copy, logging
-from .utils import numeric_to_3d_pos, _3d_to_numeric_pos
+from .utils import *
 logger = logging.getLogger(__name__)
 
 DEBUG_LOCAL=False
@@ -346,7 +346,7 @@ def get_buff_to_vols(R, B, O, buffers_volumes, buffers_partition):
         print(f'\nProcessing buffer {buffer_index}')
         if DEBUG_LOCAL:
             buffers_volumes[buffer_index].print()
-        _3d_index = numeric_to_3d_pos(buffer_index, buffers_partition, order='F')
+        _3d_index = numeric_to_3d_pos(buffer_index, buffers_partition, order='C')
 
         T = get_theta(buffers_volumes, buffer_index, _3d_index, O, B)
         volumes_list = get_main_volumes(B, T)  # get coords in basis of buffer
@@ -383,16 +383,16 @@ def get_buff_to_vols(R, B, O, buffers_volumes, buffers_partition):
             ))
             
     # debug csv file
-    columns = [
-        'bl_corner',
-        'width',
-        'height'
-    ]
-    csv_path = '/tmp/compute_zones_buffervolumes.csv'
-    csv_out, writer = create_csv_file(csv_path, columns, delimiter=',', mode='w+')
-    for row in set(rows): 
-        writer.writerow(row)
-    csv_out.close()
+    # columns = [
+    #     'bl_corner',
+    #     'width',
+    #     'height'
+    # ]
+    # csv_path = '/tmp/compute_zones_buffervolumes.csv'
+    # csv_out, writer = create_csv_file(csv_path, columns, delimiter=',', mode='w+')
+    # for row in set(rows): 
+    #     writer.writerow(row)
+    # csv_out.close()
 
     logger.debug("End\n")
     return buff_to_vols
@@ -445,16 +445,16 @@ def compute_zones(B, O, R, volumestokeep):
                 e.print()
         logger.debug("---\n")
 
-    clean_arrays_dict(arrays_dict)
+    # clean_arrays_dict(arrays_dict)
 
-    if DEBUG_LOCAL:
-        logger.debug("Arrays dict after clean:")
-        for k in sorted(list(arrays_dict.keys())):
-            v = arrays_dict[k]
-            logger.debug("key %s", k)
-            for e in v:
-                logger.debug("\t%s", e)
-        logger.debug("---\n")
+    # if DEBUG_LOCAL:
+    #     logger.debug("Arrays dict after clean:")
+    #     for k in sorted(list(arrays_dict.keys())):
+    #         v = arrays_dict[k]
+    #         logger.debug("key %s", k)
+    #         for e in v:
+    #             logger.debug("\t%s", e)
+    #     logger.debug("---\n")
 
     logger.debug("-----------------End Compute zones-----------------")
     return arrays_dict, buffer_to_outfiles
