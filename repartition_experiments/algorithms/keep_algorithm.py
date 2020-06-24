@@ -1,4 +1,4 @@
-import math
+import math, time
 import numpy as np
 from .policy import compute_zones
 from .utils import get_partition, get_named_volumes, get_overlap_subarray, get_file_manager, numeric_to_3d_pos, Volume, hypercubes_overlap, included_in
@@ -128,17 +128,27 @@ def read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpa
     return data
 
 
-def equals(vol_to_write, buff_volume):
-    pair = get_overlap_subarray(vol_to_write, buff_volume)
-    p1, p2 = tuple(pair[0]), tuple(pair[1])
-    overlap = Volume(0, p1, p2)
+def equals(v1, v2):
 
-    vol_to_write_shape = (vol_to_write.p2[0] - vol_to_write.p1[0], vol_to_write.p2[1] - vol_to_write.p1[1], vol_to_write.p2[2] - vol_to_write.p1[2])
+    p1, p2 = v1.get_corners()
+    p3, p4 = v2.get_corners()
+    if p1 != p3:
+        return False 
+    if p2 != p4:
+        return False
+
+    pair = get_overlap_subarray(v1, v2)
+    p1, p2 = tuple(pair[0]), tuple(pair[1])
+
+    overlap = Volume(0, p1, p2)
+    shape1 = (v1.p2[0] - v1.p1[0], v1.p2[1] - v1.p1[1], v1.p2[2] - v1.p1[2])
+    shape2 = (v2.p2[0] - v2.p1[0], v2.p2[1] - v2.p1[1], v2.p2[2] - v2.p1[2])
     overlap_shape = (overlap.p2[0] - overlap.p1[0], overlap.p2[1] - overlap.p1[1], overlap.p2[2] - overlap.p1[2])
 
-    for i in range(len(overlap_shape)):
-        if overlap_shape[i] != vol_to_write_shape[i]:
-            return False 
+    if shape1 != overlap_shape:
+        return False
+    if shape2 != overlap_shape:
+        return False
     
     return True
 
@@ -211,11 +221,12 @@ def get_data_to_write(vol_to_write, buff_volume, data_part):
     
     # convert pair in basis of buff_volume to extract data of interest from data_part
     offset = ((-1) * buff_volume.p1[0], (-1) * buff_volume.p1[1], (-1) * buff_volume.p1[2]) 
-    v = Volume(0, p1, p2)
-    v.add_offset(offset)
-    p1, p2 = v.get_corners()
+    v1 = Volume(0, p1, p2)
+    v2 = Volume(0, p1, p2)
+    v2.add_offset(offset)
+    p1, p2 = v2.get_corners()
     s = ((p1[0], p2[0]), (p1[1], p2[1]), (p1[2], p2[2]))
-    return data_part[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]]
+    return v1, data_part[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]]
 
 
 def complete(cache, vol_to_write, outvolume_index):
@@ -229,16 +240,6 @@ def complete(cache, vol_to_write, outvolume_index):
             if tracker.is_complete(v_shape): 
                 return True, a
     return False, None
-
-
-def fully_contained(vol_to_write, buff_volume):
-    pair = get_overlap_subarray(vol_to_write, buff_volume)
-    p1, p2 = tuple(pair[0]), tuple(pair[1])
-    intersection_shape = (p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2])  
-    v_to_write_shape = (vol_to_write.p2[0] - vol_to_write.p1[0], vol_to_write.p2[1] - vol_to_write.p1[1], vol_to_write.p2[2] - vol_to_write.p1[2])  
-    if intersection_shape == v_to_write_shape:
-        return True
-    return False 
 
 
 def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_dirpath):
@@ -259,8 +260,12 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
     infiles_partition, involumes = get_volumes(R, I)
     outfiles_partition, outvolumes = get_volumes(R, O)
 
+    tpp = time.time()
     arrays_dict, buffer_to_outfiles = compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partition, buffers, outvolumes)
     buffers_to_infiles = get_buffers_to_infiles(buffers, involumes)
+    tpp = time.time() - tpp
+    print("Preprocessing time: ", tpp)
+
     file_manager = get_file_manager(file_format)
     cache = dict()
 
@@ -286,14 +291,14 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
                     buff_volume.print()
 
                     if hypercubes_overlap(buff_volume, vol_to_write):
+                        v, data_to_write = get_data_to_write(vol_to_write, buff_volume, data_part)
 
-                        if fully_contained(vol_to_write, buff_volume):   
-                            data_to_write = get_data_to_write(vol_to_write, buff_volume, data_part)
+                        if equals(vol_to_write, v):   
                             write_in_outfile(data_to_write, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, False)
                             print("writing ", vol_to_write.p1, " ", vol_to_write.p2 ," in ", outvolume_index)
                             vols_written.append(j)
                         else:
-                            data_to_write = get_data_to_write(vol_to_write, buff_volume, data_part)
+                            
                             add_to_cache(cache, vol_to_write, buff_volume, data_to_write, outvolume.index)
 
                             is_complete, arr = complete(cache, vol_to_write, outvolume.index)
