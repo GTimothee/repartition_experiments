@@ -211,7 +211,7 @@ def get_overlap_subarray(hypercube1, hypercube2):
         subarray_lowercorner.append(max(lowercorner1[i], lowercorner2[i]))
         subarray_uppercorner.append(min(uppercorner1[i], uppercorner2[i]))
 
-    print(f"Overlap subarray : {subarray_lowercorner[0]}:{subarray_uppercorner[0]}, {subarray_lowercorner[1]}:{subarray_uppercorner[1]}, {subarray_lowercorner[2]}:{subarray_uppercorner[2]}")
+    # print(f"Overlap subarray : {subarray_lowercorner[0]}:{subarray_uppercorner[0]}, {subarray_lowercorner[1]}:{subarray_uppercorner[1]}, {subarray_lowercorner[2]}:{subarray_uppercorner[2]}")
     return (subarray_lowercorner, subarray_uppercorner)
 
 
