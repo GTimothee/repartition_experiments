@@ -171,6 +171,7 @@ def add_to_cache(cache, vol_to_write, buff_volume, data_part, outvolume_index):
 
             p1, p2 = overlap_volume.get_corners()
             s = ((p1[0], p2[0]), (p1[1], p2[1]), (p1[2], p2[2]))
+            print(s)
             array[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = data_part
 
             element = (volume, array, tracker)
@@ -181,17 +182,21 @@ def add_to_cache(cache, vol_to_write, buff_volume, data_part, outvolume_index):
     array = np.zeros(shape)
     tracker = Tracker()
 
+    # print("getting subarr")
     pair = get_overlap_subarray(vol_to_write, buff_volume)
     p1, p2 = tuple(pair[0]), tuple(pair[1])
     offset = ((-1) * vol_to_write.p1[0], (-1) * vol_to_write.p1[1], (-1) * vol_to_write.p1[2])
+    
     overlap_volume = Volume(0, p1, p2)
+    # print("treating volume ", overlap_volume.p1, " ", overlap_volume.p2 ," for cache")
     overlap_volume.add_offset(offset)
 
-    print("adding ", overlap_volume.p1, " ", overlap_volume.p2 ," to cache")
+    # print("adding ", overlap_volume.p1, " ", overlap_volume.p2 ," to cache")
     tracker.add_volume(overlap_volume)
 
     p1, p2 = overlap_volume.get_corners()
     s = ((p1[0], p2[0]), (p1[1], p2[1]), (p1[2], p2[2]))
+    # print(s, ' (2)')
     array[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = data_part
 
     stored_data.append((vol_to_write, array, tracker))
@@ -243,6 +248,13 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
             when a volume to write' part is added into cache: create a zero array of shape volume to write, then write the part that has been loaded
             when searching for a part: search for outfile index, then for the right volume
     """
+    import logging
+    import logging.config
+    logging.config.dictConfig({
+        'version': 1,
+        'disable_existing_loggers': True,
+    })
+
     arrays_dict, buffer_to_outfiles = compute_zones(B, O, R, volumestokeep)
     buffers_partition, buffers = get_volumes(R, B)
     infiles_partition, involumes = get_volumes(R, I)
@@ -251,38 +263,46 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
     file_manager = get_file_manager(file_format)
     cache = dict()
 
+    print("------------")
+
     for buffer_index, buffer in buffers.items():
         data = read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpath, R, I)
 
-        for buff_volume, data_part in data.items():
+        print("processing buffer ", buffer_index)
 
-            for outvolume_index in buffer_to_outfiles[buffer_index]:
+        for outvolume_index in buffer_to_outfiles[buffer_index]:
+            
+            print("buffer ", buffer_index, " overlaps with outfile ", outvolume_index)
+
+            outvolume = outvolumes[outvolume_index]
+            vols_to_write = arrays_dict[outvolume.index]
+            vols_written = list()
+
+            for j, vol_to_write in enumerate(vols_to_write):  # TODO: remove vol_to_write from arrays_dict when written
                 
-                print("buffer ", buffer_index, " overlaps with outfile ", outvolume_index)
+                for buff_volume, data_part in data.items():
+                    print("treating buff_volume")
+                    buff_volume.print()
 
-                outvolume = outvolumes[outvolume_index]
-                vols_to_write = arrays_dict[outvolume.index]
-                vols_written = list()
+                    if hypercubes_overlap(buff_volume, vol_to_write):
 
-                for j, vol_to_write in enumerate(vols_to_write):  # TODO: remove vol_to_write from arrays_dict when written
-                    
-                    if fully_contained(vol_to_write, buff_volume):   
-                        data_to_write = get_data_to_write(vol_to_write, buff_volume, data_part)
-                        write_in_outfile(data_to_write, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, False)
-                        print("writing ", vol_to_write.p1, " ", vol_to_write.p2 ," in ", outvolume_index)
-                        vols_written.append(j)
-                    else:
-                        data_to_write = get_data_to_write(vol_to_write, buff_volume, data_part)
-                        add_to_cache(cache, vol_to_write, buff_volume, data_to_write, outvolume.index)
-
-                        is_complete, arr = complete(cache, vol_to_write, outvolume.index)
-                        if is_complete:
-                            write_in_outfile(arr, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, True)
+                        if fully_contained(vol_to_write, buff_volume):   
+                            data_to_write = get_data_to_write(vol_to_write, buff_volume, data_part)
+                            write_in_outfile(data_to_write, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, False)
                             print("writing ", vol_to_write.p1, " ", vol_to_write.p2 ," in ", outvolume_index)
                             vols_written.append(j)
-                            
-                for j in vols_written:
-                    del vols_to_write[j]
-                arrays_dict[outvolume.index] = vols_to_write
+                        else:
+                            data_to_write = get_data_to_write(vol_to_write, buff_volume, data_part)
+                            add_to_cache(cache, vol_to_write, buff_volume, data_to_write, outvolume.index)
+
+                            is_complete, arr = complete(cache, vol_to_write, outvolume.index)
+                            if is_complete:
+                                write_in_outfile(arr, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, True)
+                                print("writing ", vol_to_write.p1, " ", vol_to_write.p2 ," in ", outvolume_index)
+                                vols_written.append(j)
+                        
+            for j in vols_written:
+                del vols_to_write[j]
+            arrays_dict[outvolume.index] = vols_to_write
                 
     # optimisation possible: stop la boucle quand tout buff_volume a été process

@@ -379,7 +379,7 @@ def get_partition(array_shape, chunk_shape):
         the partition as a tuple
     """
     chunks = chunk_shape 
-    logger.debug(f'Chunks for get_array_block_dims: {chunks}')
+    # logger.debug(f'Chunks for get_array_block_dims: {chunks}')
     if not len(array_shape) == len(chunks):
         raise ValueError(
             "chunks and shape should have the same dimension",

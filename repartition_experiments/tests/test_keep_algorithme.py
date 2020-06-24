@@ -134,18 +134,73 @@ def test_add_to_cache():
 
 # different test cases 
 @pytest.fixture(params=[
-    ((1,12,12), (1,6,6), (1,4,4)), 
-    ((12,12,12), (6,6,6), (4,4,4))
+{
+    "R": (1,12,12),
+    "O": (1,4,4),
+    "I": (1,6,6),
+    "B": (1,6,6),
+    "volumestokeep": [1]
+},{  
+    "R": (1,12,12),
+    "O": (1,4,4),
+    "I": (1,3,3),
+    "B": (1,6,6),
+    "volumestokeep": [1]
+},{  
+    "R": (1,12,12),
+    "O": (1,4,4),
+    "I": (1,3,3),
+    "B": (1,6,6),
+    "volumestokeep": [1,2,3]
+},{
+    "R": (12,12,12),
+    "O": (4,4,4),
+    "I": (3,3,3),
+    "B": (6,6,6),
+    "volumestokeep": [1,2,3,4,5,6,7]    
+},{
+    "R": (390,300,350),
+    "O": (65,50,50),
+    "I": (78,60,70),
+    "B": (78,60,70),
+    "volumestokeep": [1,2,3,4,5,6,7]  
+},{
+    "R": [390,300,350],
+    "I": [78,60,70],
+    "O": [65,50,50],
+    "B": [1,30,70],
+    "volumestokeep": [1]
+},{
+    "R": [390,300,350],
+    "I": [78,60,70],
+    "O": [65,50,50],
+    "B": [39,60,70],
+    "volumestokeep": [1,2,3]
+},{
+    "R": [390,300,350],
+    "I": [39,30,35],
+    "O": [65,50,50],
+    "B": [39,60,70],
+    "volumestokeep": [1,2,3]
+},{
+    "R": [390,300,350],
+    "I": [78,60,70],
+    "O": [78,300,70],
+    "B": [39,300,70],
+    "volumestokeep": [1,2,3]
+}
 ])
 def case(request):
     return request.param 
 
 
 def test_keep_algorithm(case):
-    R, I, O = case
-    lambd = get_input_aggregate(O, I)
-    B = (lambd[0],lambd[1],lambd[2])
-    volumestokeep = [1,2,3]
+    # R, I, O = case
+    # lambd = get_input_aggregate(O, I)
+    # B = (lambd[0],lambd[1],lambd[2])
+    # volumestokeep = [1,2,3]
+
+    R, O, I, B, volumestokeep = case["R"], case["O"], case["I"], case["B"], case["volumestokeep"]
 
     indir_path, outdir_path, file_format = './input_dir', './output_dir', 'HDF5'
     create_empty_dir(indir_path)
