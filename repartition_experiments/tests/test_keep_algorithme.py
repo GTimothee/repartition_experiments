@@ -135,6 +135,7 @@ def test_add_to_cache():
 # different test cases 
 @pytest.fixture(params=[
     ((1,12,12), (1,6,6), (1,4,4)), 
+    ((12,12,12), (6,6,6), (4,4,4))
 ])
 def case(request):
     return request.param 
