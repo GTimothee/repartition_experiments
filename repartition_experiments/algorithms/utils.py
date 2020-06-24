@@ -24,6 +24,13 @@ class Volume:
         self.p2 = p2  # top right corner
 
 
+    def get_shape(self):
+        return (self.p2[0] - self.p1[0], self.p2[1] - self.p1[1], self.p2[2] - self.p1[2])
+
+
+    def get_slices(self):
+        return ((self.p1[0], self.p2[0]), (self.p1[1], self.p2[1]), (self.p1[2], self.p2[2]))
+
     def add_offset(self, offset):
         """
         offset: a tuple

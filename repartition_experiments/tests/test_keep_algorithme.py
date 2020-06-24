@@ -107,11 +107,11 @@ def test_add_to_cache():
     }
     buff_volume = Volume(0, (5,5,5), (15,15,15))
     data_part = np.random.uniform(size=(10,10,10))
-
     vol_to_write = Volume(0, (0,0,0), (20,20,20))
+    overlap_vol_in_R = Volume(0, (5,5,5), (15,15,15))
 
     outvolume_index = 3
-    add_to_cache(cache, vol_to_write, buff_volume, data_part, outvolume_index)
+    add_to_cache(cache, vol_to_write, buff_volume, data_part, outvolume_index, overlap_vol_in_R)
     assert len(cache.keys()) == 2
     l = cache[3]
     assert len(l) == 1
@@ -126,7 +126,7 @@ def test_add_to_cache():
         2: [(Volume(0, (0,0,0), (5,5,5)), np.zeros((5,5,5)), dict())]
     }
     outvolume_index = 2
-    add_to_cache(cache, vol_to_write, buff_volume, data_part, outvolume_index)
+    add_to_cache(cache, vol_to_write, buff_volume, data_part, outvolume_index, overlap_vol_in_R)
     assert len(cache.keys()) == 1
     l = cache[2]
     assert len(l) == 2

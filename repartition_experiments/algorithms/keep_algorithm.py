@@ -21,8 +21,6 @@ def remove_from_cache(cache, outfile_index, volume_to_write):
     for i, e in enumerate(volumes_in_cache):
         v, d, tracker = e
         p1, p2 = v.get_corners()
-        print(p1, p2)
-        print(volume_to_write.p1, volume_to_write.p2)
         if p1 == volume_to_write.p1 and p2 == volume_to_write.p2:
             target = i
             break
@@ -45,11 +43,8 @@ def write_in_outfile(data_part, vol_to_write, file_manager, outdir_path, outvolu
         file_manager: to write the data
     """
     # get region in output file to write into
-    offset = ((-1) * outvolume.p1[0], (-1) * outvolume.p1[1], (-1) * outvolume.p1[2]) # find coordinates into the output file
-    vol_to_write_O_basis = Volume(vol_to_write.index, vol_to_write.p1, vol_to_write.p2)
-    vol_to_write_O_basis.add_offset(offset)
-    p1, p2 = vol_to_write_O_basis.get_corners()
-    slices = ((p1[0], p2[0]), (p1[1], p2[1]), (p1[2], p2[2]))
+    vol_to_write_O_basis = to_basis(vol_to_write, outvolume)
+    slices = vol_to_write_O_basis.get_slices()
 
     # write
     i, j, k = numeric_to_3d_pos(outvolume.index, outfiles_partition, order='C')
@@ -85,6 +80,31 @@ def get_buffers_to_infiles(buffers, involumes):
     return buffers_to_infiles
 
 
+def to_basis(v, basis):
+    """ Create a new volume from volume v with basis changed from R to basis
+
+    Arguments: 
+    ----------
+        v: Volume obj
+        basis: Volume obj
+    """
+    v2 = Volume(0, v.p1, v.p2)
+    offset = ((-1) * basis.p1[0], (-1) * basis.p1[1], (-1) * basis.p1[2])
+    v2.add_offset(offset)
+
+    # sanity check
+    p1, p2 = v2.get_corners()
+    for p in [p1, p2]:
+        for e in p:
+            if e < 0:
+                print("Volume in basis R:")
+                v.print()
+                print("Basis:")
+                basis.print()
+                raise ValueError("An error occured while changing from basis R to new basis")
+    return v2
+
+
 def read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpath, R, I):
     """ Read a buffer from several input files.
 
@@ -109,27 +129,26 @@ def read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpa
 
     for involume_index in involumes_list:
         involume = involumes[involume_index]
-        pair = get_overlap_subarray(buffer, involume)
+        pair = get_overlap_subarray(buffer, involume)  # overlap in R
         p1, p2 = tuple(pair[0]), tuple(pair[1])
 
-        # create Volume for intersection in basis of input file for reading
-        intersection = Volume(involume.index, p1, p2)
-        intersection_read = Volume(0, p1, p2)
-        offset = ((-1) * involume.p1[0], (-1) * involume.p1[1], (-1) * involume.p1[2])
-        intersection_read.add_offset(offset)
+        # convert overlap in basis of I for reading
+        intersection_in_R = Volume(involume.index, p1, p2)
+        intersection_read = to_basis(intersection_in_R, involume)
 
-        # read from infile
+        # get infile 3d position, get slices to read from overlap volume, read data
         i, j, k = numeric_to_3d_pos(involume.index, get_partition(R, I), order='C')
-        p1, p2 = intersection_read.p1, intersection_read.p2
-        slices = ((p1[0], p2[0]), (p1[1], p2[1]), (p1[2], p2[2]))
+        slices = intersection_read.get_slices()
         data_part = file_manager.read_data(i, j, k, input_dirpath, slices)
 
-        data[intersection] = data_part
+        data[intersection_in_R] = data_part
     return data
 
 
 def equals(v1, v2):
-
+    """ Test if two volumes have same coordinates and shape
+    """
+    # test coords
     p1, p2 = v1.get_corners()
     p3, p4 = v2.get_corners()
     if p1 != p3:
@@ -137,23 +156,18 @@ def equals(v1, v2):
     if p2 != p4:
         return False
 
-    pair = get_overlap_subarray(v1, v2)
-    p1, p2 = tuple(pair[0]), tuple(pair[1])
-
-    overlap = Volume(0, p1, p2)
-    shape1 = (v1.p2[0] - v1.p1[0], v1.p2[1] - v1.p1[1], v1.p2[2] - v1.p1[2])
-    shape2 = (v2.p2[0] - v2.p1[0], v2.p2[1] - v2.p1[1], v2.p2[2] - v2.p1[2])
-    overlap_shape = (overlap.p2[0] - overlap.p1[0], overlap.p2[1] - overlap.p1[1], overlap.p2[2] - overlap.p1[2])
-
-    if shape1 != overlap_shape:
+    # test shape
+    overlap = get_overlap_volume(v1, v2)
+    overlap_shape = overlap.get_shape()
+    if v1.get_shape() != overlap_shape:
         return False
-    if shape2 != overlap_shape:
+    if v2.get_shape() != overlap_shape:
         return False
     
     return True
 
 
-def add_to_cache(cache, vol_to_write, buff_volume, data_part, outvolume_index):
+def add_to_cache(cache, vol_to_write, buff_volume, data_part, outvolume_index, overlap_vol_in_R):
     """
     cache: 
     ------
@@ -161,71 +175,57 @@ def add_to_cache(cache, vol_to_write, buff_volume, data_part, outvolume_index):
         value = (volumetowrite, array)
         array has shape volumetowrite, missing parts are full of zeros
     """
+
+    def write_in_arr(array, data_part, overlap_volume):
+        """ Write part of vol_to_write into cache
+        Arguments: 
+        ----------
+            array: receiver
+            data_part: what to write
+            overlap_volume: where to write
+        """
+        s = overlap_volume.get_slices()
+        array[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = data_part
+        return array 
+
+
+    # add list in cache for outfile index if nothing from this file in cache yet
     if not outvolume_index in cache.keys():
         cache[outvolume_index] = list()
 
-    stored_data = cache[outvolume_index]
-    for element in stored_data:
+    overlap_volume = to_basis(overlap_vol_in_R, vol_to_write)
+    stored_data_list = cache[outvolume_index]  # get list of outfile parts partially loaded in cache
+
+    # if cache already contains part of the outfile part, we add data to it 
+    for element in stored_data_list:
         volume, array, tracker = element
 
         if equals(vol_to_write, volume):
-            pair = get_overlap_subarray(vol_to_write, buff_volume)
-
-            p1, p2 = tuple(pair[0]), tuple(pair[1])
-            offset = ((-1) * vol_to_write.p1[0], (-1) * vol_to_write.p1[1], (-1) * vol_to_write.p1[2])
-            overlap_volume = Volume(0, p1, p2)
-            overlap_volume.add_offset(offset)
-
-            print("adding ", overlap_volume.p1, " ", overlap_volume.p2 ," to cache")
+            array = write_in_arr(array, data_part, overlap_volume)
             tracker.add_volume(overlap_volume)
-
-            p1, p2 = overlap_volume.get_corners()
-            s = ((p1[0], p2[0]), (p1[1], p2[1]), (p1[2], p2[2]))
-            print(s)
-            array[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = data_part
-
-            element = (volume, array, tracker)
+            element = (volume, array, tracker)  # update element
             return 
 
-    # if reached, vol_to_write not in cache -> add to cache
-    shape = (vol_to_write.p2[0] - vol_to_write.p1[0], vol_to_write.p2[1] - vol_to_write.p1[1], vol_to_write.p2[2] - vol_to_write.p1[2])
-    array = np.zeros(shape)
+    # add new element
+    array = write_in_arr(np.zeros(vol_to_write.get_shape()), data_part, overlap_volume)
     tracker = Tracker()
-
-    # print("getting subarr")
-    pair = get_overlap_subarray(vol_to_write, buff_volume)
-    p1, p2 = tuple(pair[0]), tuple(pair[1])
-    offset = ((-1) * vol_to_write.p1[0], (-1) * vol_to_write.p1[1], (-1) * vol_to_write.p1[2])
-    
-    overlap_volume = Volume(0, p1, p2)
-    # print("treating volume ", overlap_volume.p1, " ", overlap_volume.p2 ," for cache")
-    overlap_volume.add_offset(offset)
-
-    # print("adding ", overlap_volume.p1, " ", overlap_volume.p2 ," to cache")
     tracker.add_volume(overlap_volume)
+    stored_data_list.append((vol_to_write, array, tracker))
+    cache[outvolume_index] = stored_data_list
 
-    p1, p2 = overlap_volume.get_corners()
-    s = ((p1[0], p2[0]), (p1[1], p2[1]), (p1[2], p2[2]))
-    # print(s, ' (2)')
-    array[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = data_part
 
-    stored_data.append((vol_to_write, array, tracker))
+def get_overlap_volume(v1, v2):
+    pair = get_overlap_subarray(v1, v2)  # overlap coordinates in basis of R
+    p1, p2 = tuple(pair[0]), tuple(pair[1])
+    return Volume(0, p1, p2)
 
 
 def get_data_to_write(vol_to_write, buff_volume, data_part):
     """ get intersection between the buffer volume and the volume to write into outfile
     """
-    # get data part to read
-    pair = get_overlap_subarray(buff_volume, vol_to_write)  # overlap coordinates in basis of R
-    p1, p2 = tuple(pair[0]), tuple(pair[1])
-    
-    # convert pair in basis of buff_volume to extract data of interest from data_part
-    offset = ((-1) * buff_volume.p1[0], (-1) * buff_volume.p1[1], (-1) * buff_volume.p1[2]) 
-    v1 = Volume(0, p1, p2)
-    v2 = Volume(0, p1, p2)
-    v2.add_offset(offset)
-    p1, p2 = v2.get_corners()
-    s = ((p1[0], p2[0]), (p1[1], p2[1]), (p1[2], p2[2]))
+    v1 = get_overlap_volume(vol_to_write, buff_volume) 
+    v2 = to_basis(v1, buff_volume)
+    s = v2.get_slices()
     return v1, data_part[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]]
 
 
@@ -236,8 +236,7 @@ def complete(cache, vol_to_write, outvolume_index):
     for e in l:
         v, a, tracker = e 
         if equals(vol_to_write, v):
-            v_shape = (vol_to_write.p2[0] - vol_to_write.p1[0], vol_to_write.p2[1] - vol_to_write.p1[1], vol_to_write.p2[2] - vol_to_write.p1[2])
-            if tracker.is_complete(v_shape): 
+            if tracker.is_complete(vol_to_write.get_shape()): 
                 return True, a
     return False, None
 
@@ -287,21 +286,21 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
             for j, vol_to_write in enumerate(vols_to_write):  # TODO: remove vol_to_write from arrays_dict when written
                 
                 for buff_volume, data_part in data.items():
-                    print("treating buff_volume")
+                    print("Treating buff_volume")
                     buff_volume.print()
 
                     if hypercubes_overlap(buff_volume, vol_to_write):
-                        v, data_to_write = get_data_to_write(vol_to_write, buff_volume, data_part)
+                        data_to_write_vol, data_to_write = get_data_to_write(vol_to_write, buff_volume, data_part)
 
-                        if equals(vol_to_write, v):   
+                        if equals(vol_to_write, data_to_write_vol):   
                             write_in_outfile(data_to_write, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, False)
-                            print("writing ", vol_to_write.p1, " ", vol_to_write.p2 ," in ", outvolume_index)
+                            print("Writing ", vol_to_write.p1, " ", vol_to_write.p2 ," in ", outvolume_index)
                             vols_written.append(j)
-                        else:
-                            
-                            add_to_cache(cache, vol_to_write, buff_volume, data_to_write, outvolume.index)
 
+                        else:
+                            add_to_cache(cache, vol_to_write, buff_volume, data_to_write, outvolume.index, data_to_write_vol)
                             is_complete, arr = complete(cache, vol_to_write, outvolume.index)
+
                             if is_complete:
                                 write_in_outfile(arr, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, True)
                                 print("writing ", vol_to_write.p1, " ", vol_to_write.p2 ," in ", outvolume_index)
