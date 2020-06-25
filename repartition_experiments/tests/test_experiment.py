@@ -1,6 +1,6 @@
-import os, csv
+import os, csv, sys
 
-from ..experiment import experiment, write_results
+from ..experiment import experiment, write_results, load_json
 
 
 class Args:
@@ -16,6 +16,17 @@ class Args:
 
 
 def test_experiment_keep():
+    args = Args("case 1_1", "keep")
+    paths = load_json(args.paths_config)
+    for k, v in paths.items():
+        if "PYTHONPATH" in k:
+            sys.path.insert(0, v)
+    from repartition_experiments.exp_utils import create_empty_dir, verify_results
+    from repartition_experiments.algorithms.baseline_algorithm import baseline_rechunk
+    from repartition_experiments.algorithms.keep_algorithm import keep_algorithm, get_input_aggregate
+    from repartition_experiments.algorithms.clustered_writes import clustered_writes
+    from repartition_experiments.algorithms.utils import get_file_manager
+
     results = experiment(Args("case 1_1", "keep"))
     for r in results:
         success = r[-1]
@@ -44,6 +55,12 @@ def test_experiment_keep():
 
 
 def test_experiment_baseline():
+    args = Args("case 1_1", "baseline")
+    paths = load_json(args.paths_config)
+    for k, v in paths.items():
+        if "PYTHONPATH" in k:
+            sys.path.insert(0, v)
+
     results = experiment(Args("case 1_1", "baseline"))
     for r in results:
         success = r[-1]
