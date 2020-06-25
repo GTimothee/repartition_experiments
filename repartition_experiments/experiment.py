@@ -2,12 +2,6 @@ import random, argparse, sys, os, json, time, csv
 from time import strftime, gmtime
 import numpy as np
 
-from repartition_experiments.exp_utils import create_empty_dir, verify_results
-from repartition_experiments.algorithms.baseline_algorithm import baseline_rechunk
-from repartition_experiments.algorithms.keep_algorithm import keep_algorithm, get_input_aggregate
-from repartition_experiments.algorithms.clustered_writes import clustered_writes
-from repartition_experiments.algorithms.utils import get_file_manager
-
 
 def flush_cache():
     os.system('sync; echo 3 | sudo tee /proc/sys/vm/drop_caches') 
@@ -70,12 +64,11 @@ def load_json(filepath):
         return json.load(f)
 
 
-def experiment(args):
+def experiment(args, paths):
     """
     Notes: 
     - data type is np.float16
     """
-    paths = load_json(args.paths_config)
     cases = load_json(args.cases_config)
     bpv = 2
 
@@ -161,5 +154,16 @@ def write_results(rows, args):
 
 if __name__ == "__main__":
     args = get_arguments()
+    paths = load_json(args.paths_config)
+
+    for k, v in paths:
+        if "PYTHONPATH" in k:
+            sys.path.insert(0, v)
+    from repartition_experiments.exp_utils import create_empty_dir, verify_results
+    from repartition_experiments.algorithms.baseline_algorithm import baseline_rechunk
+    from repartition_experiments.algorithms.keep_algorithm import keep_algorithm, get_input_aggregate
+    from repartition_experiments.algorithms.clustered_writes import clustered_writes
+    from repartition_experiments.algorithms.utils import get_file_manager
+
     results = experiment(args)
     write_results(results, args)
