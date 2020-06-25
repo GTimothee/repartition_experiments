@@ -4,7 +4,7 @@ import numpy as np
 
 from .exp_utils import create_empty_dir, verify_results
 from .algorithms.baseline_algorithm import baseline_rechunk
-from .algorithms.keep_algorithm import keep_algorithm
+from .algorithms.keep_algorithm import keep_algorithm, get_input_aggregate
 from .algorithms.clustered_writes import clustered_writes
 from .algorithms.utils import get_file_manager
 
@@ -93,6 +93,9 @@ def experiment(args):
     R_prev, I_prev = (0,0,0), (0,0,0)
     for run in case:
         R, O, I, B, volumestokeep = run["R"], run["O"], run["I"], run["B"], run["volumestokeep"]
+        if args.case_name.split('_')[0] == "case 1":
+            lambd = get_input_aggregate(O, I)
+            B, volumestokeep = (lambd[0],lambd[1],lambd[2]), list(range(1,8))
         origarr_filepath = create_input_file(R, paths["ssd_path"], fm)
 
         # split 

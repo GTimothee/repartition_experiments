@@ -16,7 +16,7 @@ class Args:
 
 
 def test_experiment_keep():
-    results = experiment(Args("case 1", "keep"))
+    results = experiment(Args("case 1_1", "keep"))
     for r in results:
         success = r[-1]
         assert success
@@ -34,9 +34,17 @@ def test_experiment_keep():
         success = r[-1]
         assert success
 
+    csv_path = write_results(results, Args("case 2", "keep"))
+    nb_lines = 0
+    with open(csv_path, "r") as f:
+        reader = csv.reader(f, delimiter=",")
+        for i, line in enumerate(reader):
+            nb_lines += 1
+    assert nb_lines == (len(results) + 1)
+
 
 def test_experiment_baseline():
-    results = experiment(Args("case 1", "baseline"))
+    results = experiment(Args("case 1_1", "baseline"))
     for r in results:
         success = r[-1]
         assert success
