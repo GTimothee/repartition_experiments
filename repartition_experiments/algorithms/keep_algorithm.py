@@ -241,6 +241,8 @@ def complete(cache, vol_to_write, outvolume_index):
     return False, None
 
 
+# optimisation possible: stop la boucle quand tout buff_volume a été process -> ac un tracker
+# optimisation possible: remove vol_to_write from arrays_dict when written
 def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_dirpath):
     """
         cache: dict,
@@ -283,7 +285,7 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
             vols_to_write = arrays_dict[outvolume.index]
             vols_written = list()
 
-            for j, vol_to_write in enumerate(vols_to_write):  # TODO: remove vol_to_write from arrays_dict when written
+            for j, vol_to_write in enumerate(vols_to_write):  
                 
                 for buff_volume, data_part in data.items():
                     print("Treating buff_volume")
@@ -310,4 +312,4 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
                 del vols_to_write[j]
             arrays_dict[outvolume.index] = vols_to_write
                 
-    # optimisation possible: stop la boucle quand tout buff_volume a été process
+    return tpp

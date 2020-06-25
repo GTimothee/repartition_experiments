@@ -73,10 +73,6 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=F
     """ Naive rechunk implementation in plain python.
     The input directory is supposed to contain the input files (output of the split process).
     WARNING: Does not clean the output directory after use by default.
-
-    Returns: 
-    --------
-        processing time
     """
     DEBUG_LOCAL = True if debug_mode else False
 
@@ -89,8 +85,6 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=F
     outfiles_volumes = outfiles_volumes.values()
     input_files = file_manager.get_input_files(indir_path)
 
-    # try:
-    t = time.time()
     for input_file in input_files:
         involume = get_volume(input_file, infiles_volumes, infiles_partition)
         
@@ -102,15 +96,6 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=F
         
         file_manager.close_infiles()
 
-    t = time.time() - t
-
     if clean_out_dir:
         print("Cleaning output directory")
         file_manager.clean_directory(outdir_path)
-
-    return t
-    #     return t
-
-    # except Exception as e:
-    #     print(e)
-    #     return None

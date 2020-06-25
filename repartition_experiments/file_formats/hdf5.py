@@ -31,6 +31,14 @@ class HDF5_manager:
         self.filename_regex = "[0-9]*_[0-9]*_[0-9]*.hdf5"
 
 
+    def remove_all(self, dirpath):
+        workdir = os.getcwd()
+        os.chdir(dirpath)
+        for filename in glob.glob("*.hdf5"):
+            os.remove(filename)
+        os.chdir(workdir)
+        
+
     def clean_directory(self, dirpath):
         """ Remove intermediary files from split/rechunk from a directory (matching chunks regex).
         See __init__ for regex
