@@ -195,11 +195,6 @@ def case(request):
 
 
 def test_keep_algorithm(case):
-    # R, I, O = case
-    # lambd = get_input_aggregate(O, I)
-    # B = (lambd[0],lambd[1],lambd[2])
-    # volumestokeep = [1,2,3]
-
     R, O, I, B, volumestokeep = case["R"], case["O"], case["I"], case["B"], case["volumestokeep"]
 
     indir_path, outdir_path, file_format = './input_dir', './output_dir', 'HDF5'

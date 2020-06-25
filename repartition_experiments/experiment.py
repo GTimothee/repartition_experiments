@@ -1,7 +1,7 @@
-import random, argparse, sys, os, json
+import random, argparse, sys, os, json, time
 import numpy as np
 
-from exp_utils import create_empty_dir, verify_results
+from .exp_utils import create_empty_dir, verify_results
 from .algorithms.baseline_algorithm import baseline_rechunk
 from .algorithms.keep_algorithm import keep_algorithm
 from .algorithms.clustered_writes import clustered_writes
@@ -70,8 +70,13 @@ def load_json(filepath):
 
 
 def experiment(args):
+    """
+    Notes: 
+    - data type is np.float16
+    """
     paths = load_json(args.paths_config)
     cases = load_json(args.cases_config)
+    bpv = 2
 
     indir_path, outdir_path = os.path.join(paths["ssd_path"], 'indir'), os.path.join(paths["ssd_path"], 'outdir')
     create_empty_dir(indir_path)
@@ -81,7 +86,9 @@ def experiment(args):
     if args.overwrite:
         fm.remove_all(paths["ssd_path"])
     
-    case = random.shuffle(cases[args.case_name])
+    case = cases[args.case_name]
+    random.shuffle(case)
+    results = list()
     R_prev, I_prev = (0,0,0), (0,0,0)
     for run in case:
         R, O, I, B, volumestokeep = run["R"], run["O"], run["I"], run["B"], run["volumestokeep"]
@@ -90,6 +97,7 @@ def experiment(args):
         # split 
         if R_prev != R or (R_prev == R and I_prev != I):
             create_empty_dir(indir_path)
+            R_size = R[0]*R[1]*R[2]*bpv
             clustered_writes(origarr_filepath, R, I, bpv, R_size, args.file_format, indir_path)
             
         # resplit
@@ -98,6 +106,7 @@ def experiment(args):
             t = time.time()
             baseline_rechunk(indir_path, outdir_path, O, I, R, args.file_format)
             t = time.time() - t 
+            tpp = 0
         elif args.model == "keep":
             t = time.time()
             tpp = keep_algorithm(R, O, I, B, volumestokeep, args.file_format, outdir_path, indir_path)
@@ -107,10 +116,19 @@ def experiment(args):
 
         # verify and clean output
         success = verify_results(outdir_path, origarr_filepath, R, O, args.file_format)
+        results.append([
+            args.case_name,
+            run["ref"],
+            args.model, 
+            t,
+            tpp,
+            success
+        ])
         create_empty_dir(outdir_path)
         R_prev, I_prev = R, I 
 
+    return results
 
 if __name__ == "__main__":
     args = get_arguments()
-    experiment(args)
+    results = experiment(args)
