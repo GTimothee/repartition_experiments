@@ -1,4 +1,5 @@
-import random, argparse, sys, os, json, time
+import random, argparse, sys, os, json, time, csv
+from time import strftime, gmtime
 import numpy as np
 
 from .exp_utils import create_empty_dir, verify_results
@@ -129,6 +130,33 @@ def experiment(args):
 
     return results
 
+
+def write_results(rows, args):
+    case_name = args.case_name.replace(' ', '_')
+    time_string = strftime("%b_%d_%Y_%H:%M:%S", gmtime(time.time()))
+    filename = f"results_{case_name}_{args.model}_{time_string}.csv"
+    paths = load_json(args.paths_config)
+    csv_path = os.path.join(paths["outdir_path"], filename)
+
+    columns = [
+        'case_name',
+        'run_ref',
+        'model',
+        'process_time',
+        'preprocess_time',
+        'success'
+    ]
+
+    with open(csv_path, mode='w+') as f:
+        writer = csv.writer(f, delimiter=',')
+        writer.writerow(columns)
+        for row in rows: 
+            writer.writerow(row)
+
+    return csv_path
+
+
 if __name__ == "__main__":
     args = get_arguments()
     results = experiment(args)
+    write_results(results, args)
