@@ -1,7 +1,7 @@
 import operator, logging, math
 from enum import Enum
 
-from ..file_formats.hdf5 import HDF5_manager
+from repartition_experiments.file_formats.hdf5 import HDF5_manager
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)

@@ -1,8 +1,8 @@
 import math, time
 import numpy as np
-from .policy import compute_zones
-from .utils import get_partition, get_named_volumes, get_overlap_subarray, get_file_manager, numeric_to_3d_pos, Volume, hypercubes_overlap, included_in
-from .tracker import Tracker
+from repartition_experiments.algorithms.policy import compute_zones
+from repartition_experiments.algorithms.utils import get_partition, get_named_volumes, get_overlap_subarray, get_file_manager, numeric_to_3d_pos, Volume, hypercubes_overlap, included_in
+from repartition_experiments.algorithms.tracker import Tracker
 
 def get_input_aggregate(O, I):
     lambd = list()

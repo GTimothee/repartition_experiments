@@ -1,6 +1,6 @@
 import math
-from .utils import Volume, get_file_manager, get_blocks_shape
-from ..file_formats.hdf5 import HDF5_manager
+from repartition_experiments.algorithms.utils import Volume, get_file_manager, get_blocks_shape
+from repartition_experiments.file_formats.hdf5 import HDF5_manager
 
 
 def get_entity_sizes(cs, bytes_per_voxel, partition):

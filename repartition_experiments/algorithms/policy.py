@@ -1,5 +1,5 @@
 import math, copy, logging
-from .utils import *
+from repartition_experiments.algorithms.utils import *
 logger = logging.getLogger(__name__)
 
 DEBUG_LOCAL=False

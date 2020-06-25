@@ -1,8 +1,8 @@
 import sys, os, shutil
 import numpy as np
 
-from .file_formats.hdf5 import HDF5_manager
-from .algorithms.utils import get_blocks_shape
+from repartition_experiments.file_formats.hdf5 import HDF5_manager
+from repartition_experiments.algorithms.utils import get_blocks_shape
 
 
 def create_input_chunks(cs, partition, data_dir, file_format):

@@ -2,11 +2,11 @@ import random, argparse, sys, os, json, time, csv
 from time import strftime, gmtime
 import numpy as np
 
-from .exp_utils import create_empty_dir, verify_results
-from .algorithms.baseline_algorithm import baseline_rechunk
-from .algorithms.keep_algorithm import keep_algorithm, get_input_aggregate
-from .algorithms.clustered_writes import clustered_writes
-from .algorithms.utils import get_file_manager
+from repartition_experiments.exp_utils import create_empty_dir, verify_results
+from repartition_experiments.algorithms.baseline_algorithm import baseline_rechunk
+from repartition_experiments.algorithms.keep_algorithm import keep_algorithm, get_input_aggregate
+from repartition_experiments.algorithms.clustered_writes import clustered_writes
+from repartition_experiments.algorithms.utils import get_file_manager
 
 
 def flush_cache():
