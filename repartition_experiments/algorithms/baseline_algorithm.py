@@ -87,7 +87,6 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=F
 
     for input_file in input_files:
         involume = get_volume(input_file, infiles_volumes, infiles_partition)
-        
         data = file_manager.read_all(input_file)
         
         for outvolume in outfiles_volumes:

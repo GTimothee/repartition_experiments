@@ -53,7 +53,7 @@ def create_input_file(shape, dirname, file_manager):
     filepath = os.path.join(dirname, filename)
 
     if not os.path.isfile(filepath):
-        data = np.random.normal(size=shape)
+        data = np.random.normal(size=shape, dtype=np.float16)
         file_manager.write(filepath, data, shape, _slices=None)
 
     return filepath
