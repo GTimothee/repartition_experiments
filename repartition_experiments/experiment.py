@@ -51,9 +51,12 @@ def get_arguments():
 def create_input_file(shape, dirname, file_manager):
     filename = f'{shape[0]}_{shape[1]}_{shape[2]}_original.hdf5'
     filepath = os.path.join(dirname, filename)
+    
+    import randomgen
 
     if not os.path.isfile(filepath):
-        data = np.random.normal(size=shape)
+        # data = np.array(np.random.normal(size=shape), dtype=np.float16)
+        data = np.random.default_rng().random(size=shape, dtype='f')
         file_manager.write(filepath, data, shape, _slices=None)
 
     return filepath
