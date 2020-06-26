@@ -48,10 +48,14 @@ def write_in_outfile(data_part, vol_to_write, file_manager, outdir_path, outvolu
 
     # write
     i, j, k = numeric_to_3d_pos(outvolume.index, outfiles_partition, order='C')
+    t2 = time.time()
     file_manager.write_data(i, j, k, outdir_path, data_part, slices, outfile_shape, dtype=np.float16)
+    t2 = time.time() - t2
 
     if from_cache:
         remove_from_cache(cache, outvolume.index, vol_to_write)
+
+    return t2
         
 
 def get_volumes(R, B):
@@ -271,10 +275,17 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
 
     print("------------")
 
+    read_time = 0
+    write_time = 0
+
     nb_buffers = len(buffers.keys())
     for buffer_index in range(nb_buffers):
         buffer = buffers[buffer_index]
+
+        t1 = time.time()
         data = read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpath, R, I)
+        t1 = time.time() - t1 
+        read_time += t1
 
         print("processing buffer ", buffer_index)
 
@@ -296,21 +307,23 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
                         data_to_write_vol, data_to_write = get_data_to_write(vol_to_write, buff_volume, data_part)
 
                         if equals(vol_to_write, data_to_write_vol):   
-                            write_in_outfile(data_to_write, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, False)
+                            t2 = write_in_outfile(data_to_write, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, False)
                             print("Writing ", vol_to_write.p1, " ", vol_to_write.p2 ," in ", outvolume_index)
                             vols_written.append(j)
+                            write_time += t2
 
                         else:
                             add_to_cache(cache, vol_to_write, buff_volume, data_to_write, outvolume.index, data_to_write_vol)
                             is_complete, arr = complete(cache, vol_to_write, outvolume.index)
 
                             if is_complete:
-                                write_in_outfile(arr, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, True)
+                                t2 = write_in_outfile(arr, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, True)
                                 print("writing ", vol_to_write.p1, " ", vol_to_write.p2 ," in ", outvolume_index)
                                 vols_written.append(j)
+                                write_time += t2
                         
             for j in vols_written:
                 del vols_to_write[j]
             arrays_dict[outvolume.index] = vols_to_write
                 
-    return tpp
+    return tpp, read_time, write_time

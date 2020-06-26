@@ -110,12 +110,12 @@ def experiment(args):
         flush_cache()
         if args.model == "baseline":
             t = time.time()
-            baseline_rechunk(indir_path, outdir_path, O, I, R, args.file_format)
+            tread, twrite = baseline_rechunk(indir_path, outdir_path, O, I, R, args.file_format)
             t = time.time() - t 
             tpp = 0
         elif args.model == "keep":
             t = time.time()
-            tpp = keep_algorithm(R, O, I, B, volumestokeep, args.file_format, outdir_path, indir_path)
+            tpp, tread, twrite = keep_algorithm(R, O, I, B, volumestokeep, args.file_format, outdir_path, indir_path)
             t = time.time() - t - tpp
         else:
             raise ValueError("Bad model name")
@@ -128,6 +128,8 @@ def experiment(args):
             args.model, 
             t,
             tpp,
+            tread,
+            twrite
             success
         ])
         create_empty_dir(outdir_path)
@@ -149,6 +151,8 @@ def write_results(rows, args):
         'model',
         'process_time',
         'preprocess_time',
+        'read_time',
+        'write_time',
         'success'
     ]
 

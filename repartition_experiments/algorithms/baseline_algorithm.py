@@ -8,6 +8,13 @@ logger = logging.getLogger(__name__ + 'baseline')
 
 DEBUG_LOCAL = False
 
+
+def get_overlap_volume(v1, v2):
+    pair = get_overlap_subarray(v1, v2)  # overlap coordinates in basis of R
+    p1, p2 = tuple(pair[0]), tuple(pair[1])
+    return Volume(0, p1, p2)
+
+
 def write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager):
     """ Write intersection of input file and output file into output file.
 
@@ -51,6 +58,8 @@ def write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path,
     if DEBUG_LOCAL: 
         file_manager.test_write(outfile_path, slices_in_outfile, subarr_data)
 
+    return get_overlap_volume(involume, outvolume).get_shape()
+
 
 def get_volume(infilepath, infiles_volumes, infiles_partition):
     """ Get Volume object associated to a file.
@@ -85,16 +94,27 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=F
     outfiles_volumes = outfiles_volumes.values()
     input_files = file_manager.get_input_files(indir_path)
 
+    t_read = 0
+    t_write = 0
+
     for input_file in input_files:
         involume = get_volume(input_file, infiles_volumes, infiles_partition)
+        t1 = time.time()
         data = file_manager.read_all(input_file)
+        t1 = time.time() - t1
+        t_read += t1
         
         for outvolume in outfiles_volumes:
             if hypercubes_overlap(involume, outvolume):
-                write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager)
+                t2 = time.time()
+                shape = write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager)
+                t2 = time.time() - t2
+                t_write += t2
         
         file_manager.close_infiles()
 
     if clean_out_dir:
         print("Cleaning output directory")
         file_manager.clean_directory(outdir_path)
+
+    return t_read, t_write
