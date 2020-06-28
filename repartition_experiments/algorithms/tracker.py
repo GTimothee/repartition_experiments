@@ -17,45 +17,45 @@ class Tracker:
             self.i_dict[slices[0]][slices[1]][slices[2]] = dict() 
 
 
-    def is_complete(self, expected_shape):
-        return self._iscomplete(self.i_dict, 0, expected_shape)
+    def is_complete(self, corners):
+        p1, p2 = corners
+        return self._iscomplete(self.i_dict, 0, p1, p2)
 
 
-    def _iscomplete(self, d, dim_index, expected_shape):
-        if not self.is_dimension_complete(d, dim_index, expected_shape):
-            return False
+    def print(self):
+        print("\n Tracker -----")
+        for i, v in self.i_dict.items():
+            print(f'i: {i}')
+            for j, v2 in v.items():
+                print(f'j: {j}')
+                for k, v3 in v2.items():
+                    print(f'k: {k}')
 
-        if not dim_index == len(expected_shape) -1:
-            for d2 in d.values():
-                if not self._iscomplete(d2, dim_index + 1, expected_shape):
-                    return False
 
-        return True
-        
-        
-    def is_dimension_complete(self, d, dim_index, expected_shape):
-        if len(list(d.keys())) == 0:
-            return False
+    def _iscomplete(self, d, index, p1, p2):
+        keys = list(d.keys())
 
-        all_ranges = list(d.keys())
-        l = list()
-        for _range in all_ranges:
-            l.append(_range[0])
-            l.append(_range[1])
-
+        l = list()  # test if keys start and end at the same points than corners
+        for key in keys:
+            start, end = key
+            l.extend(list(range(start, end+1)))
         l.sort()
-        if not min(l) == 0 or not max(l) == expected_shape[dim_index]:
+        start, end = l[0], l[-1]
+        if not start == p1[index] or not end == p2[index]:
+            print(f"extremity points not matching: {(start, end)}!={(p1[index], p2[index])}")
+            return False 
+        
+        s = list(set(l))
+        expected = list(range(p1[index], p2[index]+1))
+        s.sort()
+        if not s == expected:
+            print(f"missing points {s}!={expected}")
             return False 
 
-        l.remove(min(l))
-        l.remove(max(l))
-        if len(l) > 0:
-            # all i must be present twice
-            _set = set(l)
-            for e in _set:
-                l.remove(e)
-                if not e in l:
+        last_dim = len(p1)-1
+        if not index == last_dim:  
+            for k, v in d.items():
+                if not self._iscomplete(v, index + 1, p1, p2):
                     return False 
         
         return True
-

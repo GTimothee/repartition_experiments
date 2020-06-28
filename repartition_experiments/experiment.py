@@ -51,8 +51,6 @@ def get_arguments():
 def create_input_file(shape, dirname, file_manager):
     filename = f'{shape[0]}_{shape[1]}_{shape[2]}_original.hdf5'
     filepath = os.path.join(dirname, filename)
-    
-    import randomgen
 
     if not os.path.isfile(filepath):
         data = np.random.default_rng().random(size=shape, dtype='f')
@@ -89,15 +87,30 @@ def experiment(args):
     if args.overwrite:
         fm.remove_all(paths["ssd_path"])
     
+    # transform cases into tuples + perform sanity check
     case = cases[args.case_name]
+    for run in case:
+        R, O, I, B, volumestokeep = tuple(run["R"]), tuple(run["O"]), tuple(run["I"]), tuple(run["B"]), run["volumestokeep"]
+        if args.case_name.split('_')[0] == "case 1":
+            lambd = get_input_aggregate(O, I)
+            B, volumestokeep = (lambd[0],lambd[1],lambd[2]), list(range(1,8))
+            run["volumestokeep"] = volumestokeep
+        
+        run["R"] = R 
+        run["O"] = O
+        run["I"] = I
+        run["B"] = B
+
+        for shape_to_test in [O, I, B]:
+            for dim in range(3):
+                assert R[dim] % shape_to_test[dim] == 0
+
     random.shuffle(case)
     results = list()
     R_prev, I_prev = (0,0,0), (0,0,0)
     for run in case:
         R, O, I, B, volumestokeep = run["R"], run["O"], run["I"], run["B"], run["volumestokeep"]
-        if args.case_name.split('_')[0] == "case 1":
-            lambd = get_input_aggregate(O, I)
-            B, volumestokeep = (lambd[0],lambd[1],lambd[2]), list(range(1,8))
+        
         origarr_filepath = create_input_file(R, paths["ssd_path"], fm)
 
         # split 
@@ -129,7 +142,7 @@ def experiment(args):
             t,
             tpp,
             tread,
-            twrite
+            twrite,
             success
         ])
         create_empty_dir(outdir_path)

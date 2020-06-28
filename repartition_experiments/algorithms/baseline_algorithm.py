@@ -1,7 +1,7 @@
-import os, h5py, time, logging
+import os, h5py, time, logging, csv
 import numpy as np
 
-from repartition_experiments.algorithms.utils import _3d_to_numeric_pos, get_file_manager, get_blocks_shape, get_named_volumes, hypercubes_overlap, get_overlap_subarray, numeric_to_3d_pos
+from repartition_experiments.algorithms.utils import _3d_to_numeric_pos, get_file_manager, get_blocks_shape, get_named_volumes, hypercubes_overlap, get_overlap_subarray, numeric_to_3d_pos, Volume
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__ + 'baseline')
@@ -85,6 +85,8 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=F
     """
     DEBUG_LOCAL = True if debug_mode else False
 
+    O, I, R = tuple(O), tuple(I), tuple(R)
+
     file_manager = get_file_manager(file_format)
 
     infiles_partition = get_blocks_shape(R, I)
@@ -96,6 +98,8 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=F
 
     t_read = 0
     t_write = 0
+
+    vols_written = list()
 
     for input_file in input_files:
         involume = get_volume(input_file, infiles_volumes, infiles_partition)
@@ -110,8 +114,15 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=F
                 shape = write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager)
                 t2 = time.time() - t2
                 t_write += t2
+                vols_written.append(shape)
         
         file_manager.close_infiles()
+
+    with open('/tmp/verifbase.csv', mode='w+') as f:
+        writer = csv.writer(f, delimiter=',')
+        writer.writerow(['shape'])
+        for row in vols_written: 
+            writer.writerow([row[0]*row[1]*row[2]])
 
     if clean_out_dir:
         print("Cleaning output directory")

@@ -15,7 +15,9 @@ def test_add_volume():
 def test_is_complete():
     tracker = Tracker()
     tracker.add_volume(Volume(0, (0,0,0), (10,10,5)))
-    assert not tracker.is_complete((10,10,10))
+    tracker.print()
+    assert not tracker.is_complete(((0,0,0), (10,10,10)))
 
     tracker.add_volume(Volume(0, (0,0,5), (10,10,10)))
-    assert tracker.is_complete((10,10,10))
+    tracker.print()
+    assert tracker.is_complete(((0,0,0), (10,10,10)))

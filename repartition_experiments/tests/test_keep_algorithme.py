@@ -6,6 +6,15 @@ from ..algorithms.utils import Volume, get_file_manager, get_named_volumes
 from ..exp_utils import create_empty_dir, create_input_chunks, verify_results
 from ..algorithms.clustered_writes import clustered_writes
 
+
+def test_input_aggregate():
+    I = (156,120,140)
+    O = (195,200,175)
+    expected = (156*2, 120*2, 140*2)
+    lambd = get_input_aggregate(O, I)
+    assert expected == lambd
+
+
 def test_remove_from_cache():
     cache = {
         2: [(Volume(0, (0,0,0), (5,5,5)), np.zeros((5,5,5)), dict())]
@@ -214,5 +223,5 @@ def test_keep_algorithm(case):
     R_size = R[0]*R[1]*R[2]*bpv
     clustered_writes(origarr_filepath, R, I, bpv, R_size, file_format, indir_path)
 
-    keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, indir_path)
+    ppt, _, _ = keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, indir_path)
     assert verify_results(outdir_path, origarr_filepath, R, O, file_format)

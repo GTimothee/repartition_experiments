@@ -62,7 +62,7 @@ def verify_results(outdir_path, original_array_path, R, O, file_format):
 
                 try:
                     assert np.allclose(data_stored, ground_truth)
-                    print(f"Good output file {outfilepath}")
+                    # print(f"Good output file {outfilepath}")
                 except:
                     print(f"Error: bad rechunking {outfilepath}")
                     print(f"Slices from ground truth {i*O[0]}:{(i+1)*O[0]}, {j*O[1]}:{(j+1)*O[1]}, {k*O[2]}:{(k+1)*O[2]}")

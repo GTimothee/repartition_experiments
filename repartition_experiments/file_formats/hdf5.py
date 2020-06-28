@@ -87,19 +87,22 @@ class HDF5_manager:
         else:
             mode = 'w'
 
+        empty_dataset = False
         with h5py.File(outfilepath, mode) as f:
-
-            # if no datasets, create one
-            # print("KEYS", list(f.keys()))
             if not "/data" in f.keys():
-                # print('[debug] No dataset, creating dataset')
-                null_arr = np.zeros(O)
-                outdset = f.create_dataset("/data", O, data=null_arr, dtype=dtype)  # initialize an empty dataset
+                if O != data.shape:
+                     #print(f"O != data.shape: {O} != {data.shape}")
+                    null_arr = np.zeros(O)
+                    outdset = f.create_dataset("/data", O, data=null_arr, dtype=dtype)  # initialize an empty dataset
+                    outdset[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
+                else:
+                    f.create_dataset("/data", O, data=data, dtype=dtype)
+                empty_dataset = True
             else:
-                # print('[debug] Dataset exists')
                 outdset = f["/data"]
+                outdset[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
 
-            outdset[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
+        return empty_dataset
 
 
     def write(self, outfilepath, data, cs, _slices=None, dtype=np.float16): 
@@ -150,18 +153,19 @@ class HDF5_manager:
     def inspect_h5py_file(self, f):
         """ Get information about an HDF5 file
         """
-        print(f'Inspecting h5py file...')
-        for k, v in f.items():
-            print(f'\tFound object {v.name} at key {k}')
-            if isinstance(v, Dataset):
-                print(f'\t - Object type: dataset')
-                print(f'\t - Physical chunks shape: {v.chunks}')
-                print(f'\t - Compression: {v.compression}')
-                print(f'\t - Shape: {v.shape}')
-                print(f'\t - Size: {v.size}')
-                print(f'\t - Dtype: {v.dtype}')
-            else:
-                print(f'\t - Object type: group')
+        # print(f'Inspecting h5py file...')
+        # for k, v in f.items():
+        #     print(f'\tFound object {v.name} at key {k}')
+        #     if isinstance(v, Dataset):
+        #         print(f'\t - Object type: dataset')
+        #         print(f'\t - Physical chunks shape: {v.chunks}')
+        #         print(f'\t - Compression: {v.compression}')
+        #         print(f'\t - Shape: {v.shape}')
+        #         print(f'\t - Size: {v.size}')
+        #         print(f'\t - Dtype: {v.dtype}')
+        #     else:
+        #         print(f'\t - Object type: group')
+        pass
 
 
     def get_dataset(self, file_path, dataset_key):
@@ -187,7 +191,7 @@ class HDF5_manager:
         if not file_in_list(f, SOURCE_FILES):
             SOURCE_FILES.append(f)
 
-        print("Loading file...")
+        # print("Loading file...")
         self.inspect_h5py_file(f)
 
         return f[dataset_key]

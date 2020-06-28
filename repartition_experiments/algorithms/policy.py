@@ -1,5 +1,6 @@
 import math, copy, logging
 from repartition_experiments.algorithms.utils import *
+from repartition_experiments.algorithms.tracker import Tracker
 logger = logging.getLogger(__name__)
 
 DEBUG_LOCAL=False
@@ -117,7 +118,7 @@ def merge_cached_volumes(arrays_dict, volumestokeep):
         
         for remainder_index in merge_rules.keys():
             for i in range(len(volumes)):
-                volumes[i].print()
+                # volumes[i].print()
                 name = volumes[i].index
                 index = int(name.split('_')[0])
                 if index == remainder_index:
@@ -129,8 +130,8 @@ def merge_cached_volumes(arrays_dict, volumestokeep):
 
         arrays_dict[outfileindex] = volumes
         logger.debug("Associated outfile n°%s with list of volumes:", outfileindex)
-        for v in volumes: 
-            v.print()
+        # for v in volumes: 
+        #     v.print()
 
     logger.debug("End\n")
 
@@ -266,7 +267,7 @@ def get_buff_to_vols(R, B, O, buffers_volumes, buffers_partition):
                 C = 0 
             else:            
                 C = ((_3d_index[dim]+1) * B[dim]) % O[dim]
-                print(f'{((_3d_index[dim]+1) * B[dim])}mod{O[dim]} = {C}')
+                # print(f'{((_3d_index[dim]+1) * B[dim])}mod{O[dim]} = {C}')
                 if C == 0 and B[dim] != O[dim]:  # particular case 
                     C = O[dim]
 
@@ -275,8 +276,8 @@ def get_buff_to_vols(R, B, O, buffers_volumes, buffers_partition):
 
             Cs.append(C)
             T.append(B[dim] - C)   
-        print(f'C: {Cs}')
-        print(f'theta: {T}')
+        # print(f'C: {Cs}')
+        # print(f'theta: {T}')
         return T
 
     def first_sanity_check(buffers_volumes, buffer_index, volumes_list):
@@ -374,26 +375,6 @@ def get_buff_to_vols(R, B, O, buffers_volumes, buffers_partition):
 
         buff_to_vols[buffer_index] = volumes_list
         
-        # debug csv file
-        for v in volumes_list:
-            rows.append((
-                (v.p1[1], v.p1[2]),
-                v.p2[1] - v.p1[1],
-                v.p2[2] - v.p1[2],
-            ))
-            
-    # debug csv file
-    # columns = [
-    #     'bl_corner',
-    #     'width',
-    #     'height'
-    # ]
-    # csv_path = '/tmp/compute_zones_buffervolumes.csv'
-    # csv_out, writer = create_csv_file(csv_path, columns, delimiter=',', mode='w+')
-    # for row in set(rows): 
-    #     writer.writerow(row)
-    # csv_out.close()
-
     logger.debug("End\n")
     return buff_to_vols
 
@@ -422,16 +403,47 @@ def compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partititon
 
     buff_to_vols = get_buff_to_vols(R, B, O, buffers_volumes, buffers_partition)
     arrays_dict, buffer_to_outfiles = get_arrays_dict(buff_to_vols, buffers_volumes, outfiles_volumes, outfiles_partititon) 
+
+    # sanity check
+    outvolumes_trackers_preprocess = dict()
+    for index, outvol in outfiles_volumes.items():
+        outvolumes_trackers_preprocess[index] = Tracker()
+    for k, v_list in arrays_dict.items():
+        for v in v_list:
+            outvolumes_trackers_preprocess[k].add_volume(v)
+        assert outvolumes_trackers_preprocess[k].is_complete(outfiles_volumes[k].get_corners())
+
     merge_cached_volumes(arrays_dict, volumestokeep)
 
-    if DEBUG_LOCAL:
-        logger.debug("Arrays dict before clean:")
-        for k in sorted(list(arrays_dict.keys())):
-            v = arrays_dict[k]
-            logger.debug("key %s", k)
-            for e in v:
-                e.print()
-        logger.debug("---\n")
+    # sanity check
+    outvolumes_trackers_preprocess = dict()
+    for index, outvol in outfiles_volumes.items():
+        outvolumes_trackers_preprocess[index] = Tracker()
+    for k, v_list in arrays_dict.items():
+        for v in v_list:
+            outvolumes_trackers_preprocess[k].add_volume(v)
+        assert outvolumes_trackers_preprocess[k].is_complete(outfiles_volumes[k].get_corners())
+
+    # compute number of seeks
+    nb_file_openings = 0
+    nb_inside_seeks = 0
+    for outfile_index, volumes_list in arrays_dict.items():
+        nb_file_openings += len(volumes_list)
+        outfile_shape = outfiles_volumes[outfile_index].get_shape()
+
+        for v in volumes_list:
+            s = v.get_shape()
+            
+            if s[2] != outfile_shape[2]:
+                nb_inside_seeks += s[0]*s[1]
+            elif s[1] != outfile_shape[1]:
+                nb_inside_seeks += s[0]
+            elif s[0] != outfile_shape[0]:
+                nb_inside_seeks += 1
+            else:
+                pass
+
+    print(f"Expected number of seeks: {nb_file_openings + nb_inside_seeks}") # TODO add number of input files openings
 
     logger.debug("-----------------End Compute zones-----------------")
     return arrays_dict, buffer_to_outfiles

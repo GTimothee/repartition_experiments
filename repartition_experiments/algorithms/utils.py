@@ -64,6 +64,18 @@ class Volume:
         print(f"Volume name: {self.index}, ({self.p1[0]}:{self.p2[0]},{self.p1[1]}:{self.p2[1]},{self.p1[2]}:{self.p2[2]}), shape:({self.p2[0]-self.p1[0]},{self.p2[1]-self.p1[1]},{self.p2[2]-self.p1[2]})")
 
 
+def get_volumes(R, B):
+    """ Returns a dictionary mapping each buffer (numeric) index to a Volume object containing its coordinates in R.
+
+    Arguments: 
+    ----------
+        R: original array
+        B: buffer shape
+    """
+    buffers_partition = get_partition(R, B)
+    return buffers_partition, get_named_volumes(buffers_partition, B)
+
+
 def hypercubes_overlap(hypercube1, hypercube2):
     """ Evaluate if two hypercubes cross each other.
     """
