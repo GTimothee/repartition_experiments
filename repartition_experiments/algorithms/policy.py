@@ -26,37 +26,43 @@ def get_main_volumes(B, T):
                (0,0,T[Axes.k.value]),
                (T[Axes.i.value], T[Axes.j.value], B[Axes.k.value]))]
     
-    if B[Axes.j.value] == T[Axes.j.value]:
-        logger.debug("\tEnd")
-        return main_volumes
-
-    main_volumes.append(Volume(2,
-               (0, T[Axes.j.value], 0),
-               (T[Axes.i.value], B[Axes.j.value], T[Axes.k.value])))
-    main_volumes.append(Volume(3,
-               (0, T[Axes.j.value], T[Axes.k.value]),
-               (T[Axes.i.value], B[Axes.j.value], B[Axes.k.value])))
+    if B[Axes.j.value] > T[Axes.j.value]:
+        main_volumes.append(Volume(2,
+                (0, T[Axes.j.value], 0),
+                (T[Axes.i.value], B[Axes.j.value], T[Axes.k.value])))
+        main_volumes.append(Volume(3,
+                (0, T[Axes.j.value], T[Axes.k.value]),
+                (T[Axes.i.value], B[Axes.j.value], B[Axes.k.value])))
     
-    if B[Axes.i.value] == T[Axes.i.value]:
-        logger.debug("\tEnd")
-        return main_volumes
-
-    bottom_volumes = [
-        Volume(4,
-               (T[Axes.i.value], 0, 0),
-               (B[Axes.i.value], T[Axes.j.value], T[Axes.k.value])),
-        Volume(5,
-               (T[Axes.i.value], 0, T[Axes.k.value]),
-               (B[Axes.i.value], T[Axes.j.value], B[Axes.k.value])),
-        Volume(6,
-               (T[Axes.i.value], T[Axes.j.value], 0),
-               (B[Axes.i.value], B[Axes.j.value], T[Axes.k.value])),
-        Volume(7,
-               (T[Axes.i.value], T[Axes.j.value], T[Axes.k.value]),
-               (B[Axes.i.value], B[Axes.j.value], B[Axes.k.value]))
-    ]
-    logger.debug("\tEnd")
-    return main_volumes + bottom_volumes
+    if B[Axes.i.value] > T[Axes.i.value]:
+        if B[Axes.j.value] > T[Axes.j.value]:
+            bottom_volumes = [
+                Volume(4,
+                    (T[Axes.i.value], 0, 0),
+                    (B[Axes.i.value], T[Axes.j.value], T[Axes.k.value])),
+                Volume(5,
+                    (T[Axes.i.value], 0, T[Axes.k.value]),
+                    (B[Axes.i.value], T[Axes.j.value], B[Axes.k.value])),
+                Volume(6,
+                    (T[Axes.i.value], T[Axes.j.value], 0),
+                    (B[Axes.i.value], B[Axes.j.value], T[Axes.k.value])),
+                Volume(7,
+                    (T[Axes.i.value], T[Axes.j.value], T[Axes.k.value]),
+                    (B[Axes.i.value], B[Axes.j.value], B[Axes.k.value]))
+            ]
+            main_volumes = main_volumes + bottom_volumes
+        else:
+            bottom_volumes = [
+                Volume(4,
+                    (T[Axes.i.value], 0, 0),
+                    (B[Axes.i.value], T[Axes.j.value], T[Axes.k.value])),
+                Volume(5,
+                    (T[Axes.i.value], 0, T[Axes.k.value]),
+                    (B[Axes.i.value], T[Axes.j.value], B[Axes.k.value]))
+            ]
+            main_volumes = main_volumes + bottom_volumes
+        
+    return main_volumes
 
 
 def add_offsets(volumes_list, _3d_index, B):
@@ -105,7 +111,7 @@ def get_arrays_dict(buff_to_vols, buffers_volumes, outfiles_volumes, outfiles_pa
     return array_dict, buffer_to_outfiles
 
 
-def merge_cached_volumes(arrays_dict, volumestokeep):
+def merge_cached_volumes(arrays_dict, volumestokeep, outfiles_volumes):
     """ V - Pour chaque output file, pour chaque volume, si le volume doit être kept alors fusionner
     """
     logger.debug("== Function == merge_cached_volumes")
@@ -115,10 +121,13 @@ def merge_cached_volumes(arrays_dict, volumestokeep):
     for outfileindex in sorted(list(arrays_dict.keys())):
         logger.debug("Treating outfile n°%s", outfileindex)
         volumes = arrays_dict[outfileindex]
+        print(f'volumes before:')
+        for v in volumes:
+            v.print()
         
         for remainder_index in merge_rules.keys():
             for i in range(len(volumes)):
-                # volumes[i].print()
+                
                 name = volumes[i].index
                 index = int(name.split('_')[0])
                 if index == remainder_index:
@@ -128,10 +137,21 @@ def merge_cached_volumes(arrays_dict, volumestokeep):
                     volumes.append(new_volume)
                     break
 
+        tracker = Tracker()
+        for v in volumes:
+            tracker.add_volume(v)
+        try:
+            assert tracker.is_complete(outfiles_volumes[outfileindex].get_corners())
+        except Exception as e:
+            print(f'outfile of interest: ')
+            outfiles_volumes[outfileindex].print()
+            
+            print(f'volumes:')
+            for v in volumes:
+                v.print()
+            raise e
+
         arrays_dict[outfileindex] = volumes
-        logger.debug("Associated outfile n°%s with list of volumes:", outfileindex)
-        # for v in volumes: 
-        #     v.print()
 
     logger.debug("End\n")
 
@@ -282,6 +302,11 @@ def get_buff_to_vols(R, B, O, buffers_volumes, buffers_partition):
 
     def first_sanity_check(buffers_volumes, buffer_index, volumes_list):
         """ see if volumes coordinates found are inside buffer
+        Arguments:
+        ----------
+            buffers_volumes: dict containing all buffers (Volumes)
+            buffer_index: index of current buffer
+            volumes_list: list of volumes found in buffer
         """
         xs, ys, zs = list(), list(), list()
         for volume in volumes_list:
@@ -353,6 +378,21 @@ def get_buff_to_vols(R, B, O, buffers_volumes, buffers_partition):
         volumes_list = get_main_volumes(B, T)  # get coords in basis of buffer
         add_offsets(volumes_list, _3d_index, B)  # convert coords in basis of R - WARNING: important to be in this order, we need basis R for split_main_volumes
         
+        tracker = Tracker()
+        for v in volumes_list:
+            tracker.add_volume(v)
+        try:
+            assert tracker.is_complete(buffers_volumes[buffer_index].get_corners())
+        except:
+            print("\n-----------get_main_volumes error")
+            print("buffer of interest:")
+            buffers_volumes[buffer_index].print()
+            print(f"B: {B}")
+            print("volumes found")
+            for v in volumes_list:
+                v.print()
+            raise ValueError()
+
         if DEBUG_LOCAL:
             print('Main volumes found:')
             for v in volumes_list:
@@ -363,6 +403,11 @@ def get_buff_to_vols(R, B, O, buffers_volumes, buffers_partition):
             print('Split volumes found:')
             for v in volumes_list:
                 v.print()
+
+        tracker = Tracker()
+        for v in volumes_list:
+            tracker.add_volume(v)
+        assert tracker.is_complete(buffers_volumes[buffer_index].get_corners())
         
         if DEBUG_LOCAL:
             print('\nVolumes found:')
@@ -413,7 +458,7 @@ def compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partititon
             outvolumes_trackers_preprocess[k].add_volume(v)
         assert outvolumes_trackers_preprocess[k].is_complete(outfiles_volumes[k].get_corners())
 
-    merge_cached_volumes(arrays_dict, volumestokeep)
+    merge_cached_volumes(arrays_dict, volumestokeep, outfiles_volumes)
 
     # sanity check
     outvolumes_trackers_preprocess = dict()

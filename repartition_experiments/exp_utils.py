@@ -1,8 +1,13 @@
-import sys, os, shutil
+import sys, os, shutil, json
 import numpy as np
 
 from repartition_experiments.file_formats.hdf5 import HDF5_manager
 from repartition_experiments.algorithms.utils import get_blocks_shape
+
+
+def load_json(filepath):
+    with open(filepath) as f:
+        return json.load(f)
 
 
 def create_input_chunks(cs, partition, data_dir, file_format):
