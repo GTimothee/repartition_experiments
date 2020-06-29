@@ -1,4 +1,4 @@
-import operator, logging, math
+import operator, logging, math, psutil
 from enum import Enum
 
 from repartition_experiments.file_formats.hdf5 import HDF5_manager
@@ -62,6 +62,11 @@ class Volume:
 
     def print(self):
         print(f"Volume name: {self.index}, ({self.p1[0]}:{self.p2[0]},{self.p1[1]}:{self.p2[1]},{self.p1[2]}:{self.p2[2]}), shape:({self.p2[0]-self.p1[0]},{self.p2[1]-self.p1[1]},{self.p2[2]-self.p1[2]})")
+
+
+def get_opened_files():
+    proc = psutil.Process()
+    print(f"Number of opened files: {len(proc.open_files())}") 
 
 
 def get_volumes(R, B):
@@ -247,10 +252,10 @@ def get_named_volumes(blocks_partition, block_shape):
         blocks_partition: Number of blocks in each dimension. Shape of the reconstructed image in terms of the blocks considered.
         block_shape: shape of one block, all blocks having the same shape 
     """
-    logger.debug("== Function == get_named_volumes")
+    # logger.debug("== Function == get_named_volumes")
     d = dict()
-    logger.debug("[Arg] blocks_partition: %s", blocks_partition)
-    logger.debug("[Arg] block_shape: %s", block_shape)
+    # logger.debug("[Arg] blocks_partition: %s", blocks_partition)
+    # logger.debug("[Arg] block_shape: %s", block_shape)
     for i in range(blocks_partition[0]):
         for j in range(blocks_partition[1]):
             for k in range(blocks_partition[2]):
@@ -262,8 +267,8 @@ def get_named_volumes(blocks_partition, block_shape):
                              block_shape[2] * (k+1))   
                 index = _3d_to_numeric_pos((i, j, k), blocks_partition, order='C')
                 d[index] = Volume(index, bl_corner, tr_corner)
-    logger.debug("Indices of names volumes found: %s", d.keys())
-    logger.debug("End\n")
+    # logger.debug("Indices of names volumes found: %s", d.keys())
+    # logger.debug("End\n")
     return d
 
 

@@ -42,14 +42,14 @@ class Tracker:
         l.sort()
         start, end = l[0], l[-1]
         if not start == p1[index] or not end == p2[index]:
-            print(f"extremity points not matching: {(start, end)}!={(p1[index], p2[index])}")
+            # print(f"extremity points not matching: {(start, end)}!={(p1[index], p2[index])}")
             return False 
         
         s = list(set(l))
         expected = list(range(p1[index], p2[index]+1))
         s.sort()
         if not s == expected:
-            print(f"missing points {s}!={expected}")
+            # print(f"missing points {s}!={expected}")
             return False 
 
         last_dim = len(p1)-1

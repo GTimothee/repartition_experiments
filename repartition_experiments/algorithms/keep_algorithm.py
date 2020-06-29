@@ -3,6 +3,7 @@ import numpy as np
 from repartition_experiments.algorithms.policy import compute_zones
 from repartition_experiments.algorithms.utils import get_partition, get_named_volumes, get_overlap_subarray, get_file_manager, numeric_to_3d_pos, Volume, hypercubes_overlap, included_in, get_volumes
 from repartition_experiments.algorithms.tracker import Tracker
+from repartition_experiments.algorithms.utils import get_opened_files
 
 def get_input_aggregate(O, I):
     lambd = list()
@@ -345,9 +346,7 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
                 del vols_to_write[j]
             arrays_dict[outvolume.index] = vols_to_write
 
-    print("shapes written")
-    for s in written_shapes:
-        print(s)
+    file_manager.close_infiles()
 
     print(f"number of outfiles parts written in one shot: {nb_oneshot_writes}")
 
@@ -385,4 +384,5 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
         for row in volumes_written: 
             writer.writerow([row[0]*row[1]*row[2]])
                 
+    get_opened_files()
     return tpp, read_time, write_time

@@ -344,7 +344,7 @@ def get_buff_to_vols(R, B, O, buffers_volumes, buffers_partition):
     
     rows = list()
     for buffer_index in buffers_volumes.keys():
-        print(f'\nProcessing buffer {buffer_index}')
+        # print(f'\nProcessing buffer {buffer_index}')
         if DEBUG_LOCAL:
             buffers_volumes[buffer_index].print()
         _3d_index = numeric_to_3d_pos(buffer_index, buffers_partition, order='C')

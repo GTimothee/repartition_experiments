@@ -125,11 +125,17 @@ def experiment(args):
             t = time.time()
             tread, twrite = baseline_rechunk(indir_path, outdir_path, O, I, R, args.file_format)
             t = time.time() - t 
+            print(f"Processing time: {t}")
+            print(f"Read time: {tread}")
+            print(f"Write time: {twrite}")
             tpp = 0
         elif args.model == "keep":
             t = time.time()
             tpp, tread, twrite = keep_algorithm(R, O, I, B, volumestokeep, args.file_format, outdir_path, indir_path)
             t = time.time() - t - tpp
+            print(f"Processing time: {t}")
+            print(f"Read time: {tread}")
+            print(f"Write time: {twrite}")
         else:
             raise ValueError("Bad model name")
 

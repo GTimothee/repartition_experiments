@@ -1,6 +1,7 @@
 import math
 from repartition_experiments.algorithms.utils import Volume, get_file_manager, get_blocks_shape
 from repartition_experiments.file_formats.hdf5 import HDF5_manager
+from repartition_experiments.algorithms.utils import get_opened_files
 
 
 def get_entity_sizes(cs, bytes_per_voxel, partition):
@@ -191,3 +192,6 @@ def clustered_writes(origarr_filepath, R, cs, bpv, m, ff, outdir_path):
         buffer = buffers[buffer_index]
         buffer_data = read_buffer(origarr, file_manager, buffer)
         write_splits(file_manager, buffer, buffer_data, cs, outdir_path)
+
+    file_manager.close_infiles()
+    get_opened_files()

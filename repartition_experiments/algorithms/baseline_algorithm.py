@@ -2,6 +2,7 @@ import os, h5py, time, logging, csv
 import numpy as np
 
 from repartition_experiments.algorithms.utils import _3d_to_numeric_pos, get_file_manager, get_blocks_shape, get_named_volumes, hypercubes_overlap, get_overlap_subarray, numeric_to_3d_pos, Volume
+from repartition_experiments.algorithms.utils import get_opened_files
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__ + 'baseline')
@@ -127,5 +128,7 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=F
     if clean_out_dir:
         print("Cleaning output directory")
         file_manager.clean_directory(outdir_path)
+
+    get_opened_files()
 
     return t_read, t_write
