@@ -92,7 +92,7 @@ class HDF5_manager:
             if not "/data" in f.keys():
                 if O != data.shape:
                      #print(f"O != data.shape: {O} != {data.shape}")
-                    null_arr = np.zeros(O)
+                    null_arr = np.zeros(O, dtype=dtype)
                     outdset = f.create_dataset("/data", O, data=null_arr, dtype=dtype)  # initialize an empty dataset
                     outdset[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
                 else:
@@ -118,7 +118,7 @@ class HDF5_manager:
 
             if _slices != None:
                 if not "/data" in f.keys():
-                    null_arr = np.zeros(cs)
+                    null_arr = np.zeros(cs, dtype=dtype)
                     outdset = f.create_dataset("/data", cs, data=null_arr, dtype=dtype) 
                 else:
                     outdset = f["/data"]
