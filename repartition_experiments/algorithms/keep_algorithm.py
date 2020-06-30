@@ -120,6 +120,10 @@ def read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpa
     involumes_list = buffers_to_infiles[buffer.index]
     data = dict()
 
+    t1 = 0 
+    nb_opening_seeks_tmp = 0
+    nb_inside_seeks_tmp = 0
+
     for involume_index in involumes_list:
         involume = involumes[involume_index]
         pair = get_overlap_subarray(buffer, involume)  # overlap in R
@@ -129,13 +133,27 @@ def read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpa
         intersection_in_R = Volume(involume.index, p1, p2)
         intersection_read = to_basis(intersection_in_R, involume)
 
+        s = intersection_read.get_shape()
+        if s[2] != I[2]:
+            nb_inside_seeks_tmp += s[0]*s[1]
+        elif s[1] != I[1]:
+            nb_inside_seeks_tmp += s[0]
+        elif s[0] != I[0]:
+            nb_inside_seeks_tmp += 1
+        else:
+            pass
+        nb_opening_seeks_tmp += 1
+
         # get infile 3d position, get slices to read from overlap volume, read data
         i, j, k = numeric_to_3d_pos(involume.index, get_partition(R, I), order='C')
         slices = intersection_read.get_slices()
+
+        t_tmp = time.time()
         data_part = file_manager.read_data(i, j, k, input_dirpath, slices)
+        t1 += time.time() - t_tmp
 
         data[intersection_in_R] = data_part
-    return data
+    return data, t1, nb_opening_seeks_tmp, nb_inside_seeks_tmp
 
 
 def equals(v1, v2):
@@ -257,7 +275,7 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
     outfiles_partition, outvolumes = get_volumes(R, O)
 
     tpp = time.time()
-    arrays_dict, buffer_to_outfiles = compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partition, buffers, outvolumes)
+    arrays_dict, buffer_to_outfiles, nb_outfile_openings, nb_outfile_inside_seeks = compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partition, buffers, outvolumes)
     buffers_to_infiles = get_buffers_to_infiles(buffers, involumes)
     tpp = time.time() - tpp
     print("Preprocessing time: ", tpp)
@@ -278,6 +296,9 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
     for index, outvol in outvolumes.items():
         outvolumes_trackers[index] = Tracker()
 
+    nb_infile_openings = 0
+    nb_infile_inside_seeks = 0
+
     written_shapes = list()
     nb_oneshot_writes = 0
     volumes_written = list()
@@ -286,11 +307,10 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
     nb_buffers = len(buffers.keys())
     for buffer_index in range(nb_buffers):
         buffer = buffers[buffer_index]
-
-        t1 = time.time()
-        data = read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpath, R, I)
-        t1 = time.time() - t1 
+        data, t1, nb_opening_seeks_tmp, nb_inside_seeks_tmp = read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpath, R, I)
         read_time += t1
+        nb_infile_openings += nb_opening_seeks_tmp
+        nb_infile_inside_seeks += nb_inside_seeks_tmp
 
         # print("processing buffer ", buffer_index)
 
@@ -378,11 +398,9 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
     else:
         print(f"Sanity check passed: Number initializations == Number outfiles ({nb_file_initializations}=={len(outvolumes.keys())})")
 
-    with open('/tmp/verifkeep.csv', mode='w+') as f:
-        writer = csv.writer(f, delimiter=',')
-        writer.writerow(['shape'])
-        for row in volumes_written: 
-            writer.writerow([row[0]*row[1]*row[2]])
+    print("\nShapes written:")
+    for row in volumes_written: 
+        print(row)
                 
     get_opened_files()
-    return tpp, read_time, write_time
+    return tpp, read_time, write_time, [nb_outfile_openings, nb_outfile_inside_seeks, nb_infile_openings, nb_infile_inside_seeks]

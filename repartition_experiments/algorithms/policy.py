@@ -21,8 +21,10 @@ def get_main_volumes(B, T):
     main_volumes = [
         Volume(0,
                (0,0,0),
-               (T[Axes.i.value], T[Axes.j.value], T[Axes.k.value])),
-        Volume(1,
+               (T[Axes.i.value], T[Axes.j.value], T[Axes.k.value]))]
+
+    if B[Axes.k.value] > T[Axes.k.value]:
+        main_volumes = main_volumes + [Volume(1,
                (0,0,T[Axes.k.value]),
                (T[Axes.i.value], T[Axes.j.value], B[Axes.k.value]))]
     
@@ -488,7 +490,5 @@ def compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partititon
             else:
                 pass
 
-    print(f"Expected number of seeks: {nb_file_openings + nb_inside_seeks}") # TODO add number of input files openings
-
     logger.debug("-----------------End Compute zones-----------------")
-    return arrays_dict, buffer_to_outfiles
+    return arrays_dict, buffer_to_outfiles, nb_file_openings, nb_inside_seeks

@@ -54,12 +54,27 @@ def write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path,
 
     _3d_pos = numeric_to_3d_pos(outvolume.index, outfiles_partition, order='C')
     i, j, k = _3d_pos
+
+    t2 = time.time()
     file_manager.write_data(i, j, k, outdir_path, subarr_data, slices_in_outfile, O)
+    t2 = time.time() - t2
     
     if DEBUG_LOCAL: 
         file_manager.test_write(outfile_path, slices_in_outfile, subarr_data)
 
-    return get_overlap_volume(involume, outvolume).get_shape()
+    overlap_shape = get_overlap_volume(involume, outvolume).get_shape()
+    nb_outfile_seeks_tmp = 0
+    s = overlap_shape
+    if s[2] != O[2]:
+        nb_outfile_seeks_tmp += s[0]*s[1]
+    elif s[1] != O[1]:
+        nb_outfile_seeks_tmp += s[0]
+    elif s[0] != O[0]:
+        nb_outfile_seeks_tmp += 1
+    else:
+        pass
+
+    return overlap_shape, t2, nb_outfile_seeks_tmp
 
 
 def get_volume(infilepath, infiles_volumes, infiles_partition):
@@ -101,8 +116,13 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=F
     t_write = 0
 
     vols_written = list()
-
+    nb_infile_openings = 0
+    nb_infile_seeks = 0
+    nb_outfile_openings = 0
+    nb_outfile_seeks = 0
     for input_file in input_files:
+        nb_infile_openings += 1
+
         involume = get_volume(input_file, infiles_volumes, infiles_partition)
         t1 = time.time()
         data = file_manager.read_all(input_file)
@@ -111,19 +131,17 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=F
         
         for outvolume in outfiles_volumes:
             if hypercubes_overlap(involume, outvolume):
-                t2 = time.time()
-                shape = write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager)
-                t2 = time.time() - t2
+                shape, t2, nb_outfile_seeks_tmp = write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager)
                 t_write += t2
                 vols_written.append(shape)
+                nb_outfile_openings += 1
+                nb_outfile_seeks += nb_outfile_seeks_tmp
         
         file_manager.close_infiles()
 
-    with open('/tmp/verifbase.csv', mode='w+') as f:
-        writer = csv.writer(f, delimiter=',')
-        writer.writerow(['shape'])
-        for row in vols_written: 
-            writer.writerow([row[0]*row[1]*row[2]])
+    print("\nShapes written:")
+    for row in vols_written: 
+        print(row)
 
     if clean_out_dir:
         print("Cleaning output directory")
@@ -131,4 +149,4 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=F
 
     get_opened_files()
 
-    return t_read, t_write
+    return t_read, t_write, [nb_outfile_openings, nb_outfile_seeks, nb_infile_openings, nb_infile_seeks]

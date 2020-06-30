@@ -110,7 +110,9 @@ def experiment(args):
     R_prev, I_prev = (0,0,0), (0,0,0)
     for run in case:
         R, O, I, B, volumestokeep = run["R"], run["O"], run["I"], run["B"], run["volumestokeep"]
-        
+        ref = run["ref"]
+        print(f'Case being processed: (ref: {ref}) {R}, {I}, {O}, {B}, {volumestokeep}')
+
         origarr_filepath = create_input_file(R, paths["ssd_path"], fm)
 
         # split 
@@ -123,7 +125,7 @@ def experiment(args):
         flush_cache()
         if args.model == "baseline":
             t = time.time()
-            tread, twrite = baseline_rechunk(indir_path, outdir_path, O, I, R, args.file_format)
+            tread, twrite, seeks_data = baseline_rechunk(indir_path, outdir_path, O, I, R, args.file_format)
             t = time.time() - t 
             print(f"Processing time: {t}")
             print(f"Read time: {tread}")
@@ -131,7 +133,7 @@ def experiment(args):
             tpp = 0
         elif args.model == "keep":
             t = time.time()
-            tpp, tread, twrite = keep_algorithm(R, O, I, B, volumestokeep, args.file_format, outdir_path, indir_path)
+            tpp, tread, twrite, seeks_data = keep_algorithm(R, O, I, B, volumestokeep, args.file_format, outdir_path, indir_path)
             t = time.time() - t - tpp
             print(f"Processing time: {t}")
             print(f"Read time: {tread}")
@@ -149,6 +151,10 @@ def experiment(args):
             tpp,
             tread,
             twrite,
+            seeks_data[0],
+            seeks_data[1],
+            seeks_data[2],
+            seeks_data[3],
             success
         ])
         create_empty_dir(outdir_path)
@@ -172,6 +178,10 @@ def write_results(rows, args):
         'preprocess_time',
         'read_time',
         'write_time',
+        'outfile_openings',
+        'outfile_seeks',
+        'infile_openings',
+        'infile_seeks',
         'success'
     ]
 
