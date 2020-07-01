@@ -32,37 +32,51 @@ def get_main_volumes(B, T):
         main_volumes.append(Volume(2,
                 (0, T[Axes.j.value], 0),
                 (T[Axes.i.value], B[Axes.j.value], T[Axes.k.value])))
-        main_volumes.append(Volume(3,
-                (0, T[Axes.j.value], T[Axes.k.value]),
-                (T[Axes.i.value], B[Axes.j.value], B[Axes.k.value])))
+
+        if B[Axes.k.value] > T[Axes.k.value]:
+            main_volumes.append(Volume(3,
+                    (0, T[Axes.j.value], T[Axes.k.value]),
+                    (T[Axes.i.value], B[Axes.j.value], B[Axes.k.value])))
     
     if B[Axes.i.value] > T[Axes.i.value]:
         if B[Axes.j.value] > T[Axes.j.value]:
-            bottom_volumes = [
+            main_volumes.append(
                 Volume(4,
                     (T[Axes.i.value], 0, 0),
-                    (B[Axes.i.value], T[Axes.j.value], T[Axes.k.value])),
-                Volume(5,
-                    (T[Axes.i.value], 0, T[Axes.k.value]),
-                    (B[Axes.i.value], T[Axes.j.value], B[Axes.k.value])),
+                    (B[Axes.i.value], T[Axes.j.value], T[Axes.k.value]))
+            )
+            if B[Axes.k.value] > T[Axes.k.value]:
+                main_volumes.append(
+                    Volume(5,
+                        (T[Axes.i.value], 0, T[Axes.k.value]),
+                        (B[Axes.i.value], T[Axes.j.value], B[Axes.k.value]))
+                )
+
+            main_volumes.append(
                 Volume(6,
                     (T[Axes.i.value], T[Axes.j.value], 0),
-                    (B[Axes.i.value], B[Axes.j.value], T[Axes.k.value])),
-                Volume(7,
-                    (T[Axes.i.value], T[Axes.j.value], T[Axes.k.value]),
-                    (B[Axes.i.value], B[Axes.j.value], B[Axes.k.value]))
-            ]
-            main_volumes = main_volumes + bottom_volumes
+                    (B[Axes.i.value], B[Axes.j.value], T[Axes.k.value]))
+            )
+
+            if B[Axes.k.value] > T[Axes.k.value]:
+                main_volumes.append(
+                    Volume(7,
+                        (T[Axes.i.value], T[Axes.j.value], T[Axes.k.value]),
+                        (B[Axes.i.value], B[Axes.j.value], B[Axes.k.value]))
+                )
         else:
-            bottom_volumes = [
+            main_volumes.append(
                 Volume(4,
                     (T[Axes.i.value], 0, 0),
-                    (B[Axes.i.value], T[Axes.j.value], T[Axes.k.value])),
-                Volume(5,
-                    (T[Axes.i.value], 0, T[Axes.k.value]),
-                    (B[Axes.i.value], T[Axes.j.value], B[Axes.k.value]))
-            ]
-            main_volumes = main_volumes + bottom_volumes
+                    (B[Axes.i.value], T[Axes.j.value], T[Axes.k.value]))
+            )
+
+            if B[Axes.k.value] > T[Axes.k.value]:
+                main_volumes.append(
+                    Volume(5,
+                        (T[Axes.i.value], 0, T[Axes.k.value]),
+                        (B[Axes.i.value], T[Axes.j.value], B[Axes.k.value]))
+                )
         
     return main_volumes
 

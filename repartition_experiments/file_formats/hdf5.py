@@ -63,6 +63,11 @@ class HDF5_manager:
         return infiles
 
 
+    def get_filepath(self, i, j, k, dirpath):
+        filename = f'{i}_{j}_{k}.hdf5'
+        return os.path.join(dirpath, filename)
+
+
     def read_data(self, i, j, k, dirpath, slices):
         """ Read part of a chunk
         """
