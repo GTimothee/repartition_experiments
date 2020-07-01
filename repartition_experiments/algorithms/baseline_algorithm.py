@@ -125,7 +125,7 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=F
 
         involume = get_volume(input_file, infiles_volumes, infiles_partition)
         t1 = time.time()
-        data = file_manager.read_all(input_file)
+        data = file_manager.read_data_from_fp(input_file, slices=None)
         t1 = time.time() - t1
         t_read += t1
         

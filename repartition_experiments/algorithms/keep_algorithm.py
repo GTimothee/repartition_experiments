@@ -148,15 +148,15 @@ def read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpa
         i, j, k = numeric_to_3d_pos(involume.index, get_partition(R, I), order='C')
         slices = intersection_read.get_slices()
 
-        if intersection_read.get_shape() == I:
-            filepath = file_manager.get_filepath(i, j, k, input_dirpath)
-            t_tmp = time.time()
-            data_part = file_manager.read_all(filepath)
-            t1 += time.time() - t_tmp
-        else:
-            t_tmp = time.time()
-            data_part = file_manager.read_data(i, j, k, input_dirpath, slices)
-            t1 += time.time() - t_tmp
+        # if intersection_read.get_shape() == I:
+        #     filepath = file_manager.get_filepath(i, j, k, input_dirpath)
+        #     t_tmp = time.time()
+        #     data_part = file_manager.read_all(filepath)
+        #     t1 += time.time() - t_tmp
+        # else:
+        t_tmp = time.time()
+        data_part = file_manager.read_data(i, j, k, input_dirpath, slices)
+        t1 += time.time() - t_tmp
 
         data[intersection_in_R] = data_part
     return data, t1, nb_opening_seeks_tmp, nb_inside_seeks_tmp

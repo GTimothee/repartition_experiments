@@ -73,8 +73,31 @@ class HDF5_manager:
         """
         filename = f'{i}_{j}_{k}.hdf5'
         input_file = os.path.join(dirpath, filename)
+
+        if slices == None:
+            with h5py.File(input_file, 'r') as f:
+                dset = f['/data']
+                data = dset[:,:,:]
+                return data
+
         s = slices
         with h5py.File(input_file, 'r') as f:
+            dset = f['/data']
+            data = dset[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] 
+        return data
+
+
+    def read_data_from_fp(self, filepath, slices):
+        """ Read part of a chunk
+        """
+        if slices == None:
+            with h5py.File(filepath, 'r') as f:
+                dset = f['/data']
+                data = dset[:,:,:]
+                return data
+
+        s = slices
+        with h5py.File(filepath, 'r') as f:
             dset = f['/data']
             data = dset[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] 
         return data
