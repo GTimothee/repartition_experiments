@@ -103,6 +103,11 @@ class HDF5_manager:
         return data
 
 
+    def get_dataset(self, filepath):
+        with h5py.File(filepath, 'r') as f:
+            return f['/data']
+
+
     def write_data(self, i, j, k, outdir_path, data, s2, O, dtype=np.float16):
         """ Write data at region _slices in outfilepath
         Used to create a file of shape O and write data into a part of that file
