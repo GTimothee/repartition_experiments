@@ -3,11 +3,12 @@
 class NUMPY_manager:
     def __init__(self):
         self.filename_regex = "[0-9]*_[0-9]*_[0-9]*.npy"
+        self.ext = '.npy'
 
     def remove_all(self, dirpath):
         workdir = os.getcwd()
         os.chdir(dirpath)
-        for filename in glob.glob("*.hdf5"):
+        for filename in glob.glob("*" + self.ext):
             os.remove(filename)
         os.chdir(workdir)
         
@@ -37,56 +38,38 @@ class NUMPY_manager:
 
 
     def get_filepath(self, i, j, k, dirpath):
-        filename = f'{i}_{j}_{k}.hdf5'
+        filename = f'{i}_{j}_{k}' + self.ext
         return os.path.join(dirpath, filename)
 
 
     def read_data(self, i, j, k, dirpath, slices):
         """ Read part of a chunk
         """
-        filename = f'{i}_{j}_{k}.hdf5'
-        input_file = os.path.join(dirpath, filename)
-
-        if slices == None:
-            with h5py.File(input_file, 'r') as f:
-                dset = f['/data']
-                data = dset[:,:,:]
-                return data
-
-        s = slices
-        with h5py.File(input_file, 'r') as f:
-            dset = f['/data']
-            data = dset[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] 
-        return data
+        filepath = self.get_filepath(i, j, k, dirpath)
+        return self.read_data_from_fp(filepath, slices)
 
 
     def read_data_from_fp(self, filepath, slices):
-        """ Read part of a chunk
+        """ Read part of a chunk from filepath
         """
         if slices == None:
-            with h5py.File(filepath, 'r') as f:
-                dset = f['/data']
-                data = dset[:,:,:]
-                return data
-
-        s = slices
-        with h5py.File(filepath, 'r') as f:
-            dset = f['/data']
-            data = dset[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] 
+            data = np.load(input_file)
+        else:
+            data = np.load(input_file, mmap_mode='r')
+            s = slices
+            data = data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] 
         return data
 
 
     def get_dataset(self, filepath):
-        with h5py.File(filepath, 'r') as f:
-            return f['/data']
+        return np.load(filepath, mmap_mode='r')
 
 
     def write_data(self, i, j, k, outdir_path, data, s2, O, dtype=np.float16):
         """ Write data at region _slices in outfilepath
         Used to create a file of shape O and write data into a part of that file
         """
-        out_filename = f'{i}_{j}_{k}.hdf5'
-        outfilepath = os.path.join(outdir_path, out_filename)
+        outfilepath = filepath = self.get_filepath(i, j, k, outdir_path)
 
         if os.path.isfile(outfilepath):
             mode = 'r+'
@@ -94,19 +77,20 @@ class NUMPY_manager:
             mode = 'w'
 
         empty_dataset = False
-        with h5py.File(outfilepath, mode) as f:
-            if not "/data" in f.keys():
-                if O != data.shape:
-                     #print(f"O != data.shape: {O} != {data.shape}")
-                    null_arr = np.zeros(O, dtype=dtype)
-                    outdset = f.create_dataset("/data", O, data=null_arr, dtype=dtype)  # initialize an empty dataset
-                    outdset[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
-                else:
-                    f.create_dataset("/data", O, data=data, dtype=dtype)
-                empty_dataset = True
-            else:
-                outdset = f["/data"]
+        
+        if not "/data" in f.keys():
+            if O != data.shape:
+                    #print(f"O != data.shape: {O} != {data.shape}")
+                null_arr = np.zeros(O, dtype=dtype)
+                outdset = f.create_dataset("/data", O, data=null_arr, dtype=dtype)  # initialize an empty dataset
                 outdset[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
+            else:
+                np.save(outfilepath, data)
+
+            empty_dataset = True
+        else:
+            outdset = f["/data"]
+            outdset[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
 
         return empty_dataset
 

@@ -43,7 +43,7 @@ def create_empty_dir(dir_path):
         raise OSError()
 
 
-def verify_results(outdir_path, original_array_path, R, O, file_format):
+def verify_results(outdir_path, original_array_path, R, O, file_format, addition):
     """ Compare content of each output file against expected subarrays from original array.
     WARNING: this function opens all output files + the original array
     """
@@ -64,6 +64,9 @@ def verify_results(outdir_path, original_array_path, R, O, file_format):
                 outfilepath = os.path.join(outdir_path, str(i) + "_" + str(j) + "_" + str(k) + ".hdf5")
                 data_stored = file_manager.read_all(outfilepath)
                 ground_truth = orig_arr_data[i*O[0]:(i+1)*O[0],j*O[1]:(j+1)*O[1],k*O[2]:(k+1)*O[2]]
+
+                if addition:
+                    ground_truth = ground_truth +1
 
                 try:
                     assert np.allclose(data_stored, ground_truth)

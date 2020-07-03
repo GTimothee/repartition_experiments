@@ -154,7 +154,7 @@ def experiment(args):
             raise ValueError("Bad model name")
 
         # verify and clean output
-        success = verify_results(outdir_path, origarr_filepath, R, O, args.file_format)
+        success = verify_results(outdir_path, origarr_filepath, R, O, args.file_format, args.addition)
         results.append([
             args.case_name,
             run["ref"],
