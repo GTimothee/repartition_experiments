@@ -16,7 +16,7 @@ def get_overlap_volume(v1, v2):
     return Volume(0, p1, p2)
 
 
-def write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager):
+def write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager, addition):
     """ Write intersection of input file and output file into output file.
 
     Arguments:
@@ -54,6 +54,9 @@ def write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path,
 
     _3d_pos = numeric_to_3d_pos(outvolume.index, outfiles_partition, order='C')
     i, j, k = _3d_pos
+
+    if addition:
+        subarr_data = subarr_data + 1
 
     t2 = time.time()
     file_manager.write_data(i, j, k, outdir_path, subarr_data, slices_in_outfile, O)
@@ -94,7 +97,7 @@ def get_volume(infilepath, infiles_volumes, infiles_partition):
     return infiles_volumes[numeric_pos]
 
 
-def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=False, clean_out_dir=False):
+def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, addition, debug_mode=False, clean_out_dir=False):
     """ Naive rechunk implementation in plain python.
     The input directory is supposed to contain the input files (output of the split process).
     WARNING: Does not clean the output directory after use by default.
@@ -131,7 +134,7 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, debug_mode=F
         
         for outvolume in outfiles_volumes:
             if hypercubes_overlap(involume, outvolume):
-                shape, t2, nb_outfile_seeks_tmp = write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager)
+                shape, t2, nb_outfile_seeks_tmp = write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager, addition)
                 t_write += t2
                 vols_written.append(shape)
                 nb_outfile_openings += 1

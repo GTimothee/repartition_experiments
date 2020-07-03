@@ -260,7 +260,7 @@ def complete(cache, vol_to_write, outvolume_index):
 
 # optimisation possible: stop la boucle quand tout buff_volume a été process -> ac un tracker
 # optimization possible: changer le np.zeros en forcant la génération en float16
-def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_dirpath):
+def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_dirpath, addition):
     """
         cache: dict,
             outfile_index -> list of volumes to write 
@@ -341,6 +341,9 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
                             assert vol_to_write.get_shape() == data_to_write_vol.get_shape() and vol_to_write.get_shape() == data_to_write.shape
                             nb_oneshot_writes += 1
                             # print("\n[Writing] ", vol_to_write.p1, " ", vol_to_write.p2 ," in ", outvolume_index)
+
+                            if addition:
+                                data_to_write = data_to_write +1
                             t2, initialized = write_in_outfile(data_to_write, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, False)
                             write_time += t2
                             written_shapes.append(vol_to_write.get_shape())
@@ -357,6 +360,8 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
 
                             if is_complete:
                                 # print("\n[writing] ", vol_to_write.p1, " ", vol_to_write.p2 ," in ", outvolume_index)
+                                if addition:
+                                    data_to_write = data_to_write +1
                                 t2, initialized = write_in_outfile(arr, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, True)
                                 write_time += t2
 

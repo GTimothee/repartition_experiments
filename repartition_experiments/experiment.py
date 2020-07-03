@@ -45,6 +45,12 @@ def get_arguments():
         default=False,
         help='Set to true to overwrite original array if it already exists. Default is False.')
 
+    parser.add_argument('-a', '--addition', 
+        action='store_true', 
+        dest='addition',
+        default=False,
+        help='Set to true to do an addition operation before writing data. Default is False.')
+
     return parser.parse_args()
 
 
@@ -125,7 +131,7 @@ def experiment(args):
         flush_cache()
         if args.model == "baseline":
             t = time.time()
-            tread, twrite, seeks_data = baseline_rechunk(indir_path, outdir_path, O, I, R, args.file_format)
+            tread, twrite, seeks_data = baseline_rechunk(indir_path, outdir_path, O, I, R, args.file_format, args.addition)
             t = time.time() - t 
             print(f"Processing time: {t}")
             print(f"Read time: {tread}")
@@ -133,7 +139,7 @@ def experiment(args):
             tpp = 0
         elif args.model == "keep":
             t = time.time()
-            tpp, tread, twrite, seeks_data = keep_algorithm(R, O, I, B, volumestokeep, args.file_format, outdir_path, indir_path)
+            tpp, tread, twrite, seeks_data = keep_algorithm(R, O, I, B, volumestokeep, args.file_format, outdir_path, indir_path, args.addition)
             t = time.time() - t - tpp
             print(f"Processing time: {t}")
             print(f"Read time: {tread}")
