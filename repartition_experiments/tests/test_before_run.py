@@ -30,7 +30,7 @@ def test_before_run():
             outfiles_partition, outvolumes = get_volumes(R, O)
 
             try:
-                arrays_dict, buffer_to_outfiles = compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partition, buffers, outvolumes)
+                arrays_dict, buffer_to_outfiles, _, _ = compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partition, buffers, outvolumes)
             except Exception as e:
                 print(f'error {e} \nError with ref {ref}')
                 raise Exception()

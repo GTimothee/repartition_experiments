@@ -124,10 +124,9 @@ class HDF5_manager:
         with h5py.File(outfilepath, mode) as f:
             if not "/data" in f.keys():
                 if O != data.shape:
-                     #print(f"O != data.shape: {O} != {data.shape}")
                     null_arr = np.zeros(O, dtype=dtype)
+                    null_arr[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
                     outdset = f.create_dataset("/data", O, data=null_arr, dtype=dtype)  # initialize an empty dataset
-                    outdset[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
                 else:
                     f.create_dataset("/data", O, data=data, dtype=dtype)
                 empty_dataset = True

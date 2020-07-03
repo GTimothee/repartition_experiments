@@ -40,6 +40,7 @@ def test_baseline(case):
 
     m = R[0]*R[1]*R[2]*bpv
     clustered_writes(origarr_filepath, R, I, bpv, m, ff, indir_path)  # split
-    baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, True, clean_out_dir=False)  # rechunk
 
-    assert verify_results(outdir_path, origarr_filepath, R, O, file_format)
+    baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, False, clean_out_dir=False)  # rechunk
+
+    assert verify_results(outdir_path, origarr_filepath, R, O, file_format, False)

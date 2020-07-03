@@ -1,3 +1,5 @@
+import numpy as np
+import os, h5py, glob, logging
 
 
 class NUMPY_manager:
@@ -74,23 +76,23 @@ class NUMPY_manager:
         if os.path.isfile(outfilepath):
             mode = 'r+'
         else:
-            mode = 'w'
+            mode = 'w+'
 
         empty_dataset = False
         
         if not "/data" in f.keys():
             if O != data.shape:
-                    #print(f"O != data.shape: {O} != {data.shape}")
                 null_arr = np.zeros(O, dtype=dtype)
-                outdset = f.create_dataset("/data", O, data=null_arr, dtype=dtype)  # initialize an empty dataset
-                outdset[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
+                null_arr[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
+                np.save(outfilepath, null_arr)
             else:
                 np.save(outfilepath, data)
 
             empty_dataset = True
         else:
-            outdset = f["/data"]
-            outdset[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
+            fp = np.memmap(outfilepath, dtype=dtype, mode='r+')
+            fp[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
+            del fp
 
         return empty_dataset
 
@@ -104,37 +106,33 @@ class NUMPY_manager:
         else:
             mode = 'w'
 
-        with h5py.File(outfilepath, mode) as f:
-
-            if _slices != None:
-                if not "/data" in f.keys():
-                    null_arr = np.zeros(cs, dtype=dtype)
-                    outdset = f.create_dataset("/data", cs, data=null_arr, dtype=dtype) 
-                else:
-                    outdset = f["/data"]
-
-                outdset[_slices[0][0]:_slices[0][1],_slices[1][0]:_slices[1][1],_slices[2][0]:_slices[2][1]] = data
+        if _slices != None:
+            s = _slices
+            if not os.path.isfile(outfilepath):
+                null_arr = np.zeros(O, dtype=dtype)
+                null_arr[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = data
+                np.save(outfilepath, null_arr)
             else:
-                f.create_dataset("/data", cs, data=data, dtype=dtype)            
+                fp = np.memmap(outfilepath, dtype=dtype, mode='r+')
+                fp[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = data
+                del fp
+        else:
+            np.save(outfilepath, data)          
 
 
     def test_write(self, outfile_path, s, subarr_data):
         """ Used in baseline for verifying subarray writing
         """
-        with h5py.File(outfile_path, 'r') as f:
-            stored = f['/data'][s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]]
-            if np.allclose(stored, subarr_data):
-                logger.debug("[success] data successfully stored.")
-            else:
-                logger.debug("[error] in data storage")
-
-
-    def close_infiles(self):
-        clean_files()
+        fp = np.memmap(outfile_path, dtype=dtype, mode='r+')
+        stored = fp[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]]
+        if np.allclose(stored, subarr_data):
+            logger.debug("[success] data successfully stored.")
+        else:
+            logger.debug("[error] in data storage")
+        del fp
 
 
     def read_all(self, filepath):
         """ Read all the file and return the whole array
         """
-        dset = self.get_dataset(filepath, '/data')
-        return dset[()]
+        return np.load(filepath)

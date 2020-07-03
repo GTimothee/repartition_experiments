@@ -361,7 +361,7 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
                             if is_complete:
                                 # print("\n[writing] ", vol_to_write.p1, " ", vol_to_write.p2 ," in ", outvolume_index)
                                 if addition:
-                                    data_to_write = data_to_write +1
+                                    arr = arr +1
                                 t2, initialized = write_in_outfile(arr, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, True)
                                 write_time += t2
 

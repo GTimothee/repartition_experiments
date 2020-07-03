@@ -80,7 +80,7 @@ def test_read_buffer():
         0: [0,1,2,3]
     }
     involumes = get_named_volumes(partition, cs)
-    data = read_buffer(buffer, buffers_to_infiles, involumes, file_manager, indir, (20,20,20), cs)
+    data, _, _, _ = read_buffer(buffer, buffers_to_infiles, involumes, file_manager, indir, (20,20,20), cs)
 
     # verification
     arr0 = file_manager.read_all(os.path.join(indir, "0_0_0.hdf5"))
@@ -223,5 +223,5 @@ def test_keep_algorithm(case):
     R_size = R[0]*R[1]*R[2]*bpv
     clustered_writes(origarr_filepath, R, I, bpv, R_size, file_format, indir_path)
 
-    ppt, _, _ = keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, indir_path)
-    assert verify_results(outdir_path, origarr_filepath, R, O, file_format)
+    ppt, _, _, _ = keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, indir_path, False)
+    assert verify_results(outdir_path, origarr_filepath, R, O, file_format, False)

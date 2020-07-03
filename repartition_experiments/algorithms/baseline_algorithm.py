@@ -104,6 +104,8 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, addition, de
     """
     DEBUG_LOCAL = True if debug_mode else False
 
+    print("Addition mode:", addition)
+
     O, I, R = tuple(O), tuple(I), tuple(R)
 
     file_manager = get_file_manager(file_format)

@@ -64,12 +64,12 @@ def verify_results(outdir_path, original_array_path, R, O, file_format, addition
                 outfilepath = os.path.join(outdir_path, str(i) + "_" + str(j) + "_" + str(k) + ".hdf5")
                 data_stored = file_manager.read_all(outfilepath)
                 ground_truth = orig_arr_data[i*O[0]:(i+1)*O[0],j*O[1]:(j+1)*O[1],k*O[2]:(k+1)*O[2]]
-
+                
                 if addition:
                     ground_truth = ground_truth +1
 
                 try:
-                    assert np.allclose(data_stored, ground_truth)
+                    assert np.allclose(data_stored, ground_truth, rtol=1e-02)
                     # print(f"Good output file {outfilepath}")
                 except:
                     print(f"Error: bad rechunking {outfilepath}")

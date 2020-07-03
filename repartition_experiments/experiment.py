@@ -144,7 +144,7 @@ def experiment(args):
             print(f"Write time: {twrite}")
             tpp = 0
         elif args.model == "keep":
-            t = time.time()
+            t = time.time()                    
             tpp, tread, twrite, seeks_data = keep_algorithm(R, O, I, B, volumestokeep, args.file_format, outdir_path, indir_path, args.addition)
             t = time.time() - t - tpp
             print(f"Processing time: {t}")

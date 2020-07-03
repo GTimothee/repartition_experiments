@@ -32,4 +32,4 @@ def test_policy():
     is_partition(involumes.values(), R)
     is_partition(outvolumes.values(), R)
 
-    arrays_dict, buffer_to_outfiles = compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partition, buffers, outvolumes)
+    arrays_dict, buffer_to_outfiles, _, _ = compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partition, buffers, outvolumes)
