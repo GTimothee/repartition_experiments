@@ -1,6 +1,7 @@
 import random, argparse, sys, os, json, time, csv
 from time import strftime, gmtime
 import numpy as np
+import dask.array as da
 
 
 def flush_cache():
@@ -58,9 +59,14 @@ def create_input_file(shape, dirname, file_manager):
     filename = f'{shape[0]}_{shape[1]}_{shape[2]}_original.hdf5'
     filepath = os.path.join(dirname, filename)
 
+    # if not os.path.isfile(filepath):
+    #     data = np.random.default_rng().random(size=shape, dtype='f')
+    #     file_manager.write(filepath, data, shape, _slices=None)
+
     if not os.path.isfile(filepath):
-        data = np.random.default_rng().random(size=shape, dtype='f')
-        file_manager.write(filepath, data, shape, _slices=None)
+        arr = da.random.random(size=shape)
+        arr = arr.astype(np.float16)
+        da.to_hdf5(filepath, '/data', arr, chunks=None, compression=None)
 
     return filepath
 
