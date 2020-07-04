@@ -201,6 +201,20 @@ def write_results(rows, args):
     return csv_path
 
 
+def write_memory_pile(rows, args):
+    case_name = args.case_name.replace(' ', '_')
+    time_string = strftime("%b_%d_%Y_%H:%M:%S", gmtime(time.time()))
+    filename = f"memorytrace_{case_name}_{args.model}_{time_string}.txt"
+    paths = load_json(args.paths_config)
+    filepath = os.path.join(paths["outdir_path"], filename)
+
+    with open(filepath, "w+") as f:
+        for s in rows:
+            f.write(s + "\n")
+
+    return filepath
+
+
 if __name__ == "__main__":
     args = get_arguments()
     paths = load_json(args.paths_config)
@@ -209,5 +223,14 @@ if __name__ == "__main__":
         if "PYTHONPATH" in k:
             sys.path.insert(0, v)
 
+    from monitor.monitor import Monitor
+    _monitor = Monitor(enable_print=True, enable_log=False, save_data=True)
+    _monitor.disable_clearconsole()
+    _monitor.set_delay(50)
+
+    _monitor.start()
     results = experiment(args)
+    pile = _monitor.stop()
+
     write_results(results, args)
+    write_memory_pile(pile, args)

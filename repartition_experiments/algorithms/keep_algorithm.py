@@ -280,6 +280,7 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
     infiles_partition, involumes = get_volumes(R, I)
     outfiles_partition, outvolumes = get_volumes(R, O)
 
+    print("Preprocessing...")
     tpp = time.time()
     arrays_dict, buffer_to_outfiles, nb_outfile_openings, nb_outfile_inside_seeks = compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partition, buffers, outvolumes)
     buffers_to_infiles = get_buffers_to_infiles(buffers, involumes)
