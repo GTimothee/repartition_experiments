@@ -77,11 +77,11 @@ if __name__ == "__main__":
     R, I = tuple(map(lambda e: int(e), R_stringlist)), tuple(map(lambda e: int(e), I_stringlist))
     print(R, I)
 
+    indir_path, outdir_path = os.path.join(paths["ssd_path"], 'indir'), os.path.join(paths["ssd_path"], 'outdir')
     if not args.splits_only:
         origarr_filepath = create_input_file(R, paths["ssd_path"], fm)
         R_size = R[0]*R[1]*R[2]
         bpv = 2
-        indir_path, outdir_path = os.path.join(paths["ssd_path"], 'indir'), os.path.join(paths["ssd_path"], 'outdir')
         create_empty_dir(indir_path)
         create_empty_dir(outdir_path)
         clustered_writes(origarr_filepath, R, I, bpv, R_size, args.file_format, indir_path)
