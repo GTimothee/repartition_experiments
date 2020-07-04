@@ -84,7 +84,6 @@ def experiment(args):
     from repartition_experiments.exp_utils import create_empty_dir, verify_results
     from repartition_experiments.algorithms.baseline_algorithm import baseline_rechunk
     from repartition_experiments.algorithms.keep_algorithm import keep_algorithm, get_input_aggregate
-    from repartition_experiments.algorithms.clustered_writes import clustered_writes
     from repartition_experiments.algorithms.utils import get_file_manager
 
     paths = load_json(args.paths_config)
@@ -92,7 +91,6 @@ def experiment(args):
     bpv = 2
 
     indir_path, outdir_path = os.path.join(paths["ssd_path"], 'indir'), os.path.join(paths["ssd_path"], 'outdir')
-    create_empty_dir(indir_path)
     create_empty_dir(outdir_path)
 
     fm = get_file_manager(args.file_format)
@@ -124,15 +122,9 @@ def experiment(args):
         R, O, I, B, volumestokeep = run["R"], run["O"], run["I"], run["B"], run["volumestokeep"]
         ref = run["ref"]
         print(f'Case being processed: (ref: {ref}) {R}, {I}, {O}, {B}, {volumestokeep}')
+        filename = f'{R[0]}_{R[1]}_{R[2]}_original.hdf5'
+        origarr_filepath = os.path.join(paths["ssd_path"], filename)
 
-        origarr_filepath = create_input_file(R, paths["ssd_path"], fm)
-
-        # split 
-        if R_prev != R or (R_prev == R and I_prev != I):
-            create_empty_dir(indir_path)
-            R_size = R[0]*R[1]*R[2]*bpv
-            clustered_writes(origarr_filepath, R, I, bpv, R_size, args.file_format, indir_path)
-            
         # resplit
         flush_cache()
         if args.model == "baseline":
