@@ -126,6 +126,7 @@ def experiment(args):
         origarr_filepath = os.path.join(paths["ssd_path"], filename)
 
         # resplit
+        print("processing...")
         flush_cache()
         if args.model == "baseline":
             t = time.time()
@@ -146,6 +147,7 @@ def experiment(args):
             raise ValueError("Bad model name")
 
         # verify and clean output
+        print("verifying results....")
         success = verify_results(outdir_path, origarr_filepath, R, O, args.file_format, args.addition)
         results.append([
             args.case_name,
