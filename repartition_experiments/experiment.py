@@ -133,19 +133,29 @@ def experiment(args):
 
         # resplit
         print("processing...")
+        
         flush_cache()
         if args.model == "baseline":
+            _monitor = Monitor(enable_print=False, enable_log=False, save_data=True)
+            _monitor.disable_clearconsole()
+            _monitor.set_delay(15)
+            _monitor.start()
             t = time.time()
             tread, twrite, seeks_data = baseline_rechunk(indir_path, outdir_path, O, I, R, args.file_format, args.addition)
             t = time.time() - t 
+            _monitor.stop()
+            piles = _monitor.get_mem_piles()
+            max_voxels = 0
             print(f"Processing time: {t}")
             print(f"Read time: {tread}")
             print(f"Write time: {twrite}")
             tpp = 0
+            voxel_tracker = None
         elif args.model == "keep":
             t = time.time()                    
-            tpp, tread, twrite, seeks_data = keep_algorithm(R, O, I, B, volumestokeep, args.file_format, outdir_path, indir_path, args.addition)
+            tpp, tread, twrite, seeks_data, voxel_tracker, piles = keep_algorithm(R, O, I, B, volumestokeep, args.file_format, outdir_path, indir_path, args.addition)
             t = time.time() - t - tpp
+            max_voxels = voxel_tracker.get_max()
             print(f"Processing time: {t}")
             print(f"Read time: {tread}")
             print(f"Write time: {twrite}")
@@ -171,10 +181,15 @@ def experiment(args):
             seeks_data[1],
             seeks_data[2],
             seeks_data[3],
+            max_voxels,
             success
         ])
         create_empty_dir(outdir_path)
         R_prev, I_prev = R, I 
+
+        write_memory_pile(piles[0], piles[1], run["ref"], args)
+        if voxel_tracker != None:
+            write_voxel_history(voxel_tracker, run["ref"], args)
 
     return results
 
@@ -198,6 +213,7 @@ def write_results(rows, args):
         'outfile_seeks',
         'infile_openings',
         'infile_seeks',
+        'max_voxels',
         'success'
     ]
 
@@ -210,16 +226,36 @@ def write_results(rows, args):
     return csv_path
 
 
-def write_memory_pile(rows, args):
+def write_memory_pile(ram_pile, swap_pile, ref, args):
     case_name = args.case_name.replace(' ', '_')
     time_string = strftime("%b_%d_%Y_%H:%M:%S", gmtime(time.time()))
-    filename = f"memorytrace_{case_name}_{args.model}_{time_string}.txt"
+    filename = f"memorytrace_{case_name}_{ref}_{args.model}_{time_string}.csv"
     paths = load_json(args.paths_config)
     filepath = os.path.join(paths["outdir_path"], filename)
 
+    columns = ['ram', 'swap']
     with open(filepath, "w+") as f:
-        for s in rows:
-            f.write(s + "\n")
+        writer = csv.writer(f, delimiter=',')
+        writer.writerow(columns)
+        for ram, swap in zip(ram_pile, swap_pile):
+            writer.writerow([ram, swap])
+
+    return filepath
+
+
+def write_voxel_history(voxel_tracker, ref, args):
+    case_name = args.case_name.replace(' ', '_')
+    time_string = strftime("%b_%d_%Y_%H:%M:%S", gmtime(time.time()))
+    filename = f"voxelstrace_{case_name}_{ref}_{args.model}_{time_string}.csv"
+    paths = load_json(args.paths_config)
+    filepath = os.path.join(paths["outdir_path"], filename)
+
+    columns = ['nb_voxels']
+    with open(filepath, mode='w+') as f:
+        writer = csv.writer(f, delimiter=',')
+        writer.writerow(columns)
+        for data in voxel_tracker.get_history(): 
+            writer.writerow([data])
 
     return filepath
 
@@ -233,13 +269,7 @@ if __name__ == "__main__":
             sys.path.insert(0, v)
 
     from monitor.monitor import Monitor
-    _monitor = Monitor(enable_print=True, enable_log=False, save_data=True)
-    _monitor.disable_clearconsole()
-    _monitor.set_delay(50)
-
-    _monitor.start()
+    
     results = experiment(args)
-    pile = _monitor.stop()
-
     write_results(results, args)
-    write_memory_pile(pile, args)
+    

@@ -137,9 +137,9 @@ def merge_cached_volumes(arrays_dict, volumestokeep, outfiles_volumes):
     for outfileindex in sorted(list(arrays_dict.keys())):
         logger.debug("Treating outfile n°%s", outfileindex)
         volumes = arrays_dict[outfileindex]
-        print(f'volumes before:')
-        for v in volumes:
-            v.print()
+        # print(f'volumes before:')
+        # for v in volumes:
+        #     v.print()
         
         for remainder_index in merge_rules.keys():
             for i in range(len(volumes)):
