@@ -20,7 +20,7 @@ def remove_from_cache(cache, outfile_index, volume_to_write):
 
     target = None
     for i, e in enumerate(volumes_in_cache):
-        v, d, tracker = e
+        v, _, _, _ = e
         p1, p2 = v.get_corners()
         if p1 == volume_to_write.p1 and p2 == volume_to_write.p2:
             target = i
@@ -239,10 +239,14 @@ def complete(cache, vol_to_write, outvolume_index):
     """
     l = cache[outvolume_index]
     for e in l:
-        v, a, tracker = e 
+        v, v_list, a_list, tracker = e 
         if equals(vol_to_write, v):
             if tracker.is_complete(vol_to_write.get_corners()): 
-                return True, a
+                arr = np.empty(vol_to_write.get_shape(), dtype=np.float16)
+                for v_tmp, a_tmp in zip(v_list, a_list):
+                    s = to_basis(v_tmp, vol_to_write).get_slices()
+                    arr[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = a_tmp
+                return True, arr
     return False, None
 
 

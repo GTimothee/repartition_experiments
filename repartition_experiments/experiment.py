@@ -52,6 +52,12 @@ def get_arguments():
         default=False,
         help='Set to true to do an addition operation before writing data. Default is False.')
 
+    parser.add_argument('-v', '--verify', 
+        action='store_true', 
+        dest='verify',
+        default=False,
+        help='Verify results. Default is False for benchmarks because it creates overhead in RAM consumption.')
+
     return parser.parse_args()
 
 
@@ -148,8 +154,11 @@ def experiment(args):
 
         # verify and clean output
         print("verifying results....")
-        # success = verify_results(outdir_path, origarr_filepath, R, O, args.file_format, args.addition)
-        success = True
+        if args.verify:
+            success = verify_results(outdir_path, origarr_filepath, R, O, args.file_format, args.addition)
+        else:
+            success = True
+
         results.append([
             args.case_name,
             run["ref"],
