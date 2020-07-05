@@ -193,21 +193,7 @@ def add_to_cache(cache, vol_to_write, buff_volume, data_part, outvolume_index, o
         array has shape volumetowrite, missing parts are full of zeros
     """
 
-    def write_in_arr(array, data_part, overlap_volume):
-        """ Write part of vol_to_write into cache
-        Arguments: 
-        ----------
-            array: receiver
-            data_part: what to write
-            overlap_vol_in_R: coords of data_part in R
-        """
-        where_to_write = to_basis(overlap_vol_in_R, vol_to_write)
-        s = where_to_write.get_slices()
-        array[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = data_part
-        return array 
-
-
-    # add list in cache for outfile index if nothing from this file in cache yet
+    # add list in cache for outfile index if nothing for this file in cache yet
     if not outvolume_index in cache.keys():
         cache[outvolume_index] = list()
 
@@ -215,19 +201,21 @@ def add_to_cache(cache, vol_to_write, buff_volume, data_part, outvolume_index, o
 
     # if cache already contains part of the outfile part, we add data to it 
     for element in stored_data_list:
-        volume, array, tracker = element
+        vol_to_write_tmp, volumes_list, arrays_list, tracker = element
 
-        if equals(vol_to_write, volume):
-            array = write_in_arr(array, data_part, overlap_vol_in_R)
+        if equals(vol_to_write, vol_to_write_tmp):
+            volumes_list.append(overlap_vol_in_R)
+            arrays_list.append(data_part)
             tracker.add_volume(overlap_vol_in_R)
-            element = (volume, array, tracker)  # update element
+            element = (vol_to_write_tmp, volumes_list, arrays_list, tracker)  # update element
             return 
 
     # add new element
-    array = write_in_arr(np.zeros(vol_to_write.get_shape()), data_part, overlap_vol_in_R)
+    arrays_list = [data_part]
+    volumes_list = [overlap_vol_in_R]
     tracker = Tracker()
     tracker.add_volume(overlap_vol_in_R)
-    stored_data_list.append((vol_to_write, array, tracker))
+    stored_data_list.append((vol_to_write, volumes_list, arrays_list, tracker))
     cache[outvolume_index] = stored_data_list
 
 
@@ -319,12 +307,8 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
         nb_infile_openings += nb_opening_seeks_tmp
         nb_infile_inside_seeks += nb_inside_seeks_tmp
 
-        # print("processing buffer ", buffer_index)
-
         for outvolume_index in buffer_to_outfiles[buffer_index]:
-            
-            # print("buffer ", buffer_index, " overlaps with outfile ", outvolume_index)
-
+    
             outvolume = outvolumes[outvolume_index]
             vols_to_write = arrays_dict[outvolume.index]
             vols_written = list()
@@ -332,8 +316,6 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
             for j, vol_to_write in enumerate(vols_to_write):  
                 
                 for buff_volume, data_part in data.items():
-                    # print("Treating buff_volume")
-                    # buff_volume.print()
 
                     if hypercubes_overlap(buff_volume, vol_to_write):
                         data_to_write_vol, data_to_write = get_data_to_write(vol_to_write, buff_volume, data_part)
@@ -341,7 +323,6 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
                         if equals(vol_to_write, data_to_write_vol):   
                             assert vol_to_write.get_shape() == data_to_write_vol.get_shape() and vol_to_write.get_shape() == data_to_write.shape
                             nb_oneshot_writes += 1
-                            # print("\n[Writing] ", vol_to_write.p1, " ", vol_to_write.p2 ," in ", outvolume_index)
 
                             if addition:
                                 data_to_write = data_to_write +1
