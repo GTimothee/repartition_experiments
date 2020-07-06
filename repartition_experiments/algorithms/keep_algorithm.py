@@ -4,6 +4,8 @@ from repartition_experiments.algorithms.policy import compute_zones
 from repartition_experiments.algorithms.utils import get_partition, get_named_volumes, get_overlap_subarray, get_file_manager, numeric_to_3d_pos, Volume, hypercubes_overlap, included_in, get_volumes
 from repartition_experiments.algorithms.tracker import Tracker
 from repartition_experiments.algorithms.utils import get_opened_files
+from repartition_experiments.algorithms.voxel_tracker import VoxelTracker
+from monitor.monitor import Monitor
 
 def get_input_aggregate(O, I):
     lambd = list()
@@ -20,7 +22,7 @@ def remove_from_cache(cache, outfile_index, volume_to_write):
 
     target = None
     for i, e in enumerate(volumes_in_cache):
-        v, d, tracker = e
+        v, _, _, _ = e
         p1, p2 = v.get_corners()
         if p1 == volume_to_write.p1 and p2 == volume_to_write.p2:
             target = i
@@ -193,21 +195,7 @@ def add_to_cache(cache, vol_to_write, buff_volume, data_part, outvolume_index, o
         array has shape volumetowrite, missing parts are full of zeros
     """
 
-    def write_in_arr(array, data_part, overlap_volume):
-        """ Write part of vol_to_write into cache
-        Arguments: 
-        ----------
-            array: receiver
-            data_part: what to write
-            overlap_vol_in_R: coords of data_part in R
-        """
-        where_to_write = to_basis(overlap_vol_in_R, vol_to_write)
-        s = where_to_write.get_slices()
-        array[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = data_part
-        return array 
-
-
-    # add list in cache for outfile index if nothing from this file in cache yet
+    # add list in cache for outfile index if nothing for this file in cache yet
     if not outvolume_index in cache.keys():
         cache[outvolume_index] = list()
 
@@ -215,19 +203,21 @@ def add_to_cache(cache, vol_to_write, buff_volume, data_part, outvolume_index, o
 
     # if cache already contains part of the outfile part, we add data to it 
     for element in stored_data_list:
-        volume, array, tracker = element
+        vol_to_write_tmp, volumes_list, arrays_list, tracker = element
 
-        if equals(vol_to_write, volume):
-            array = write_in_arr(array, data_part, overlap_vol_in_R)
+        if equals(vol_to_write, vol_to_write_tmp):
+            volumes_list.append(overlap_vol_in_R)
+            arrays_list.append(data_part)
             tracker.add_volume(overlap_vol_in_R)
-            element = (volume, array, tracker)  # update element
+            element = (vol_to_write_tmp, volumes_list, arrays_list, tracker)  # update element
             return 
 
     # add new element
-    array = write_in_arr(np.zeros(vol_to_write.get_shape()), data_part, overlap_vol_in_R)
+    arrays_list = [data_part]
+    volumes_list = [overlap_vol_in_R]
     tracker = Tracker()
     tracker.add_volume(overlap_vol_in_R)
-    stored_data_list.append((vol_to_write, array, tracker))
+    stored_data_list.append((vol_to_write, volumes_list, arrays_list, tracker))
     cache[outvolume_index] = stored_data_list
 
 
@@ -251,16 +241,19 @@ def complete(cache, vol_to_write, outvolume_index):
     """
     l = cache[outvolume_index]
     for e in l:
-        v, a, tracker = e 
+        v, v_list, a_list, tracker = e 
         if equals(vol_to_write, v):
             if tracker.is_complete(vol_to_write.get_corners()): 
-                return True, a
+                arr = np.empty(vol_to_write.get_shape(), dtype=np.float16)
+                for v_tmp, a_tmp in zip(v_list, a_list):
+                    s = to_basis(v_tmp, vol_to_write).get_slices()
+                    arr[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = a_tmp
+                return True, arr
     return False, None
 
 
 # optimisation possible: stop la boucle quand tout buff_volume a été process -> ac un tracker
-# optimization possible: changer le np.zeros en forcant la génération en float16
-def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_dirpath, addition):
+def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_dirpath, addition, sanity_check=False):
     """
         cache: dict,
             outfile_index -> list of volumes to write 
@@ -295,36 +288,47 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
     read_time = 0
     write_time = 0
 
-    nb_volumes_to_write = 0
-    for k, v in arrays_dict.items():
-        nb_volumes_to_write += len(v)
-
-    outvolumes_trackers = dict()
-    for index, outvol in outvolumes.items():
-        outvolumes_trackers[index] = Tracker()
-
     nb_infile_openings = 0
     nb_infile_inside_seeks = 0
 
-    written_shapes = list()
-    nb_oneshot_writes = 0
-    volumes_written = list()
-    nb_file_initializations = 0
-    nb_volumes_written = 0
+    if sanity_check:
+        written_shapes = list()
+        nb_oneshot_writes = 0
+        volumes_written = list()
+        nb_file_initializations = 0
+        nb_volumes_written = 0
+
+        nb_volumes_to_write = 0
+        for k, v in arrays_dict.items():
+            nb_volumes_to_write += len(v)
+
+        outvolumes_trackers = dict()
+        for index, outvol in outvolumes.items():
+            outvolumes_trackers[index] = Tracker()
+    
+    voxel_tracker = VoxelTracker()
+    _monitor = Monitor(enable_print=False, enable_log=False, save_data=True)
+    _monitor.disable_clearconsole()
+    _monitor.set_delay(5)
+    _monitor.start()
     nb_buffers = len(buffers.keys())
+    print("nb buffers:", nb_buffers)
     for buffer_index in range(nb_buffers):
+        print("BUFFER ", buffer_index, '/', nb_buffers)
         buffer = buffers[buffer_index]
+        
         data, t1, nb_opening_seeks_tmp, nb_inside_seeks_tmp = read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpath, R, I)
+        data_shape = buffer.get_shape()
+        buffer_size = data_shape[0]*data_shape[1]*data_shape[2]
+        voxel_tracker.add_voxels(buffer_size)
+        data_movement = 0
+        
         read_time += t1
         nb_infile_openings += nb_opening_seeks_tmp
         nb_infile_inside_seeks += nb_inside_seeks_tmp
 
-        # print("processing buffer ", buffer_index)
-
         for outvolume_index in buffer_to_outfiles[buffer_index]:
-            
-            # print("buffer ", buffer_index, " overlaps with outfile ", outvolume_index)
-
+    
             outvolume = outvolumes[outvolume_index]
             vols_to_write = arrays_dict[outvolume.index]
             vols_written = list()
@@ -332,87 +336,117 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
             for j, vol_to_write in enumerate(vols_to_write):  
                 
                 for buff_volume, data_part in data.items():
-                    # print("Treating buff_volume")
-                    # buff_volume.print()
 
                     if hypercubes_overlap(buff_volume, vol_to_write):
                         data_to_write_vol, data_to_write = get_data_to_write(vol_to_write, buff_volume, data_part)
 
-                        if equals(vol_to_write, data_to_write_vol):   
-                            assert vol_to_write.get_shape() == data_to_write_vol.get_shape() and vol_to_write.get_shape() == data_to_write.shape
-                            nb_oneshot_writes += 1
-                            # print("\n[Writing] ", vol_to_write.p1, " ", vol_to_write.p2 ," in ", outvolume_index)
-
+                        if equals(vol_to_write, data_to_write_vol):  
+                            
+                            # write
                             if addition:
                                 data_to_write = data_to_write +1
                             t2, initialized = write_in_outfile(data_to_write, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, False)
+                            
+                            # stats
                             write_time += t2
-                            written_shapes.append(vol_to_write.get_shape())
-
-                            outvolumes_trackers[outvolume_index].add_volume(vol_to_write)
-                            vols_written.append(j)
-                            if initialized:
-                                nb_file_initializations += 1
-                            nb_volumes_written += 1
-
-                        else:
-                            add_to_cache(cache, vol_to_write, buff_volume, data_to_write, outvolume.index, data_to_write_vol)
-                            is_complete, arr = complete(cache, vol_to_write, outvolume.index)
-
-                            if is_complete:
-                                # print("\n[writing] ", vol_to_write.p1, " ", vol_to_write.p2 ," in ", outvolume_index)
-                                if addition:
-                                    arr = arr +1
-                                t2, initialized = write_in_outfile(arr, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, True)
-                                write_time += t2
-
+                            
+                            if sanity_check:
+                                assert vol_to_write.get_shape() == data_to_write_vol.get_shape() and vol_to_write.get_shape() == data_to_write.shape
                                 written_shapes.append(vol_to_write.get_shape())
                                 outvolumes_trackers[outvolume_index].add_volume(vol_to_write)
-                                vols_written.append(j)
-                                volumes_written.append(vol_to_write.get_shape())
                                 if initialized:
                                     nb_file_initializations += 1
                                 nb_volumes_written += 1
+                                nb_oneshot_writes += 1
+
+                            # garbage collection
+                            vols_written.append(j)
+
+                        else:
+                            add_to_cache(cache, vol_to_write, buff_volume, data_to_write, outvolume.index, data_to_write_vol)
+
+                            # stats
+                            tmp_s = data_to_write_vol.get_shape()
+                            data_movement += tmp_s[0]*tmp_s[1]*tmp_s[2]
+
+                            is_complete, arr = complete(cache, vol_to_write, outvolume.index)
+                            if is_complete:
+                                # write
+                                if addition:
+                                    arr = arr +1
+                                t2, initialized = write_in_outfile(arr, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, True)
+
+                                # stats
+                                write_time += t2
+                                tmp_s = vol_to_write.get_shape()
+                                data_movement -= tmp_s[0]*tmp_s[1]*tmp_s[2]
+
+                                # garbage collection
+                                vols_written.append(j)
+
+                                if sanity_check:
+                                    written_shapes.append(vol_to_write.get_shape())
+                                    outvolumes_trackers[outvolume_index].add_volume(vol_to_write)
+                                    volumes_written.append(vol_to_write.get_shape())
+                                    if initialized:
+                                        nb_file_initializations += 1
+                                    nb_volumes_written += 1
+
+                        del data_to_write
                         
+            # garbage collection
             for j in vols_written:
                 del vols_to_write[j]
             arrays_dict[outvolume.index] = vols_to_write
 
+        # garbage collection
+        data.clear()
+        del data
+
+        # stats
+        data_movement -= buffer_size
+        voxel_tracker.add_voxels(data_movement)
+
     file_manager.close_infiles()
 
-    print(f"number of outfiles parts written in one shot: {nb_oneshot_writes}")
+    _monitor.stop()
+    ram_pile, swap_pile = _monitor.get_mem_piles()
 
-    for k, tracker in outvolumes_trackers.items():
-        assert tracker.is_complete(outvolumes[k].get_corners())
+    if sanity_check:
+        print(f"number of outfiles parts written in one shot: {nb_oneshot_writes}")
+        for k, tracker in outvolumes_trackers.items():
+            assert tracker.is_complete(outvolumes[k].get_corners())
 
-    # sanity check
-    if not nb_volumes_written == nb_volumes_to_write:
-        print("WARNING: All outfile parts have not been written")  
-    else:
-        print(f"Sanity check passed: All outfile parts have been written")
+        # sanity check
+        if not nb_volumes_written == nb_volumes_to_write:
+            print("WARNING: All outfile parts have not been written")  
+        else:
+            print(f"Sanity check passed: All outfile parts have been written")
 
-    # sanity check
-    miss = False
-    for k, v in cache.items():
-        if len(v) != 0:
-            miss = True
-            print(f'cache for outfile {k}, not empty')
-    if miss:
-        print("WARNING: Cache not empty at the end of process")    
-    else:
-        print(f"Sanity check passed: Empty cache at the end of process")
+        # sanity check
+        miss = False
+        for k, v in cache.items():
+            if len(v) != 0:
+                miss = True
+                print(f'cache for outfile {k}, not empty')
+        if miss:
+            print("WARNING: Cache not empty at the end of process")    
+        else:
+            print(f"Sanity check passed: Empty cache at the end of process")
 
-    # sanity check
-    if nb_file_initializations != len(outvolumes.keys()):
-        print("WARNING: number of initilized files is different than number outfiles")
-        print("Number initializations:", nb_file_initializations)
-        print("Number outfiles: ", len(outvolumes.keys()))
-    else:
-        print(f"Sanity check passed: Number initializations == Number outfiles ({nb_file_initializations}=={len(outvolumes.keys())})")
+        # sanity check
+        if nb_file_initializations != len(outvolumes.keys()):
+            print("WARNING: number of initilized files is different than number outfiles")
+            print("Number initializations:", nb_file_initializations)
+            print("Number outfiles: ", len(outvolumes.keys()))
+        else:
+            print(f"Sanity check passed: Number initializations == Number outfiles ({nb_file_initializations}=={len(outvolumes.keys())})")
 
-    print("\nShapes written:")
-    for row in volumes_written: 
-        print(row)
+        print("\nShapes written:")
+        for row in volumes_written: 
+            print(row)
+
+    print("\nMax nb voxels in RAM: ", voxel_tracker.get_max())
                 
     get_opened_files()
-    return tpp, read_time, write_time, [nb_outfile_openings, nb_outfile_inside_seeks, nb_infile_openings, nb_infile_inside_seeks]
+    return tpp, read_time, write_time, [nb_outfile_openings, nb_outfile_inside_seeks, nb_infile_openings, nb_infile_inside_seeks], voxel_tracker, [ram_pile, swap_pile]
