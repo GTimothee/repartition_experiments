@@ -314,9 +314,10 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
     nb_buffers = len(buffers.keys())
     print("nb buffers:", nb_buffers)
     for buffer_index in range(nb_buffers):
+        print("BUFFER ", buffer_index, '/', nb_buffers)
         buffer = buffers[buffer_index]
-        data, t1, nb_opening_seeks_tmp, nb_inside_seeks_tmp = read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpath, R, I)
         
+        data, t1, nb_opening_seeks_tmp, nb_inside_seeks_tmp = read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpath, R, I)
         data_shape = buffer.get_shape()
         buffer_size = data_shape[0]*data_shape[1]*data_shape[2]
         voxel_tracker.add_voxels(buffer_size)
@@ -374,7 +375,7 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
                                 if addition:
                                     arr = arr +1
                                 t2, initialized = write_in_outfile(arr, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, True)
-                                
+
                                 # stats
                                 write_time += t2
                                 tmp_s = vol_to_write.get_shape()
