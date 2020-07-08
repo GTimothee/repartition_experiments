@@ -160,7 +160,7 @@ def read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpa
         data_part = file_manager.read_data(i, j, k, input_dirpath, slices)
         t1 += time.time() - t_tmp
 
-        data[intersection_in_R] = data_part
+        data[intersection_in_R] = (data_part, Tracker())
     return data, t1, nb_opening_seeks_tmp, nb_inside_seeks_tmp
 
 
@@ -186,7 +186,7 @@ def equals(v1, v2):
     return True
 
 
-def add_to_cache(cache, vol_to_write, buff_volume, data_part, outvolume_index, overlap_vol_in_R):
+def add_to_cache(cache, vol_to_write, data_part, outvolume_index, overlap_vol_in_R):
     """
     cache: 
     ------
@@ -252,7 +252,6 @@ def complete(cache, vol_to_write, outvolume_index):
     return False, None
 
 
-# optimisation possible: stop la boucle quand tout buff_volume a été process -> ac un tracker
 def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_dirpath, addition, sanity_check=False):
     """
         cache: dict,
@@ -335,10 +334,18 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
 
             for j, vol_to_write in enumerate(vols_to_write):  
                 
-                for buff_volume, data_part in data.items():
+                all_keys = list(data.keys())
+                for datapart_volume in all_keys:
+                    data_metadata = data[datapart_volume]
+                    data_part, writing_tracker = data_metadata
 
-                    if hypercubes_overlap(buff_volume, vol_to_write):
-                        data_to_write_vol, data_to_write = get_data_to_write(vol_to_write, buff_volume, data_part)
+                    if hypercubes_overlap(datapart_volume, vol_to_write):
+                        data_to_write_vol, data_to_write = get_data_to_write(vol_to_write, datapart_volume, data_part)
+                        writing_tracker.add_volume(data_to_write_vol)
+                        if writing_tracker.is_complete(datapart_volume.get_corners()):
+                            del data_part
+                            del writing_tracker
+                            del data[datapart_volume]
 
                         if equals(vol_to_write, data_to_write_vol):  
                             
@@ -363,7 +370,7 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
                             vols_written.append(j)
 
                         else:
-                            add_to_cache(cache, vol_to_write, buff_volume, data_to_write, outvolume.index, data_to_write_vol)
+                            add_to_cache(cache, vol_to_write, data_to_write, outvolume.index, data_to_write_vol)
 
                             # stats
                             tmp_s = data_to_write_vol.get_shape()
@@ -393,7 +400,8 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
                                     nb_volumes_written += 1
 
                         del data_to_write
-                        
+
+
             # garbage collection
             for j in vols_written:
                 del vols_to_write[j]
