@@ -29,9 +29,6 @@ def get_arguments():
 
 
 if __name__ == "__main__":
-    """ 
-    python repartition_experiments/statistics.py /home/user/Documents/workspace/outputs/voxelstrace_case_1_4_3_keep_Jul_06_2020_02\:50\:32.csv /home/user/Documents/workspace/outputs/memorytrace_case_1_4_3_keep_Jul_06_2020_02\:50\:32.csv /home/user/Documents/workspace/outputs/case_1_4_3.png
-    """
     args = get_arguments()
 
     vox_data = pd.read_csv(args.voxels_filepath)
