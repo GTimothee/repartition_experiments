@@ -127,7 +127,7 @@ if __name__ == "__main__":
     from repartition_experiments.algorithms.utils import get_named_volumes, get_blocks_shape, numeric_to_3d_pos
     from repartition_experiments.algorithms.keep_algorithm import get_input_aggregate
 
-    if args.cases_config != None:
+    if args.cases_config != "none":
         compute_for_case(args)
     else:
         # run = {
@@ -139,16 +139,40 @@ if __name__ == "__main__":
         #     "ref": 3
         # }
         
-        run = {
+        runs = [{
             "R": [3500,3500,3500],
-            "I": [350,875,350],
-            "O": [500,875,500],
-            "B": [],
-            "volumestokeep": [],
-            "ref": 5
-        }
-        R, O, I, B, volumestokeep = tuple(run["R"]), tuple(run["O"]), tuple(run["I"]), tuple(run["B"]), run["volumestokeep"]
-        lambd = get_input_aggregate(O, I)
-        B, volumestokeep = (lambd[0],lambd[1],lambd[2]), list(range(1,8))
-        compute_memory(R, O, I, B, volumestokeep)
+            "I": [350,350,350],
+            "O": [500,500,500],
+            "B": [500,700,700],
+            "volumestokeep": [1,2,3],
+            "ref": -1
+        },{
+            "R": [3500,3500,3500],
+            "I": [350,350,350],
+            "O": [500,500,500],
+            "B": [350,700,700],
+            "volumestokeep": [1,2,3],
+            "ref": -1
+        },
+        {
+            "R": [3500,3500,3500],
+            "I": [350,350,350],
+            "O": [500,500,500],
+            "B": [175,700,700],
+            "volumestokeep": [1,2,3],
+            "ref": -1
+        },
+        {
+            "R": [3500,3500,3500],
+            "I": [350,350,350],
+            "O": [500,500,500],
+            "B": [1,500,700],
+            "volumestokeep": [1],
+            "ref": -1
+        }]
+        for run in runs:
+            R, O, I, B, volumestokeep = tuple(run["R"]), tuple(run["O"]), tuple(run["I"]), tuple(run["B"]), run["volumestokeep"]
+            # lambd = get_input_aggregate(O, I)
+            # B, volumestokeep = (lambd[0],lambd[1],lambd[2]), list(range(1,8))
+            compute_memory(R, O, I, B, volumestokeep)
     
