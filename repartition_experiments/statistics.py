@@ -50,8 +50,8 @@ def compute_graph_baseline(memory_filepath, out_filepath):
     mem_data['ram'] = mem_data['ram'].apply(lambda x: x - start_ram)
 
     fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(10, 5), sharex=True)
-    
-    mem_data.plot(title='virtual memory consumption', kind='bar')
+    plt.subplot(1,1,1)
+    mem_data.plot(title='virtual memory consumption', ax=plt.gca(), kind='bar')
     plt.gca().set(xlabel='time (5s interval)', ylabel='RAM used (MB)')
 
     fig.savefig(out_filepath)
@@ -84,7 +84,7 @@ if __name__ == "__main__":
 
     for key in list(memory_files.keys()):
         memory_filepath = memory_files[key]
-        
+
         if key in voxels_files.keys():
             voxels_filepath = voxels_files[key]
             out_filepath = os.path.join(args.outdir_path, f'graph_{key[0]}_{key[1]}_{key[2]}_{key[3]}.png')
