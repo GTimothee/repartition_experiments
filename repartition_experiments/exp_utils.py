@@ -43,7 +43,7 @@ def create_empty_dir(dir_path):
         raise OSError()
 
 
-def verify_results(outdir_path, original_array_path, R, O, file_format, addition):
+def verify_results(outdir_path, original_array_path, R, O, file_format, addition, split_merge=False):
     """ Compare content of each output file against expected subarrays from original array.
     WARNING: this function opens all output files + the original array
     """
@@ -57,6 +57,10 @@ def verify_results(outdir_path, original_array_path, R, O, file_format, addition
     partition = get_blocks_shape(R, O)
     orig_arr_data = file_manager.read_all(original_array_path)
     all_true = True
+
+    if split_merge:
+        result_arrpath = os.path.join(outdir_path, "0_0_0.hdf5")
+        return file_manager.check_split_merge(original_array_path, result_arrpath)
 
     for i in range(partition[0]):
         for j in range(partition[1]):

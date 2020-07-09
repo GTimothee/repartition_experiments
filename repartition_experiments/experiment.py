@@ -165,7 +165,10 @@ def experiment(args):
         # verify and clean output
         print("verifying results....")
         if args.verify:
-            success = verify_results(outdir_path, origarr_filepath, R, O, args.file_format, args.addition)
+            split_merge = False
+            if args.case_name == "case 3":
+                split_merge = True 
+            success = verify_results(outdir_path, origarr_filepath, R, O, args.file_format, args.addition, split_merge)
         else:
             success = True
 

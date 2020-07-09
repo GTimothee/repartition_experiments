@@ -1,6 +1,7 @@
 import atexit, os, h5py, glob, logging
 import numpy as np
 from h5py import Dataset
+import dask.array as da
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__ + 'hdf5_filemanager')
@@ -227,3 +228,13 @@ class HDF5_manager:
         self.inspect_h5py_file(f)
 
         return f[dataset_key]
+
+
+    def check_split_merge(self, filepath1, filepath2):
+        f = h5py.File(filepath1)
+        f2 = h5py.File(filepath2)
+
+        arr1 = da.from_array(f['/data'])
+        arr2 = da.from_array(f2['/data'])
+
+        return da.all_close(arr1, arr2)
