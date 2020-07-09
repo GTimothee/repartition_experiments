@@ -1,4 +1,4 @@
-import os
+import os, csv
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -65,6 +65,7 @@ if __name__ == "__main__":
     
     memory_files = dict()
     voxels_files = dict()
+    results = list()
     workdir = os.getcwd()
     os.chdir(args.indir_path)
     for filename in glob.glob("*.csv"):
@@ -80,8 +81,12 @@ if __name__ == "__main__":
             model = data[5]
             key = (data[2],data[3],data[4],model)
             voxels_files[key] = os.path.join(args.indir_path, filename)
+        elif "results" in filename:
+            results.append(os.path.join(args.indir_path, filename))
+
     os.chdir(workdir)
 
+    # graphs generation
     for key in list(memory_files.keys()):
         memory_filepath = memory_files[key]
 
@@ -95,4 +100,15 @@ if __name__ == "__main__":
             print("creating ", out_filepath)
             compute_graph_baseline(memory_filepath, out_filepath)
 
-    
+    # results
+    header = None
+    rows = None
+    for filepath in results:
+        df = pd.read_csv(filepath)
+        if not isinstance(rows, pd.DataFrame):
+            rows = df
+        else:
+            rows = rows.append(df)
+
+    outfilepath = os.path.join(args.outdir_path, 'results.csv')
+    rows.to_csv(outfilepath)
