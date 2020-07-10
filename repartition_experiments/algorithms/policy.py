@@ -1,4 +1,4 @@
-import math, copy, logging
+import math, copy, logging,sys
 from repartition_experiments.algorithms.utils import *
 from repartition_experiments.algorithms.tracker import Tracker
 logger = logging.getLogger(__name__)
@@ -142,16 +142,32 @@ def merge_cached_volumes(arrays_dict, volumestokeep, outfiles_volumes):
         #     v.print()
         
         for remainder_index in merge_rules.keys():
-            for i in range(len(volumes)):
-                
-                name = volumes[i].index
-                index = int(name.split('_')[0])
-                if index == remainder_index:
-                    volumetomerge = volumes.pop(i)
-                    merge_directions = merge_rules[index]
-                    new_volume = apply_merge(volumetomerge, volumes, merge_directions)  # also pops the volumes that are merged with
-                    volumes.append(new_volume)
+            i = 0
+            while True:                    
+                if i == len(volumes):
+                    for v in volumes:
+                        if not "merged" in v.index and int(v.index.split('_')[0]) == remainder_index:
+                            print("----------tmp")
+                            print(i, '/', len(volumes))
+                            for v in volumes:
+                                v.print()
+                            assert False
                     break
+
+                if not "merged" in volumes[i].index:
+                    name = volumes[i].index
+                    index = int(name.split('_')[0])
+                    if index == remainder_index:
+                        volumetomerge = volumes.pop(i)
+                        merge_directions = merge_rules[index]
+                        new_volume = apply_merge(volumetomerge, volumes, merge_directions)  # also pops the volumes that are merged with
+                        volumes.append(new_volume)
+                        i = 0 # restart count because we dont know from where and how many volumes have been pop
+                        # break
+                    else:
+                        i += 1
+                else:
+                    i += 1
 
         tracker = Tracker()
         for v in volumes:
@@ -166,6 +182,11 @@ def merge_cached_volumes(arrays_dict, volumestokeep, outfiles_volumes):
             for v in volumes:
                 v.print()
             raise e
+        
+        # print(f'volumes after:')
+        # for v in volumes:
+        #     v.print()
+        # print("number volumes: ", len(volumes))
 
         arrays_dict[outfileindex] = volumes
 
@@ -503,6 +524,8 @@ def compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partititon
                 nb_inside_seeks += 1
             else:
                 pass
+
+    # sys.exit()
 
     logger.debug("-----------------End Compute zones-----------------")
     return arrays_dict, buffer_to_outfiles, nb_file_openings, nb_inside_seeks

@@ -5,7 +5,7 @@ from repartition_experiments.algorithms.utils import get_partition, get_named_vo
 from repartition_experiments.algorithms.tracker import Tracker
 from repartition_experiments.algorithms.utils import get_opened_files
 from repartition_experiments.algorithms.voxel_tracker import VoxelTracker
-from monitor.monitor import Monitor
+
 
 def get_input_aggregate(O, I):
     lambd = list()
@@ -306,6 +306,7 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
             outvolumes_trackers[index] = Tracker()
     
     voxel_tracker = VoxelTracker()
+    from monitor.monitor import Monitor
     _monitor = Monitor(enable_print=False, enable_log=False, save_data=True)
     _monitor.disable_clearconsole()
     _monitor.set_delay(5)
@@ -318,6 +319,7 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
         
         data, t1, nb_opening_seeks_tmp, nb_inside_seeks_tmp = read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpath, R, I)
         data_shape = buffer.get_shape()
+        print("[read] buffer of shape : ", data_shape)
         buffer_size = data_shape[0]*data_shape[1]*data_shape[2]
         voxel_tracker.add_voxels(buffer_size)
         data_movement = 0
@@ -353,6 +355,7 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
                             if addition:
                                 data_to_write = data_to_write +1
                             t2, initialized = write_in_outfile(data_to_write, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, False)
+                            print("[write] data_to_write of shape : ", data_to_write.shape)
                             
                             # stats
                             write_time += t2
@@ -371,6 +374,7 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
 
                         else:
                             add_to_cache(cache, vol_to_write, data_to_write, outvolume.index, data_to_write_vol)
+                            print("[cache+] add data_to_write of shape : ", data_to_write.shape)
 
                             # stats
                             tmp_s = data_to_write_vol.get_shape()
@@ -382,6 +386,7 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
                                 if addition:
                                     arr = arr +1
                                 t2, initialized = write_in_outfile(arr, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, True)
+                                print("[cache-] remove arr of shape : ", arr.shape)
 
                                 # stats
                                 write_time += t2
@@ -414,6 +419,7 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
         # stats
         data_movement -= buffer_size
         voxel_tracker.add_voxels(data_movement)
+        print('[tracker] end of buffer -> nb voxels:', voxel_tracker.nb_voxels)
 
     file_manager.close_infiles()
 

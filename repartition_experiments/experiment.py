@@ -11,7 +11,7 @@ def flush_cache():
 def get_arguments():
     """ Get arguments from console command.
     """
-    parser = argparse.ArgumentParser(description="This experiment is referenced as experiment 3 in Guédon et al.")
+    parser = argparse.ArgumentParser(description="")
     
     parser.add_argument('paths_config', 
         action='store', 
@@ -87,6 +87,13 @@ def experiment(args):
     Notes: 
     - data type is np.float16
     """
+    paths = load_json(args.paths_config)
+
+    for k, v in paths.items():
+        if "PYTHONPATH" in k:
+            sys.path.insert(0, v)
+
+    from monitor.monitor import Monitor
     from repartition_experiments.exp_utils import create_empty_dir, verify_results
     from repartition_experiments.algorithms.baseline_algorithm import baseline_rechunk
     from repartition_experiments.algorithms.keep_algorithm import keep_algorithm, get_input_aggregate
@@ -265,13 +272,7 @@ def write_voxel_history(voxel_tracker, ref, args):
 
 if __name__ == "__main__":
     args = get_arguments()
-    paths = load_json(args.paths_config)
-
-    for k, v in paths.items():
-        if "PYTHONPATH" in k:
-            sys.path.insert(0, v)
-
-    from monitor.monitor import Monitor
+    
     
     results = experiment(args)
     write_results(results, args)

@@ -211,6 +211,7 @@ class HDF5_manager:
             return True
 
         if not os.path.isfile(file_path):
+            print("looking for ", file_path)
             raise FileNotFoundError()
 
         if not check_extension(file_path, 'hdf5'):

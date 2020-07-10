@@ -287,6 +287,8 @@ def apply_merge(volume, volumes, merge_directions):
         if v2 != None:
             return merge_volumes(volume, v2)
         else:
+            _id = volume.index.split('_')[0]
+            volume.index = str(_id) + '_merged'
             return volume
 
     def get_volume(lowcorner):

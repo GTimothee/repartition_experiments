@@ -59,9 +59,7 @@ def load_json(filepath):
         return json.load(f)
 
 
-if __name__ == "__main__":
-
-    args = get_arguments()
+def create_case(args):
     paths = load_json(args.paths_config)
 
     for k, v in paths.items():
@@ -80,6 +78,7 @@ if __name__ == "__main__":
     indir_path, outdir_path = os.path.join(paths["ssd_path"], 'indir'), os.path.join(paths["ssd_path"], 'outdir')
     if not args.splits_only:
         origarr_filepath = create_input_file(R, paths["ssd_path"], fm)
+        print("creating input file...", origarr_filepath)
         R_size = R[0]*R[1]*R[2]
         bpv = 2
         create_empty_dir(indir_path)
@@ -88,3 +87,9 @@ if __name__ == "__main__":
     else:
         partition = get_blocks_shape(R, I)
         create_input_chunks(I, partition, indir_path, args.file_format)
+
+
+if __name__ == "__main__":
+
+    args = get_arguments()
+    create_case(args)

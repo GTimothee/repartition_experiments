@@ -1,4 +1,4 @@
-import os, csv, sys, time
+import os, csv, sys, time, pytest
 import numpy as np
 
 from ..exp_utils import create_empty_dir, verify_results
@@ -8,10 +8,12 @@ from ..algorithms.clustered_writes import clustered_writes
 from ..algorithms.utils import get_file_manager
 from ..experiment import experiment, write_results, load_json
 from ..algorithms.baseline_algorithm import baseline_rechunk
+from ..create_case import create_case
 
 def flush_cache():
     os.system('sync; echo 3 | sudo tee /proc/sys/vm/drop_caches') 
 
+# note to self: need to ulimit -n 10000
 
 class Args:
     def __init__(self, case_name, model):
@@ -19,20 +21,61 @@ class Args:
         self.paths_config = os.path.join(test_dir, 'paths_config.json')
         self.cases_config = os.path.join(test_dir, 'cases_config.json')
         self.file_format = 'HDF5'
-        self.overwrite = True
+        self.overwrite = False
         self.addition = False
+        self.verify = True
 
         self.model = model
         self.case_name = case_name
 
 
-def test_experiment_keep():
-    results = experiment(Args("case 1_0", "keep"))
+class ArgsCreateCase:
+    def __init__(self, R, I ):
+        self.R = R 
+        self.I = I 
+        self.file_format = 'HDF5'
+        test_dir = os.path.dirname(os.path.abspath(__file__))
+        self.paths_config = os.path.join(test_dir, 'paths_config.json')
+        self.splits_only = False
+
+
+def _create_case(args):
+    cases = load_json(args.cases_config)
+    case = cases[args.case_name]
+    run = case[0]
+    argscc = ArgsCreateCase(str(run["R"][0]) + "_" + str(run["R"][1]) + "_" + str(run["R"][2]), str(run["I"][0]) + "_" + str(run["I"][1]) + "_" + str(run["I"][2]))
+    create_case(argscc)
+
+
+@pytest.fixture(params=[
+    "case 1_0",
+    "case 1_1",
+    "case 1_2",
+    "case 1_3",
+    "case 1_4",
+    "case 1_5",
+    "case 1_6",
+    "case 1_7",
+    "case 2_0",
+    "case 2_1",
+    "case 2_2",
+    "case 2_3",
+    "case 2_4",
+    "case 2_5"
+])
+def case_name(request):
+    return request.param 
+
+
+def test_experiment_keep(case_name):
+    args = Args(case_name, "keep")
+    _create_case(args)
+    results = experiment(args)
     for r in results:
         success = r[-1]
         assert success
 
-    csv_path = write_results(results, Args("case 1_0", "keep"))
+    csv_path = write_results(results, args)
     nb_lines = 0
     with open(csv_path, "r") as f:
         reader = csv.reader(f, delimiter=",")
@@ -40,22 +83,11 @@ def test_experiment_keep():
             nb_lines += 1
     assert nb_lines == (len(results) + 1)
 
-    results = experiment(Args("case 2", "keep"))
-    for r in results:
-        success = r[-1]
-        assert success
-
-    csv_path = write_results(results, Args("case 2", "keep"))
-    nb_lines = 0
-    with open(csv_path, "r") as f:
-        reader = csv.reader(f, delimiter=",")
-        for i, line in enumerate(reader):
-            nb_lines += 1
-    assert nb_lines == (len(results) + 1)
-
-    arggs = Args("case 2", "keep")
+    # same with addition before write
+    arggs = Args(case_name, "keep")
     arggs.addition = True
     assert arggs.addition == True
+    _create_case(arggs)
     results = experiment(arggs)
     for r in results:
         success = r[-1]
@@ -63,11 +95,13 @@ def test_experiment_keep():
 
 
 def test_experiment_baseline():
+    _create_case(Args("case 1_0", "baseline"))
     results = experiment(Args("case 1_0", "baseline"))
     for r in results:
         success = r[-1]
         assert success
 
+    _create_case(Args("case 2", "baseline"))
     results = experiment(Args("case 2", "baseline"))
     for r in results:
         success = r[-1]
@@ -75,9 +109,11 @@ def test_experiment_baseline():
 
 
 def test_compare1():
+    _create_case(Args("case 1_1", "keep"))
     flush_cache()
     results_keep = experiment(Args("case 1_1", "keep"))
 
+    _create_case(Args("case 1_1", "baseline"))
     flush_cache()
     results_baseline = experiment(Args("case 1_1", "baseline"))
 
@@ -99,9 +135,11 @@ def test_compare1():
 
 
 def test_compare2():
+    _create_case(Args("case 1_2", "keep"))
     flush_cache()
     results_keep = experiment(Args("case 1_2", "keep"))
 
+    _create_case(Args("case 1_2", "baseline"))
     flush_cache()
     results_baseline = experiment(Args("case 1_2", "baseline"))
 
