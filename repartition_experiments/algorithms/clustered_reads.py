@@ -1,5 +1,8 @@
+import os, h5py, time
 import numpy as np
+
 from .clustered_writes import get_entity_sizes, get_strategy, compute_buffers
+from .utils import get_overlap_subarray, Volume, get_file_manager, get_blocks_shape
 
 
 def clustered_reads(outdir_path, R, cs, bpv, m, ff, indir_path, dtype=np.float16):
@@ -14,6 +17,7 @@ def clustered_reads(outdir_path, R, cs, bpv, m, ff, indir_path, dtype=np.float16
 
     out_filepath = os.path.join(outdir_path, 'merged.hdf5')
     file_manager = get_file_manager(ff)
+    file_manager.clean_directory(outdir_path)
 
     partition = get_blocks_shape(R, cs)
     bs, brs, bss = get_entity_sizes(cs, bpv, partition)
@@ -48,7 +52,7 @@ def clustered_reads(outdir_path, R, cs, bpv, m, ff, indir_path, dtype=np.float16
                     _3d_pos = (start_3d_pos[0] + i, start_3d_pos[1] + j, start_3d_pos[2] + k)
                     print(f'Loading input file: ', _3d_pos)
                     rt = time.time()
-                    data = read_data(_3d_pos[0], _3d_pos[1], _3d_pos[2], indir_path, None)
+                    data = file_manager.read_data(_3d_pos[0], _3d_pos[1], _3d_pos[2], indir_path, None)
                     read_time += time.time() - rt 
                     buffer_data[i*cs[0]:(i+1)*cs[0], j*cs[0]:(j+1)*cs[1], k*cs[2]:(k+1)*cs[2]] = data
 
@@ -65,11 +69,28 @@ def clustered_reads(outdir_path, R, cs, bpv, m, ff, indir_path, dtype=np.float16
             new_shape = tuple([max(dset.shape[i], p2[i]) for i in range(3)])
             dset.resize(new_shape)
             s = buffer.get_slices()
-
             wt = 0
             dset[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = buffer_data
             write_time += time.time() - wt 
             nb_outfiles_opening += 1
+
+            # compute seeks
+            dset_volume = Volume(0, (0,0,0), new_shape)
+            pair = get_overlap_subarray(buffer, dset_volume)  # overlap in R
+            p1, p2 = tuple(pair[0]), tuple(pair[1])
+            intersection_vol = Volume(0, p1, p2)
+
+            s = intersection_vol.get_shape()
+            tmp = 0
+            if s[2] != new_shape[2]:
+                tmp += s[0]*s[1]
+            elif s[1] != new_shape[1]:
+                tmp += s[0]
+            elif s[0] != new_shape[0]:
+                tmp += 1
+            else:
+                pass
+            nb_outfiles_seeks += tmp
 
     f.close()
     return read_time, write_time, [nb_outfiles_opening, nb_outfiles_seeks, nb_infiles_opening, nb_infiles_seeks]

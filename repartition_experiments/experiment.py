@@ -106,6 +106,7 @@ def experiment(args):
     from repartition_experiments.algorithms.baseline_algorithm import baseline_rechunk
     from repartition_experiments.algorithms.keep_algorithm import keep_algorithm, get_input_aggregate
     from repartition_experiments.algorithms.utils import get_file_manager
+    from repartition_experiments.algorithms.clustered_reads import clustered_reads
 
     paths = load_json(args.paths_config)
     cases = load_json(args.cases_config)
@@ -300,8 +301,6 @@ def write_voxel_history(voxel_tracker, ref, args):
 
 if __name__ == "__main__":
     args = get_arguments()
-    
-    
     results = experiment(args)
     write_results(results, args)
     
