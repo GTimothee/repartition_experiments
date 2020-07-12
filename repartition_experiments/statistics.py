@@ -1,4 +1,4 @@
-import os, csv
+import os, csv, math
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -42,13 +42,20 @@ def compute_graph_keep(voxels_filepath, memory_filepath, out_filepath):
     start_ram = mem_data.iloc[0][0]
     mem_data['ram'] = mem_data['ram'].apply(lambda x: x - start_ram)
 
-    fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(10, 10), sharex=True)
+    fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True)
     plt.subplot(2,1,1)
     vox_data.plot(title='cache RAM consumption', ax=plt.gca())
     plt.gca().set(xlabel='time', ylabel='RAM used (MB)')
+    # plt.gca().set_xticks(plt.gca().get_xticks()[::2])
+    # plt.gca().set_xticklabels(plt.gca().get_xticks())
+
     mem_data.plot(title='virtual memory consumption', ax=axes[1], kind='bar')
     axes[1].set(xlabel='time (5s interval)', ylabel='RAM used (MB)')
+    interval = math.floor(len(mem_data.index)/10)
+    axes[1].set_xticks(axes[1].get_xticks()[::interval])
+    axes[1].set_xticklabels(axes[1].get_xticks(), rotation=0)
 
+    fig.tight_layout()
     fig.savefig(out_filepath)
 
 
@@ -59,11 +66,15 @@ def compute_graph_baseline(memory_filepath, out_filepath):
     start_ram = mem_data.iloc[0][0]
     mem_data['ram'] = mem_data['ram'].apply(lambda x: x - start_ram)
 
-    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(10, 5), sharex=True)
+    fig, axes = plt.subplots(nrows=1, ncols=1, sharex=True)
     plt.subplot(1,1,1)
     mem_data.plot(title='virtual memory consumption', ax=plt.gca(), kind='bar')
     plt.gca().set(xlabel='time (5s interval)', ylabel='RAM used (MB)')
+    interval = math.floor(len(mem_data.index)/10)
+    plt.gca().set_xticks(plt.gca().get_xticks()[::interval])
+    plt.gca().set_xticklabels(plt.gca().get_xticks(), rotation=0)
 
+    fig.tight_layout()
     fig.savefig(out_filepath)
 
 

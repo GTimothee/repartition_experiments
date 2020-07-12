@@ -58,6 +58,14 @@ def get_arguments():
         default=False,
         help='Verify results. Default is False for benchmarks because it creates overhead in RAM consumption.')
 
+    parser.add_argument('-m', '--clustered_mem',
+        action='store',
+        type=int,
+        dest='clustered_mem',
+        default=15,
+        help='in gigabytes'
+    )
+
     return parser.parse_args()
 
 
@@ -163,6 +171,26 @@ def experiment(args):
             tpp, tread, twrite, seeks_data, voxel_tracker, piles = keep_algorithm(R, O, I, B, volumestokeep, args.file_format, outdir_path, indir_path, args.addition)
             t = time.time() - t - tpp
             max_voxels = voxel_tracker.get_max()
+            print(f"Processing time: {t}")
+            print(f"Read time: {tread}")
+            print(f"Write time: {twrite}")
+        elif args.model == "clustered":
+            tpp = 0
+            m = args.clustered_mem * 1000000000 # one GIG
+            
+            _monitor = Monitor(enable_print=False, enable_log=False, save_data=True)
+            _monitor.disable_clearconsole()
+            _monitor.set_delay(15)
+            _monitor.start()
+            t = time.time()   
+            tread, twrite, seeks_data = clustered_reads(outdir_path, R, I, bpv, m, args.file_format, indir_path)
+            t = time.time() - t - tpp
+            _monitor.stop()
+            piles = _monitor.get_mem_piles()
+
+            voxel_tracker = None
+            max_voxels = 0
+
             print(f"Processing time: {t}")
             print(f"Read time: {tread}")
             print(f"Write time: {twrite}")

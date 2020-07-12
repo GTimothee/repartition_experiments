@@ -420,3 +420,28 @@ def get_file_manager(file_format):
     else:
         print("File format not supported yet. Aborting...")
         raise ValueError()
+
+
+def to_basis(v, basis):
+    """ Create a new volume from volume v with basis changed from R to basis
+
+    Arguments: 
+    ----------
+        v: Volume obj
+        basis: Volume obj
+    """
+    v2 = Volume(0, v.p1, v.p2)
+    offset = ((-1) * basis.p1[0], (-1) * basis.p1[1], (-1) * basis.p1[2])
+    v2.add_offset(offset)
+
+    # sanity check
+    p1, p2 = v2.get_corners()
+    for p in [p1, p2]:
+        for e in p:
+            if e < 0:
+                print("Volume in basis R:")
+                v.print()
+                print("Basis:")
+                basis.print()
+                raise ValueError("An error occured while changing from basis R to new basis")
+    return v2

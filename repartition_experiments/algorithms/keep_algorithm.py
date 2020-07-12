@@ -1,7 +1,7 @@
 import math, time, csv
 import numpy as np
 from repartition_experiments.algorithms.policy import compute_zones
-from repartition_experiments.algorithms.utils import get_partition, get_named_volumes, get_overlap_subarray, get_file_manager, numeric_to_3d_pos, Volume, hypercubes_overlap, included_in, get_volumes
+from repartition_experiments.algorithms.utils import get_partition, get_named_volumes, get_overlap_subarray, get_file_manager, numeric_to_3d_pos, Volume, hypercubes_overlap, included_in, get_volumes, to_basis
 from repartition_experiments.algorithms.tracker import Tracker
 from repartition_experiments.algorithms.utils import get_opened_files
 from repartition_experiments.algorithms.voxel_tracker import VoxelTracker
@@ -73,31 +73,6 @@ def get_buffers_to_infiles(buffers, involumes):
                 buffers_to_infiles[buffer_index].append(involume.index)
 
     return buffers_to_infiles
-
-
-def to_basis(v, basis):
-    """ Create a new volume from volume v with basis changed from R to basis
-
-    Arguments: 
-    ----------
-        v: Volume obj
-        basis: Volume obj
-    """
-    v2 = Volume(0, v.p1, v.p2)
-    offset = ((-1) * basis.p1[0], (-1) * basis.p1[1], (-1) * basis.p1[2])
-    v2.add_offset(offset)
-
-    # sanity check
-    p1, p2 = v2.get_corners()
-    for p in [p1, p2]:
-        for e in p:
-            if e < 0:
-                print("Volume in basis R:")
-                v.print()
-                print("Basis:")
-                basis.print()
-                raise ValueError("An error occured while changing from basis R to new basis")
-    return v2
 
 
 def read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpath, R, I):

@@ -79,8 +79,8 @@ def create_case(args):
     if not args.splits_only:
         origarr_filepath = create_input_file(R, paths["ssd_path"], fm)
         print("creating input file...", origarr_filepath)
-        R_size = R[0]*R[1]*R[2]
         bpv = 2
+        R_size = R[0]*R[1]*R[2]*bpv
         create_empty_dir(indir_path)
         create_empty_dir(outdir_path)
         clustered_writes(origarr_filepath, R, I, bpv, R_size, args.file_format, indir_path)
