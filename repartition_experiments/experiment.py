@@ -60,9 +60,9 @@ def get_arguments():
 
     parser.add_argument('-m', '--clustered_mem',
         action='store',
-        type=int,
+        type=float,
         dest='clustered_mem',
-        default=15,
+        default=15.0,
         help='in gigabytes'
     )
 
@@ -135,7 +135,11 @@ def experiment(args):
 
         for shape_to_test in [O, I, B]:
             for dim in range(3):
-                assert R[dim] % shape_to_test[dim] == 0
+                try:
+                    assert R[dim] % shape_to_test[dim] == 0
+                except Exception as e:
+                    print(R, shape_to_test)
+                    print(e)
 
     random.shuffle(case)
     results = list()
@@ -207,6 +211,7 @@ def experiment(args):
             success = verify_results(outdir_path, origarr_filepath, R, O, args.file_format, args.addition, split_merge)
         else:
             success = True
+        print("successful run: ", success)
 
         results.append([
             args.case_name,

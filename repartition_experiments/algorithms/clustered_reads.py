@@ -15,7 +15,7 @@ def clustered_reads(outdir_path, R, cs, bpv, m, ff, indir_path, dtype=np.float16
     if m < cs[0]*cs[1]*cs[2]*bpv:
         raise ValueError("m not big enough to store one block!")
 
-    out_filepath = os.path.join(outdir_path, 'merged.hdf5')
+    out_filepath = os.path.join(outdir_path, '0_0_0.hdf5')
     file_manager = get_file_manager(ff)
     file_manager.clean_directory(outdir_path)
 
@@ -54,24 +54,34 @@ def clustered_reads(outdir_path, R, cs, bpv, m, ff, indir_path, dtype=np.float16
                     rt = time.time()
                     data = file_manager.read_data(_3d_pos[0], _3d_pos[1], _3d_pos[2], indir_path, None)
                     read_time += time.time() - rt 
-                    buffer_data[i*cs[0]:(i+1)*cs[0], j*cs[0]:(j+1)*cs[1], k*cs[2]:(k+1)*cs[2]] = data
+
+                    try:
+                        buffer_data[i*cs[0]:(i+1)*cs[0], j*cs[1]:(j+1)*cs[1], k*cs[2]:(k+1)*cs[2]] = data
+                    except Exception as e:
+                        print(i,j,k)
+                        print(i*cs[0],(i+1)*cs[0], j*cs[0],(j+1)*cs[1], k*cs[2],(k+1)*cs[2])
+                        print(buffer_data.shape)
+                        print(data.shape)
+                        raise Exception(e)
 
                     nb_infiles_opening += 1
 
         # write buffer
         print("Writing buffer...")
         if dset == None:
-            wt = 0
-            dset = f.create_dataset("/data", shape, data=buffer_data, maxshape=R)
-            write_time += time.time() - wt 
+            wt = time.time()
+            dset = f.create_dataset("/data", shape, data=buffer_data, maxshape=R, chunks=None, compression=None)
+            wt = time.time() - wt
+            write_time += wt
             nb_outfiles_opening += 1
         else:
             new_shape = tuple([max(dset.shape[i], p2[i]) for i in range(3)])
             dset.resize(new_shape)
             s = buffer.get_slices()
-            wt = 0
+            wt = time.time()
             dset[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = buffer_data
-            write_time += time.time() - wt 
+            wt = time.time() - wt
+            write_time += wt
             nb_outfiles_opening += 1
 
             # compute seeks
