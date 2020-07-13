@@ -102,6 +102,11 @@ def compute_graph_results(results_path, outdir_path, title_main, title_seeks):
     baseline_means = df_baseline.groupby('run_ref').mean()
     baseline_stds = df_baseline.groupby('run_ref').std()
 
+    if "clustered" in models:
+        df_clustered = df.loc[df["model"]=="clustered"]
+        clustered_means = df_clustered.groupby('run_ref').mean()
+        clustered_stds = df_clustered.groupby('run_ref').std()
+
     # data for graph
     x = np.arange(len(references))  # the label locations
     width = 0.20  # the width of the bars
@@ -110,18 +115,32 @@ def compute_graph_results(results_path, outdir_path, title_main, title_seeks):
     baseline_overhead_bottom = baseline_prepross_bottom + baseline_means['preprocess_time']
     keep_prepross_bottom = keep_means["write_time"] + keep_means['read_time']
     keep_overhead_bottom = keep_prepross_bottom + keep_means['preprocess_time']
+    if "clustered" in models:
+        clus_prepross_bottom = clustered_means["write_time"] + clustered_means['read_time']
+        clus_overhead_bottom = clus_prepross_bottom + clustered_means['preprocess_time']
 
     # graph
-    fig, ax = plt.subplots(figsize=(10, 5))
-    _ = ax.bar(x - width/2, baseline_means["read_time"], width, yerr=baseline_stds['read_time'], label='read time (baseline)', color=['tab:blue'])
-    _ = ax.bar(x - width/2, baseline_means["write_time"], width, bottom=baseline_means["read_time"], yerr=baseline_stds['write_time'], label='write time (baseline)', color=['tab:green'])
-    _ = ax.bar(x - width/2, baseline_means["preprocess_time"], width, bottom=baseline_prepross_bottom, yerr=baseline_stds['preprocess_time'], label='preprocessing time (baseline)', color=['tab:orange'])
-    _ = ax.bar(x - width/2, baseline_means["overhead"], width, bottom=baseline_overhead_bottom, yerr=baseline_stds['overhead'], label='overhead time (baseline)', color=['tab:red'])
+    if "clustered" in models:
+        width_step = [width, width]
+    else:
+        width_step = [width /2, width /2]
 
-    _ = ax.bar(x + width/2, keep_means["read_time"], width, yerr=keep_stds['read_time'], label='read time (keep)', color=['tab:blue'], hatch='//')
-    _ = ax.bar(x + width/2, keep_means["write_time"], width, bottom=keep_means['read_time'], yerr=keep_stds['write_time'], label='write time (keep)', color=['tab:green'], hatch='//')
-    _ = ax.bar(x + width/2, keep_means["preprocess_time"], width, bottom=keep_prepross_bottom, yerr=keep_stds['preprocess_time'], label='preprocessing time (keep)', color=['tab:orange'], hatch='//')
-    _ = ax.bar(x + width/2, keep_means["overhead"], width, bottom=keep_overhead_bottom, yerr=keep_stds['overhead'], label='overhead time (keep)', color=['tab:red'], hatch='//')
+    fig, ax = plt.subplots(figsize=(10, 5))
+    _ = ax.bar(x - width_step[0], baseline_means["read_time"], width, yerr=baseline_stds['read_time'], label='read time (baseline)', color=['tab:blue'])
+    _ = ax.bar(x - width_step[0], baseline_means["write_time"], width, bottom=baseline_means["read_time"], yerr=baseline_stds['write_time'], label='write time (baseline)', color=['tab:green'])
+    _ = ax.bar(x - width_step[0], baseline_means["preprocess_time"], width, bottom=baseline_prepross_bottom, yerr=baseline_stds['preprocess_time'], label='preprocessing time (baseline)', color=['tab:orange'])
+    _ = ax.bar(x - width_step[0], baseline_means["overhead"], width, bottom=baseline_overhead_bottom, yerr=baseline_stds['overhead'], label='overhead time (baseline)', color=['tab:red'])
+
+    if "clustered" in models:
+        _ = ax.bar(x, clustered_means["read_time"], width, yerr=clustered_stds['read_time'], label='read time (baseline)', color=['tab:blue'], hatch='/')
+        _ = ax.bar(x, clustered_means["write_time"], width, bottom=clustered_means["read_time"], yerr=clustered_stds['write_time'], label='write time (baseline)', color=['tab:green'], hatch='/')
+        _ = ax.bar(x, clustered_means["preprocess_time"], width, bottom=clus_prepross_bottom, yerr=clustered_stds['preprocess_time'], label='preprocessing time (baseline)', color=['tab:orange'], hatch='/')
+        _ = ax.bar(x, clustered_means["overhead"], width, bottom=clus_overhead_bottom, yerr=clustered_stds['overhead'], label='overhead time (baseline)', color=['tab:red'], hatch='/')
+
+    _ = ax.bar(x + width_step[1], keep_means["read_time"], width, yerr=keep_stds['read_time'], label='read time (keep)', color=['tab:blue'], hatch='//')
+    _ = ax.bar(x + width_step[1], keep_means["write_time"], width, bottom=keep_means['read_time'], yerr=keep_stds['write_time'], label='write time (keep)', color=['tab:green'], hatch='//')
+    _ = ax.bar(x + width_step[1], keep_means["preprocess_time"], width, bottom=keep_prepross_bottom, yerr=keep_stds['preprocess_time'], label='preprocessing time (keep)', color=['tab:orange'], hatch='//')
+    _ = ax.bar(x + width_step[1], keep_means["overhead"], width, bottom=keep_overhead_bottom, yerr=keep_stds['overhead'], label='overhead time (keep)', color=['tab:red'], hatch='//')
             
     ax.set_ylabel('Processing time (s)')
     ax.set_xlabel('run reference')
