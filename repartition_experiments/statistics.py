@@ -80,6 +80,7 @@ def compute_graph_baseline(memory_filepath, out_filepath):
 
 def compute_graph_results(results_path, outdir_path, title_main, title_seeks):
     df = pd.read_csv(results_path)
+    df_seeks = pd.read_csv(results_path)
 
     # preprocessing
     df = df.drop(columns=['max_voxels', 'success', 'case_name', 'Unnamed: 0'])
@@ -133,13 +134,35 @@ def compute_graph_results(results_path, outdir_path, title_main, title_seeks):
     fig.savefig(os.path.join(outdir_path, 'results.png'))
 
     # preprocess seeks
-    baseline_seeks = df_baseline.groupby(["run_ref"]).mean()['nb_seeks']
-    keep_seeks =  df_keep.groupby(["run_ref"]).mean()['nb_seeks']
+    
+    df_seeks = df_seeks.drop(columns=['Unnamed: 0', 'case_name', 'process_time', 'preprocess_time', 'read_time', 'write_time', 'max_voxels', 'success'])
+    df_keep = df_seeks.loc[df_seeks["model"]=="keep"]
+    df_baseline = df_seeks.loc[df_seeks["model"]=="baseline"]
 
-    # graph seeks
+    keep_means = df_keep.groupby('run_ref').mean()
+    keep_stds = df_keep.groupby('run_ref').std()
+    baseline_means = df_baseline.groupby('run_ref').mean()
+    baseline_stds = df_baseline.groupby('run_ref').std()
+
+    outseeks_bottom_k = keep_means['outfile_openings']
+    inops_bottom_k = keep_means['outfile_openings'] + keep_means['outfile_seeks']
+    inseeks_bottom_k = keep_means['outfile_openings'] + keep_means['outfile_seeks'] + keep_means['infile_openings']
+
+    outseeks_bottom_b = baseline_means['outfile_openings']
+    inops_bottom_b = baseline_means['outfile_openings'] + baseline_means['outfile_seeks']
+    inseeks_bottom_b = baseline_means['outfile_openings'] + baseline_means['outfile_seeks'] + baseline_means['infile_openings']
+
     fig, ax = plt.subplots(figsize=(10, 5))
-    _ = ax.bar(x - width/2, baseline_seeks, width, label='baseline', color=['tab:blue'])
-    _ = ax.bar(x + width/2, keep_seeks, width, label='keep', color=['tab:orange'], hatch='//')
+    _ = ax.bar(x - width/2, baseline_means['outfile_openings'], width, yerr=baseline_stds['outfile_openings'], label='outfile_openings (baseline)', color=['tab:blue'])
+    _ = ax.bar(x - width/2, baseline_means['outfile_seeks'], width, bottom=outseeks_bottom_b, yerr=baseline_stds['outfile_seeks'], label='outfile_seeks (baseline)', color=['tab:green'])
+    _ = ax.bar(x - width/2, baseline_means['infile_openings'], width, bottom=inops_bottom_b, yerr=baseline_stds['infile_openings'], label='infile_openings (baseline)', color=['tab:red'])
+    _ = ax.bar(x - width/2, baseline_means['infile_seeks'], width, bottom=inseeks_bottom_b, yerr=baseline_stds['infile_seeks'], label='infile_seeks (baseline)', color=['tab:orange'])
+
+    _ = ax.bar(x + width/2, keep_means['outfile_openings'], width, yerr=keep_stds['outfile_openings'], label='outfile_openings (keep)', color=['tab:blue'], hatch='//')
+    _ = ax.bar(x + width/2, keep_means['outfile_seeks'], width, bottom=outseeks_bottom_k, yerr=keep_stds['outfile_seeks'], label='outfile_seeks (keep)', color=['tab:green'], hatch='//')
+    _ = ax.bar(x + width/2, keep_means['infile_openings'], width, bottom=inops_bottom_k, yerr=keep_stds['infile_openings'], label='infile_openings (keep)', color=['tab:red'], hatch='//')
+    _ = ax.bar(x + width/2, keep_means['infile_seeks'], width, bottom=inseeks_bottom_k, yerr=keep_stds['infile_seeks'], label='infile_seeks (keep)', color=['tab:orange'], hatch='//')
+
     plt.yscale('log')
 
     ax.set_ylabel('number of seeks')
@@ -147,7 +170,7 @@ def compute_graph_results(results_path, outdir_path, title_main, title_seeks):
     ax.set_title(title_seeks)
     ax.set_xticks(x)
     ax.set_xticklabels(sorted(references))
-    ax.legend()
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
     fig.tight_layout()
     fig.savefig(os.path.join(outdir_path, 'results_seeks.png'))
