@@ -35,7 +35,7 @@ def remove_from_cache(cache, outfile_index, volume_to_write):
         cache[outfile_index] = volumes_in_cache
 
 
-def write_in_outfile(data_part, vol_to_write, file_manager, outdir_path, outvolume, outfile_shape, outfiles_partition, cache):
+def write_in_outfile(data_part, vol_to_write, file_manager, outdir_path, outvolume, outfile_shape, outfiles_partition, cache, from_cache):
     """ Writes an output file part which is ready to be written.
 
     Arguments: 
@@ -54,6 +54,9 @@ def write_in_outfile(data_part, vol_to_write, file_manager, outdir_path, outvolu
     t2 = time.time()
     empty_dataset = file_manager.write_data(i, j, k, outdir_path, data_part, slices, outfile_shape)
     t2 = time.time() - t2
+
+    if from_cache:
+        remove_from_cache(cache, outvolume.index, vol_to_write)
 
     return t2, empty_dataset
 
@@ -212,10 +215,7 @@ def complete(cache, vol_to_write, outvolume_index):
     """ Test if a volume to write is complete in cache i.e. can be written
     """
     l = cache[outvolume_index]
-    is_complete = False 
-    arr = None
-    index_to_del = None
-    for i, e in enumerate(l):
+    for e in l:
         v, v_list, a_list, tracker = e 
         if equals(vol_to_write, v):
             if tracker.is_complete(vol_to_write.get_corners()): 
@@ -223,16 +223,8 @@ def complete(cache, vol_to_write, outvolume_index):
                 for v_tmp, a_tmp in zip(v_list, a_list):
                     s = to_basis(v_tmp, vol_to_write).get_slices()
                     arr[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = a_tmp
-
-                index_to_del = i
-                is_complete = True
-                break 
-
-    if is_complete:
-        del l[index_to_del]
-        cache[outvolume_index] = l
-
-    return is_complete, arr
+                return True, arr
+    return False, None
 
 
 def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_dirpath, addition, sanity_check=False):
@@ -337,7 +329,7 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
                             # write
                             if addition:
                                 data_to_write = data_to_write +1
-                            t2, initialized = write_in_outfile(data_to_write, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache)
+                            t2, initialized = write_in_outfile(data_to_write, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, False)
                             print("[write] data_to_write of shape : ", data_to_write.shape)
                             
                             # stats
@@ -368,7 +360,7 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
                                 # write
                                 if addition:
                                     arr = arr +1
-                                t2, initialized = write_in_outfile(arr, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache)
+                                t2, initialized = write_in_outfile(arr, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, True)
                                 print("[cache-] remove arr of shape : ", arr.shape)
 
                                 # stats
