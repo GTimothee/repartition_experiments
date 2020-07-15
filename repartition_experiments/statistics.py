@@ -132,10 +132,10 @@ def compute_graph_results(results_path, outdir_path, title_main, title_seeks):
     _ = ax.bar(x - width_step[0], baseline_means["overhead"], width, bottom=baseline_overhead_bottom, yerr=baseline_stds['overhead'], label='overhead time (baseline)', color=['tab:red'])
 
     if "clustered" in models:
-        _ = ax.bar(x, clustered_means["read_time"], width, yerr=clustered_stds['read_time'], label='read time (clustered)', color=['tab:blue'], hatch='/')
-        _ = ax.bar(x, clustered_means["write_time"], width, bottom=clustered_means["read_time"], yerr=clustered_stds['write_time'], label='write time (clustered)', color=['tab:green'], hatch='/')
-        _ = ax.bar(x, clustered_means["preprocess_time"], width, bottom=clus_prepross_bottom, yerr=clustered_stds['preprocess_time'], label='preprocessing time (clustered)', color=['tab:orange'], hatch='/')
-        _ = ax.bar(x, clustered_means["overhead"], width, bottom=clus_overhead_bottom, yerr=clustered_stds['overhead'], label='overhead time (clustered)', color=['tab:red'], hatch='/')
+        _ = ax.bar(x, clustered_means["read_time"], width, yerr=clustered_stds['read_time'], label='read time (baseline)', color=['tab:blue'], hatch='/')
+        _ = ax.bar(x, clustered_means["write_time"], width, bottom=clustered_means["read_time"], yerr=clustered_stds['write_time'], label='write time (baseline)', color=['tab:green'], hatch='/')
+        _ = ax.bar(x, clustered_means["preprocess_time"], width, bottom=clus_prepross_bottom, yerr=clustered_stds['preprocess_time'], label='preprocessing time (baseline)', color=['tab:orange'], hatch='/')
+        _ = ax.bar(x, clustered_means["overhead"], width, bottom=clus_overhead_bottom, yerr=clustered_stds['overhead'], label='overhead time (baseline)', color=['tab:red'], hatch='/')
 
     _ = ax.bar(x + width_step[1], keep_means["read_time"], width, yerr=keep_stds['read_time'], label='read time (keep)', color=['tab:blue'], hatch='//')
     _ = ax.bar(x + width_step[1], keep_means["write_time"], width, bottom=keep_means['read_time'], yerr=keep_stds['write_time'], label='write time (keep)', color=['tab:green'], hatch='//')
@@ -147,10 +147,7 @@ def compute_graph_results(results_path, outdir_path, title_main, title_seeks):
     ax.set_title(title_main)
     ax.set_xticks(x)
     ax.set_xticklabels(sorted(references))
-    if "clustered" in models:
-        ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    else:
-        ax.legend()
+    ax.legend()
 
     fig.tight_layout()
     fig.savefig(os.path.join(outdir_path, 'results.png'))
@@ -174,35 +171,16 @@ def compute_graph_results(results_path, outdir_path, title_main, title_seeks):
     inops_bottom_b = baseline_means['outfile_openings'] + baseline_means['outfile_seeks']
     inseeks_bottom_b = baseline_means['outfile_openings'] + baseline_means['outfile_seeks'] + baseline_means['infile_openings']
 
-    if "clustered" in models:
-        df_clustered = df_seeks.loc[df_seeks["model"]=="clustered"]
-        clustered_means = df_clustered.groupby('run_ref').mean()
-        clustered_stds = df_clustered.groupby('run_ref').std()
-        outseeks_bottom_c = clustered_means['outfile_openings']
-        inops_bottom_c = clustered_means['outfile_openings'] + clustered_means['outfile_seeks']
-        inseeks_bottom_c = clustered_means['outfile_openings'] + clustered_means['outfile_seeks'] + clustered_means['infile_openings']
-
-    if "clustered" in models:
-        width_step = [width, width]
-    else:
-        width_step = [width /2, width /2]
-
     fig, ax = plt.subplots(figsize=(10, 5))
-    _ = ax.bar(x - width_step[0], baseline_means['outfile_openings'], width, yerr=baseline_stds['outfile_openings'], label='outfile_openings (baseline)', color=['tab:blue'])
-    _ = ax.bar(x - width_step[0], baseline_means['outfile_seeks'], width, bottom=outseeks_bottom_b, yerr=baseline_stds['outfile_seeks'], label='outfile_seeks (baseline)', color=['tab:green'])
-    _ = ax.bar(x - width_step[0], baseline_means['infile_openings'], width, bottom=inops_bottom_b, yerr=baseline_stds['infile_openings'], label='infile_openings (baseline)', color=['tab:red'])
-    _ = ax.bar(x - width_step[0], baseline_means['infile_seeks'], width, bottom=inseeks_bottom_b, yerr=baseline_stds['infile_seeks'], label='infile_seeks (baseline)', color=['tab:orange'])
+    _ = ax.bar(x - width/2, baseline_means['outfile_openings'], width, yerr=baseline_stds['outfile_openings'], label='outfile_openings (baseline)', color=['tab:blue'])
+    _ = ax.bar(x - width/2, baseline_means['outfile_seeks'], width, bottom=outseeks_bottom_b, yerr=baseline_stds['outfile_seeks'], label='outfile_seeks (baseline)', color=['tab:green'])
+    _ = ax.bar(x - width/2, baseline_means['infile_openings'], width, bottom=inops_bottom_b, yerr=baseline_stds['infile_openings'], label='infile_openings (baseline)', color=['tab:red'])
+    _ = ax.bar(x - width/2, baseline_means['infile_seeks'], width, bottom=inseeks_bottom_b, yerr=baseline_stds['infile_seeks'], label='infile_seeks (baseline)', color=['tab:orange'])
 
-    if "clustered" in models:
-        _ = ax.bar(x, clustered_means['outfile_openings'], width, yerr=clustered_stds['outfile_openings'], label='outfile_openings (clustered)', color=['tab:blue'], hatch='/')
-        _ = ax.bar(x, clustered_means['outfile_seeks'], width, bottom=outseeks_bottom_c, yerr=clustered_stds['outfile_seeks'], label='outfile_seeks (clustered)', color=['tab:green'], hatch='/')
-        _ = ax.bar(x, clustered_means['infile_openings'], width, bottom=inops_bottom_c, yerr=clustered_stds['infile_openings'], label='infile_openings (clustered)', color=['tab:red'], hatch='/')
-        _ = ax.bar(x, clustered_means['infile_seeks'], width, bottom=inseeks_bottom_c, yerr=clustered_stds['infile_seeks'], label='infile_seeks (clustered)', color=['tab:orange'], hatch='/')
-
-    _ = ax.bar(x + width_step[1], keep_means['outfile_openings'], width, yerr=keep_stds['outfile_openings'], label='outfile_openings (keep)', color=['tab:blue'], hatch='//')
-    _ = ax.bar(x + width_step[1], keep_means['outfile_seeks'], width, bottom=outseeks_bottom_k, yerr=keep_stds['outfile_seeks'], label='outfile_seeks (keep)', color=['tab:green'], hatch='//')
-    _ = ax.bar(x + width_step[1], keep_means['infile_openings'], width, bottom=inops_bottom_k, yerr=keep_stds['infile_openings'], label='infile_openings (keep)', color=['tab:red'], hatch='//')
-    _ = ax.bar(x + width_step[1], keep_means['infile_seeks'], width, bottom=inseeks_bottom_k, yerr=keep_stds['infile_seeks'], label='infile_seeks (keep)', color=['tab:orange'], hatch='//')
+    _ = ax.bar(x + width/2, keep_means['outfile_openings'], width, yerr=keep_stds['outfile_openings'], label='outfile_openings (keep)', color=['tab:blue'], hatch='//')
+    _ = ax.bar(x + width/2, keep_means['outfile_seeks'], width, bottom=outseeks_bottom_k, yerr=keep_stds['outfile_seeks'], label='outfile_seeks (keep)', color=['tab:green'], hatch='//')
+    _ = ax.bar(x + width/2, keep_means['infile_openings'], width, bottom=inops_bottom_k, yerr=keep_stds['infile_openings'], label='infile_openings (keep)', color=['tab:red'], hatch='//')
+    _ = ax.bar(x + width/2, keep_means['infile_seeks'], width, bottom=inseeks_bottom_k, yerr=keep_stds['infile_seeks'], label='infile_seeks (keep)', color=['tab:orange'], hatch='//')
 
     plt.yscale('log')
 
