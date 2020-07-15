@@ -1,11 +1,11 @@
-import math, time, csv
+import math, time, csv, psutil, sys
 import numpy as np
 from repartition_experiments.algorithms.policy import compute_zones
 from repartition_experiments.algorithms.utils import get_partition, get_named_volumes, get_overlap_subarray, get_file_manager, numeric_to_3d_pos, Volume, hypercubes_overlap, included_in, get_volumes, to_basis
 from repartition_experiments.algorithms.tracker import Tracker
 from repartition_experiments.algorithms.utils import get_opened_files
 from repartition_experiments.algorithms.voxel_tracker import VoxelTracker
-
+import gc
 
 def get_input_aggregate(O, I):
     lambd = list()
@@ -132,10 +132,9 @@ def read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpa
         #     t1 += time.time() - t_tmp
         # else:
         t_tmp = time.time()
-        data_part = file_manager.read_data(i, j, k, input_dirpath, slices)
+        data[intersection_in_R] = (file_manager.read_data(i, j, k, input_dirpath, slices), Tracker())
         t1 += time.time() - t_tmp
 
-        data[intersection_in_R] = (data_part, Tracker())
     return data, t1, nb_opening_seeks_tmp, nb_inside_seeks_tmp
 
 
@@ -227,6 +226,15 @@ def complete(cache, vol_to_write, outvolume_index):
     return False, None
 
 
+def print_mem_info():
+    mem = psutil.virtual_memory()
+    swap = psutil.swap_memory()
+    used_ram = (mem.total - mem.available) /1024 /1024
+    used_swap = swap.used /1024 /1024 
+    print("Used RAM: ", used_ram, "MB")
+    print("Used swap: ", used_swap, "MB")
+
+
 def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_dirpath, addition, sanity_check=False):
     """
         cache: dict,
@@ -280,6 +288,9 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
         for index, outvol in outvolumes.items():
             outvolumes_trackers[index] = Tracker()
     
+    print("Starting monitor... Memory status: \n")
+    print_mem_info()
+
     voxel_tracker = VoxelTracker()
     from monitor.monitor import Monitor
     _monitor = Monitor(enable_print=False, enable_log=False, save_data=True)
@@ -295,6 +306,8 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
         data, t1, nb_opening_seeks_tmp, nb_inside_seeks_tmp = read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpath, R, I)
         data_shape = buffer.get_shape()
         print("[read] buffer of shape : ", data_shape)
+        print_mem_info()
+
         buffer_size = data_shape[0]*data_shape[1]*data_shape[2]
         voxel_tracker.add_voxels(buffer_size)
         data_movement = 0
@@ -313,16 +326,24 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
                 
                 all_keys = list(data.keys())
                 for datapart_volume in all_keys:
-                    data_metadata = data[datapart_volume]
-                    data_part, writing_tracker = data_metadata
+                    data_part, writing_tracker = data[datapart_volume]
+                    # print("after getting copy of data part")
+                    # print_mem_info()
 
                     if hypercubes_overlap(datapart_volume, vol_to_write):
+                        # print("before getdatatowrite")
+                        # print_mem_info()
                         data_to_write_vol, data_to_write = get_data_to_write(vol_to_write, datapart_volume, data_part)
+                        # print('after get data to write')
+                        # print_mem_info()
+
                         writing_tracker.add_volume(data_to_write_vol)
                         if writing_tracker.is_complete(datapart_volume.get_corners()):
                             del data_part
                             del writing_tracker
                             del data[datapart_volume]
+                        # print("after removing data part from buffer data:")
+                        # print_mem_info()
 
                         if equals(vol_to_write, data_to_write_vol):  
                             
@@ -330,7 +351,7 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
                             if addition:
                                 data_to_write = data_to_write +1
                             t2, initialized = write_in_outfile(data_to_write, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, False)
-                            print("[write] data_to_write of shape : ", data_to_write.shape)
+                            # print("[write] data_to_write of shape : ", data_to_write.shape)
                             
                             # stats
                             write_time += t2
@@ -348,8 +369,11 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
                             vols_written.append(j)
 
                         else:
+                            # print("Memory before add to cache:\n")
+                            # print_mem_info()
                             add_to_cache(cache, vol_to_write, data_to_write, outvolume.index, data_to_write_vol)
-                            print("[cache+] add data_to_write of shape : ", data_to_write.shape)
+                            # print("[cache+] add data_to_write of shape : ", data_to_write.shape)
+                            # print_mem_info()
 
                             # stats
                             tmp_s = data_to_write_vol.get_shape()
@@ -361,8 +385,9 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
                                 if addition:
                                     arr = arr +1
                                 t2, initialized = write_in_outfile(arr, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, True)
-                                print("[cache-] remove arr of shape : ", arr.shape)
-
+                                # print("[cache-] remove arr of shape : ", arr.shape)
+                                # print_mem_info()
+                                
                                 # stats
                                 write_time += t2
                                 tmp_s = vol_to_write.get_shape()
@@ -379,22 +404,39 @@ def keep_algorithm(R, O, I, B, volumestokeep, file_format, outdir_path, input_di
                                         nb_file_initializations += 1
                                     nb_volumes_written += 1
 
+                        # print("before removing data_to_write")
+                        # print_mem_info()
                         del data_to_write
+                        # print("after")
+                        # print_mem_info()
 
 
+
+            # print("before removing data from arrays_dict ")
+            # print_mem_info()
             # garbage collection
             for j in vols_written:
                 del vols_to_write[j]
             arrays_dict[outvolume.index] = vols_to_write
+            # print("after")
+            # print_mem_info()
 
         # garbage collection
+        # print("before removing buffer data loaded")
+        # print_mem_info()
         data.clear()
         del data
+        print("after removing buffer data loaded")
+        print_mem_info()
 
         # stats
         data_movement -= buffer_size
         voxel_tracker.add_voxels(data_movement)
         print('[tracker] end of buffer -> nb voxels:', voxel_tracker.nb_voxels)
+
+        # to del
+        file_manager.close_infiles()
+        sys.exit()
 
     file_manager.close_infiles()
 
