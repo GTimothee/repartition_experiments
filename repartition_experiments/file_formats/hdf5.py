@@ -77,15 +77,11 @@ class HDF5_manager:
 
         if slices == None:
             with h5py.File(input_file, 'r') as f:
-                dset = f['/data']
-                data = dset[:,:,:]
-                return data
+                return f['/data'][:,:,:]
 
         s = slices
         with h5py.File(input_file, 'r') as f:
-            dset = f['/data']
-            data = dset[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] 
-        return data
+            return f['/data'][s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] 
 
 
     def read_data_from_fp(self, filepath, slices):
@@ -125,7 +121,7 @@ class HDF5_manager:
         with h5py.File(outfilepath, mode) as f:
             if not "/data" in f.keys():
                 if O != data.shape:
-                    null_arr = np.zeros(O, dtype=dtype)
+                    null_arr = np.empty(O, dtype=dtype)
                     null_arr[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
                     outdset = f.create_dataset("/data", O, data=null_arr, dtype=dtype)  # initialize an empty dataset
                 else:
@@ -151,7 +147,7 @@ class HDF5_manager:
 
             if _slices != None:
                 if not "/data" in f.keys():
-                    null_arr = np.zeros(cs, dtype=dtype)
+                    null_arr = np.empty(cs, dtype=dtype)
                     outdset = f.create_dataset("/data", cs, data=null_arr, dtype=dtype) 
                 else:
                     outdset = f["/data"]
