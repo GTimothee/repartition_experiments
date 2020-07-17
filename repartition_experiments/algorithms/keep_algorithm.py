@@ -7,7 +7,7 @@ from repartition_experiments.algorithms.utils import get_opened_files
 from repartition_experiments.algorithms.voxel_tracker import VoxelTracker
 from multiprocessing import Process, Queue
 
-DEBUG = False
+DEBUG = True
 
 import gc
 
@@ -172,23 +172,35 @@ def add_to_cache(cache, vol_to_write, data_to_write, outvolume_index, overlap_vo
         print_mem_info()
 
     # if cache already contains part of the outfile part, we add data to it 
+    print(f"Adding data part to cache {overlap_vol_in_R.get_shape()}")
+    print_mem_info()
+
     for element in cache[outvolume_index]:
-        vol_to_write_tmp, volumes_list, arrays_list, tracker = element
+        vol_to_write_tmp, volumes_list, array, tracker = element
 
         if equals(vol_to_write, vol_to_write_tmp):
             volumes_list.append(overlap_vol_in_R)
-            arrays_list.append(copy.deepcopy(data_to_write))
+            s = to_basis(overlap_vol_in_R, vol_to_write).get_slices()
+            array[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = copy.deepcopy(data_to_write)
             tracker.add_volume(overlap_vol_in_R)
-            element = (vol_to_write_tmp, volumes_list, arrays_list, tracker)  # update element
+            element = (vol_to_write_tmp, volumes_list, array, tracker)  # update element
             return 
 
     # add new element
+    array = np.empty(copy.deepcopy(vol_to_write.get_shape()), dtype=np.float16)
+
+    print(f"Creating new array in cache with shape {vol_to_write.get_shape()}")
     print_mem_info()
-    arrays_list = [copy.deepcopy(data_to_write)]
+
+    s = to_basis(overlap_vol_in_R, vol_to_write).get_slices()
+    array[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = copy.deepcopy(data_to_write)
     volumes_list = [overlap_vol_in_R]
     tracker = Tracker()
     tracker.add_volume(overlap_vol_in_R)
-    cache[outvolume_index].append((vol_to_write, volumes_list, arrays_list, tracker))    
+    cache[outvolume_index].append((vol_to_write, volumes_list, array, tracker))    
+    
+    print(f"Adding data part to cache {overlap_vol_in_R.get_shape()}")
+    print_mem_info()
 
 
 def get_overlap_volume(v1, v2):
@@ -214,16 +226,10 @@ def complete(cache, vol_to_write, outvolume_index):
     to_del = -1
     arr = None
     for i, e in enumerate(cache[outvolume_index]):
-        v, v_list, a_list, tracker = e 
+        v, v_list, arr_tmp, tracker = e 
         if equals(vol_to_write, v):
             if tracker.is_complete(vol_to_write.get_corners()): 
-                
-                arr = np.empty(copy.deepcopy(vol_to_write.get_shape()), dtype=np.float16)
-                for v_tmp, a_tmp in zip(v_list, a_list):
-                    s = to_basis(v_tmp, vol_to_write).get_slices()
-                    arr[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = np.copy(a_tmp)
-                    del a_tmp
-
+                arr = arr_tmp
                 to_del = i
                 is_complete = True
                 break
@@ -232,7 +238,6 @@ def complete(cache, vol_to_write, outvolume_index):
         del cache[outvolume_index][to_del]
     
     return is_complete, arr
-
 
 
 def print_mem_info():
@@ -341,7 +346,7 @@ def process_buffer(arrays_dict, buffers, buffer, voxel_tracker, buffers_to_infil
     # read buffer
     data, t1, nb_opening_seeks_tmp, nb_inside_seeks_tmp = read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpath, R, I)
     if DEBUG:
-        print("loaded buffer")
+        print(f"loaded buffer with shape {buffer.get_shape()}")
         print_mem_info()  
 
     for outvolume_index in buffer_to_outfiles[buffer.index]:
@@ -401,7 +406,7 @@ def _run_keep(arrays_dict, buffers, buffers_to_infiles, buffer_to_outfiles):
     from monitor.monitor import Monitor
     _monitor = Monitor(enable_print=False, enable_log=False, save_data=True)
     _monitor.disable_clearconsole()
-    _monitor.set_delay(5)
+    _monitor.set_delay(1)
     _monitor.start()
     
     print_mem_info()
@@ -419,8 +424,8 @@ def _run_keep(arrays_dict, buffers, buffers_to_infiles, buffer_to_outfiles):
             print("End of buffer - Memory info:")
             print_mem_info()
 
-        # if buffer_index == 1:
-        #     sys.exit()
+        if buffer_index == 1:
+            sys.exit()
 
     file_manager.close_infiles()
 
@@ -479,9 +484,6 @@ def keep_algorithm(arg_R, arg_O, arg_I, arg_B, volumestokeep, arg_file_format, a
         'version': 1,
         'disable_existing_loggers': True,
     })
-
-    
-    
 
     # initialize utility variables
     global outdir_path, R, O, I, B, file_format, input_dirpath, sanity_check, addition

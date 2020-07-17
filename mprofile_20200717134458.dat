@@ -1,0 +1,6 @@
+CMDLINE /home/user/miniconda3/envs/thesis/bin/python3.7 repartition_experiments/experiment.py repartition_experiments/local_paths_config.json repartition_experiments/mid_cases_config.json keep 'case 1_3'
+MEM 0.746094 1595007898.3152
+MEM 23.914062 1595007898.4155
+MEM 37.035156 1595007898.5157
+MEM 63.953125 1595007898.6160
+MEM 75.386719 1595007898.7163
