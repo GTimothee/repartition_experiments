@@ -45,7 +45,6 @@ def write_in_outfile(data_part, vol_to_write, file_manager, outdir_path, outvolu
     ----------
         data_part: data to write
         vol_to_write: Volume representing data_part in basis of R
-        from_cache: if data has been read from cache or not. If true it simply deletes the piece of data from the cache.
         file_manager: to write the data
     """
     # get region in output file to write into
@@ -168,12 +167,12 @@ def add_to_cache(cache, vol_to_write, data_to_write, outvolume_index, overlap_vo
 
     # add list in cache for outfile index if nothing for this file in cache yet
     if not outvolume_index in cache.keys():
+        print("add key")
         cache[outvolume_index] = list()
-
-    stored_data_list = cache[outvolume_index]  # get list of outfile parts partially loaded in cache
+        print_mem_info()
 
     # if cache already contains part of the outfile part, we add data to it 
-    for element in stored_data_list:
+    for element in cache[outvolume_index]:
         vol_to_write_tmp, volumes_list, arrays_list, tracker = element
 
         if equals(vol_to_write, vol_to_write_tmp):
@@ -183,23 +182,13 @@ def add_to_cache(cache, vol_to_write, data_to_write, outvolume_index, overlap_vo
             element = (vol_to_write_tmp, volumes_list, arrays_list, tracker)  # update element
             return 
 
-    # print("[del] del data part")
-    # print_mem_info()
-    # del data[datapart_volume]
-    # print_mem_info()
-    # print("[del] del data part 3")
-    # del data_to_write
-    # print_mem_info()
-    # sys.exit(0)
-
     # add new element
-    print("[cache] adding new element")
+    print_mem_info()
     arrays_list = [copy.deepcopy(data_to_write)]
     volumes_list = [overlap_vol_in_R]
     tracker = Tracker()
     tracker.add_volume(overlap_vol_in_R)
-    stored_data_list.append((vol_to_write, volumes_list, arrays_list, tracker))
-    cache[outvolume_index] = stored_data_list
+    cache[outvolume_index].append((vol_to_write, volumes_list, arrays_list, tracker))    
 
 
 def get_overlap_volume(v1, v2):
@@ -220,49 +209,43 @@ def get_data_to_write(vol_to_write, buff_volume, data):
 def complete(cache, vol_to_write, outvolume_index):
     """ Test if a volume to write is complete in cache i.e. can be written
     """
+
     is_complete = False
-    l = cache[outvolume_index]
     to_del = -1
     arr = None
-    for i, e in enumerate(l):
+    for i, e in enumerate(cache[outvolume_index]):
         v, v_list, a_list, tracker = e 
         if equals(vol_to_write, v):
             if tracker.is_complete(vol_to_write.get_corners()): 
                 
-                # print("creating array")
-                # print_mem_info()
                 arr = np.empty(copy.deepcopy(vol_to_write.get_shape()), dtype=np.float16)
-                # print_mem_info()
-
-                # print("filling the array")
                 for v_tmp, a_tmp in zip(v_list, a_list):
                     s = to_basis(v_tmp, vol_to_write).get_slices()
-                    arr[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = np.array(copy.deepcopy(a_tmp), dtype=np.float16)
-                    # del a_tmp
+                    arr[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = np.copy(a_tmp)
+                    del a_tmp
 
                 to_del = i
                 is_complete = True
-                # print_mem_info()
                 break
 
     if to_del != -1:
-        for e in l[to_del]:
-            del e
-        del l[to_del]
-        cache[outvolume_index] = l
-        # print("deleting array")
-        # del arr
-        # print_mem_info()
-        # gc.collect()
-        # time.sleep(1)
-        # sys.exit(0)
+        del cache[outvolume_index][to_del]
     
     return is_complete, arr
 
 
+
 def print_mem_info():
+    global start_mem
+
     process = psutil.Process(os.getpid())
-    print(process.memory_info().vms // 1024 // 1024)
+    d = process.memory_info().vms // 1024 // 1024
+    if start_mem == None:
+        start_mem = d
+        print("start_mem: ", start_mem)
+    else:
+        d = d - start_mem
+    print(d)
 
 
 def write_or_cache(outvolume, vol_to_write, datapart_volume, writing_tracker, cache, data):
@@ -271,12 +254,17 @@ def write_or_cache(outvolume, vol_to_write, datapart_volume, writing_tracker, ca
     buff_write = 0
     volume_written = False
     data_moved = 0
+
+    if DEBUG:
+        print("extraction de partie à écrire")
+        print_mem_info()
     
     if equals(vol_to_write, data_to_write_vol):  
-        if DEBUG:
-            print(f"[write complete]")
-        
+        if DEBUG:           
+            print("equals")  
+
         # write
+        print("write")
         t2, initialized = write_in_outfile(data_to_write, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, False)
 
         # stats
@@ -295,20 +283,11 @@ def write_or_cache(outvolume, vol_to_write, datapart_volume, writing_tracker, ca
         volume_written = True
 
     else:
-        # print("[del] del data part")
-        # print_mem_info()
-        # del data[datapart_volume]
-        # print_mem_info()
-        # print("[del] del data part 3")
-        # del data_to_write
-        # print_mem_info()
-        # sys.exit(0)
-
         
         add_to_cache(cache, vol_to_write, data_to_write, outvolume.index, data_to_write_vol, data, datapart_volume)
         
         if DEBUG:
-            print(f"[cache+]")
+            print("[cache+]")
             print_mem_info()
 
         # stats
@@ -321,13 +300,12 @@ def write_or_cache(outvolume, vol_to_write, datapart_volume, writing_tracker, ca
             # write
             if addition:
                 arr = arr +1
-            
-            t2, initialized = write_in_outfile(arr, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, True)
-            del arr
 
             if DEBUG:
-                print(f"[write]")
+                print("[cache write]")
                 print_mem_info()
+            t2, initialized = write_in_outfile(arr, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, True)
+            del arr
             
             # stats
             buff_write += t2
@@ -345,12 +323,10 @@ def write_or_cache(outvolume, vol_to_write, datapart_volume, writing_tracker, ca
                     nb_file_initializations += 1
                 nb_volumes_written += 1
 
-    
     del data_to_write
     if DEBUG:
-        print(f"del data to write")
+        print("deletion de partie a ecrire (part of buffer part)")
         print_mem_info()
-
     return buff_write, volume_written, data_moved
 
 
@@ -365,8 +341,8 @@ def process_buffer(arrays_dict, buffers, buffer, voxel_tracker, buffers_to_infil
     # read buffer
     data, t1, nb_opening_seeks_tmp, nb_inside_seeks_tmp = read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpath, R, I)
     if DEBUG:
-        print("[read] buffer of shape : ", data_shape)
-        print_mem_info()
+        print("loaded buffer")
+        print_mem_info()  
 
     for outvolume_index in buffer_to_outfiles[buffer.index]:
         outfile_parts_written = list()
@@ -387,26 +363,28 @@ def process_buffer(arrays_dict, buffers, buffer, voxel_tracker, buffers_to_infil
                     if volume_written:
                         outfile_parts_written.append(j)
 
+                    # if part of buffer entirely processed, remove from buffer
                     if writing_tracker.is_complete(datapart_volume.get_corners()):
                         del writing_tracker
+                        del data[datapart_volume]
 
         # if part of output file entirely processed, remove from arrays_dict
         for j in outfile_parts_written:
             del arrays_dict[outvolumes[outvolume_index].index][j]
 
     # garbage collection
-    
     for datapart_volume in list(data.keys()):
         del data[datapart_volume]
+    del data
 
     if DEBUG:
-        print("[del] del buffer")
+        print("deletion of buffer")
         print_mem_info()
 
     # stats
     data_movement -= buffer_size
     voxel_tracker.add_voxels(data_movement)
-    print('[tracker] end of buffer -> nb voxels:', voxel_tracker.nb_voxels)
+    print('[tracker] end of buffer -> predicted:', voxel_tracker.nb_voxels*2/1000000)
 
     return nb_opening_seeks_tmp, nb_inside_seeks_tmp, t1, tmp_write
 
@@ -420,15 +398,13 @@ def _run_keep(arrays_dict, buffers, buffers_to_infiles, buffer_to_outfiles):
     read_time = 0
     write_time = 0
 
-    print("Starting monitor... Memory status: \n")
-    print_mem_info()
-
     from monitor.monitor import Monitor
     _monitor = Monitor(enable_print=False, enable_log=False, save_data=True)
     _monitor.disable_clearconsole()
     _monitor.set_delay(5)
     _monitor.start()
     
+    print_mem_info()
     for buffer_index in range(nb_buffers):
         print("BUFFER ", buffer_index, '/', nb_buffers)
         buffer = buffers[buffer_index]
@@ -439,8 +415,12 @@ def _run_keep(arrays_dict, buffers, buffers_to_infiles, buffer_to_outfiles):
         nb_infile_openings += nb_opening_seeks_tmp
         nb_infile_inside_seeks += nb_inside_seeks_tmp
 
-        print("Memory info:")
-        print_mem_info()
+        if DEBUG:
+            print("End of buffer - Memory info:")
+            print_mem_info()
+
+        # if buffer_index == 1:
+        #     sys.exit()
 
     file_manager.close_infiles()
 
@@ -484,6 +464,8 @@ def end_sanity_check():
         print(row)
 
 
+start_mem = None
+
 def keep_algorithm(arg_R, arg_O, arg_I, arg_B, volumestokeep, arg_file_format, arg_outdir_path, arg_input_dirpath, arg_addition, arg_sanity_check=False):
     """
         cache: dict,
@@ -497,6 +479,9 @@ def keep_algorithm(arg_R, arg_O, arg_I, arg_B, volumestokeep, arg_file_format, a
         'version': 1,
         'disable_existing_loggers': True,
     })
+
+    
+    
 
     # initialize utility variables
     global outdir_path, R, O, I, B, file_format, input_dirpath, sanity_check, addition
