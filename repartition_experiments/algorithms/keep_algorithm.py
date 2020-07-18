@@ -396,9 +396,11 @@ def _run_keep(arrays_dict, buffers, buffers_to_infiles, buffer_to_outfiles):
     _monitor.set_delay(2.5)
     _monitor.start()
     
-    print_mem_info()
     for buffer_index in range(nb_buffers):
         print("BUFFER ", buffer_index, '/', nb_buffers)
+        if DEBUG:
+            print_mem_info() 
+            
         buffer = buffers[buffer_index]
         nb_opening_seeks_tmp, nb_inside_seeks_tmp, t1, t2 = process_buffer(arrays_dict, buffers, buffer, voxel_tracker, buffers_to_infiles, buffer_to_outfiles, cache)
 
