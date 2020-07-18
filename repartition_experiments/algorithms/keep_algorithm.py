@@ -7,7 +7,7 @@ from repartition_experiments.algorithms.utils import get_opened_files
 from repartition_experiments.algorithms.voxel_tracker import VoxelTracker
 from multiprocessing import Process, Queue
 
-DEBUG = True
+DEBUG = False
 
 import gc
 
@@ -60,6 +60,30 @@ def write_in_outfile(data_part, vol_to_write, file_manager, outdir_path, outvolu
     return t2, empty_dataset
 
 
+def write_in_outfile2(data, buffer_slices, vol_to_write, file_manager, outdir_path, outvolume, outfile_shape, outfiles_partition, cache, from_cache):
+    """ Writes an output file part which is ready to be written.
+
+    Arguments: 
+    ----------
+        data_part: data to write
+        vol_to_write: Volume representing data_part in basis of R
+        file_manager: to write the data
+    """
+    s = buffer_slices
+
+    # get region in output file to write into
+    vol_to_write_O_basis = to_basis(vol_to_write, outvolume)
+    slices = vol_to_write_O_basis.get_slices()
+
+    # write
+    i, j, k = numeric_to_3d_pos(outvolume.index, outfiles_partition, order='C')
+    t2 = time.time()
+    empty_dataset = file_manager.write_data(i, j, k, outdir_path, data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]], slices, outfile_shape)
+    t2 = time.time() - t2
+
+    return t2, empty_dataset
+
+
 def get_buffers_to_infiles(buffers, involumes):
     """ Returns a dictionary mapping each buffer (numeric) index to the list of input files from which it needs to load data.
     """
@@ -74,7 +98,7 @@ def get_buffers_to_infiles(buffers, involumes):
     return buffers_to_infiles
 
 
-def read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpath, R, I):
+def read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input_dirpath, R, I):
     """ Read a buffer from several input files.
 
     Arguments: 
@@ -95,13 +119,14 @@ def read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpa
     """
 
     involumes_list = buffers_to_infiles[buffer.index]
-    data = dict()
 
     t1 = 0 
     nb_opening_seeks_tmp = 0
     nb_inside_seeks_tmp = 0
 
-    arr = np.empty(copy.deepcopy(buffer.get_shape()), dtype=np.float16)
+    if data == None:
+        data = np.empty(copy.deepcopy(buffer.get_shape()), dtype=np.float16)
+
     for involume_index in involumes_list:
         involume = involumes[involume_index]
         pair = get_overlap_subarray(buffer, involume)  # overlap in R
@@ -128,10 +153,10 @@ def read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpa
 
         s = to_basis(intersection_in_R, buffer).get_slices()
         t_tmp = time.time()
-        arr[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = file_manager.read_data(i, j, k, input_dirpath, slices)
+        data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = file_manager.read_data(i, j, k, input_dirpath, slices)
         t1 += time.time() - t_tmp
 
-    return arr, t1, nb_opening_seeks_tmp, nb_inside_seeks_tmp
+    return data, t1, nb_opening_seeks_tmp, nb_inside_seeks_tmp
 
 
 def equals(v1, v2):
@@ -156,7 +181,7 @@ def equals(v1, v2):
     return True
 
 
-def add_to_cache(cache, vol_to_write, data_to_write, outvolume_index, overlap_vol_in_R, data, datapart_volume):
+def add_to_cache(cache, vol_to_write, data, buffer_slices, outvolume_index, overlap_vol_in_R, datapart_volume):
     """
     cache: 
     ------
@@ -164,6 +189,7 @@ def add_to_cache(cache, vol_to_write, data_to_write, outvolume_index, overlap_vo
         value = [(volumetowrite, array),...]
         array has shape volumetowrite, missing parts are full of zeros
     """
+    s = buffer_slices
 
     # add list in cache for outfile index if nothing for this file in cache yet
     if not outvolume_index in cache.keys():
@@ -177,14 +203,14 @@ def add_to_cache(cache, vol_to_write, data_to_write, outvolume_index, overlap_vo
 
         if equals(vol_to_write, vol_to_write_tmp):
             volumes_list.append(overlap_vol_in_R)
-            arrays_list.append(copy.deepcopy(data_to_write))
+            arrays_list.append(copy.deepcopy(data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]]))
             tracker.add_volume(overlap_vol_in_R)
             element = (vol_to_write_tmp, volumes_list, arrays_list, tracker)  # update element
             return 
 
     # add new element
     print_mem_info()
-    arrays_list = [copy.deepcopy(data_to_write)]
+    arrays_list = [copy.deepcopy(data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]])]
     volumes_list = [overlap_vol_in_R]
     tracker = Tracker()
     tracker.add_volume(overlap_vol_in_R)
@@ -201,9 +227,7 @@ def get_data_to_write(vol_to_write, buff_volume, data):
     """ get intersection between the buffer volume and the volume to write into outfile
     """
     v1 = get_overlap_volume(vol_to_write, buff_volume) 
-    v2 = to_basis(v1, buff_volume)
-    s = v2.get_slices()
-    return v1, data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]]
+    return v1, to_basis(v1, buff_volume).get_slices()
 
 
 def complete(cache, vol_to_write, outvolume_index):
@@ -239,7 +263,9 @@ def print_mem_info():
     global start_mem
 
     process = psutil.Process(os.getpid())
-    d = process.memory_info().vms // 1024 // 1024
+    # d = process.memory_info().vms // 1024 // 1024
+    mem = psutil.virtual_memory()
+    d = (mem.total - mem.available) /1024 /1024
     if start_mem == None:
         start_mem = d
         print("start_mem: ", start_mem)
@@ -249,21 +275,17 @@ def print_mem_info():
 
 
 def write_or_cache(outvolume, vol_to_write, buffer, cache, data):
-    data_to_write_vol, data_to_write = get_data_to_write(vol_to_write, buffer, data)
+    data_to_write_vol, buffer_slices = get_data_to_write(vol_to_write, buffer, data)
     buff_write = 0
     volume_written = False
     data_moved = 0
-
-    if DEBUG:
-        print("extraction de partie à écrire")
-        print_mem_info()
     
     if equals(vol_to_write, data_to_write_vol):  
         if DEBUG:           
             print("equals")  
 
         # write
-        t2, initialized = write_in_outfile(data_to_write, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, False)
+        t2, initialized = write_in_outfile2(data, buffer_slices, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, False)
         if DEBUG:
             print("write")
             print_mem_info()
@@ -285,7 +307,7 @@ def write_or_cache(outvolume, vol_to_write, buffer, cache, data):
 
     else:
         
-        add_to_cache(cache, vol_to_write, data_to_write, outvolume.index, data_to_write_vol, data, buffer)
+        add_to_cache(cache, vol_to_write, data, buffer_slices, outvolume.index, data_to_write_vol, buffer)
         
         if DEBUG:
             print("[cache+]")
@@ -324,14 +346,10 @@ def write_or_cache(outvolume, vol_to_write, buffer, cache, data):
                     nb_file_initializations += 1
                 nb_volumes_written += 1
 
-    del data_to_write
-    if DEBUG:
-        print("deletion de partie a ecrire (part of buffer part)")
-        print_mem_info()
     return buff_write, volume_written, data_moved
 
 
-def process_buffer(arrays_dict, buffers, buffer, voxel_tracker, buffers_to_infiles, buffer_to_outfiles, cache):
+def process_buffer(data, arrays_dict, buffers, buffer, voxel_tracker, buffers_to_infiles, buffer_to_outfiles, cache):
     # voxel tracker
     data_shape = buffer.get_shape()
     buffer_size = data_shape[0]*data_shape[1]*data_shape[2]
@@ -340,7 +358,7 @@ def process_buffer(arrays_dict, buffers, buffer, voxel_tracker, buffers_to_infil
     tmp_write = 0
 
     # read buffer
-    data, t1, nb_opening_seeks_tmp, nb_inside_seeks_tmp = read_buffer(buffer, buffers_to_infiles, involumes, file_manager, input_dirpath, R, I)
+    data, t1, nb_opening_seeks_tmp, nb_inside_seeks_tmp = read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input_dirpath, R, I)
     if DEBUG:
         print("loaded buffer")
         print_mem_info()  
@@ -393,16 +411,17 @@ def _run_keep(arrays_dict, buffers, buffers_to_infiles, buffer_to_outfiles):
     from monitor.monitor import Monitor
     _monitor = Monitor(enable_print=False, enable_log=False, save_data=True)
     _monitor.disable_clearconsole()
-    _monitor.set_delay(2.5)
+    _monitor.set_delay(0.5)
     _monitor.start()
     
+    buffer_data = None
     for buffer_index in range(nb_buffers):
-        print("BUFFER ", buffer_index, '/', nb_buffers)
+        print("\nBUFFER ", buffer_index, '/', nb_buffers)
         if DEBUG:
             print_mem_info() 
             
         buffer = buffers[buffer_index]
-        nb_opening_seeks_tmp, nb_inside_seeks_tmp, t1, t2 = process_buffer(arrays_dict, buffers, buffer, voxel_tracker, buffers_to_infiles, buffer_to_outfiles, cache)
+        nb_opening_seeks_tmp, nb_inside_seeks_tmp, t1, t2 = process_buffer(buffer_data, arrays_dict, buffers, buffer, voxel_tracker, buffers_to_infiles, buffer_to_outfiles, cache)
 
         read_time += t1
         write_time += t2
@@ -413,8 +432,8 @@ def _run_keep(arrays_dict, buffers, buffers_to_infiles, buffer_to_outfiles):
             print("End of buffer - Memory info:")
             print_mem_info()
 
-            # if buffer_index == 4:
-            #     sys.exit()
+            if buffer_index == 1:
+                sys.exit()
 
     file_manager.close_infiles()
 

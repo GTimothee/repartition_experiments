@@ -1,4 +1,4 @@
-import atexit, os, h5py, glob, logging
+import atexit, os, h5py, glob, logging, psutil
 import numpy as np
 from h5py import Dataset
 import dask.array as da
@@ -7,6 +7,11 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__ + 'hdf5_filemanager')
 
 SOURCE_FILES = list() # opened files to be closed after processing
+
+def print_mem_info():
+    mem = psutil.virtual_memory()
+    d = (mem.total - mem.available) /1024 /1024
+    print(d)
 
 
 @atexit.register
@@ -125,9 +130,15 @@ class HDF5_manager:
         with h5py.File(outfilepath, mode) as f:
             if not "/data" in f.keys():
                 if O != data.shape:
-                    null_arr = np.zeros(O, dtype=dtype)
-                    null_arr[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
+                    # print("right here")
+                    # print_mem_info()
+                    null_arr = np.empty(O, dtype=dtype)
+                    # null_arr[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
+                    
                     outdset = f.create_dataset("/data", O, data=null_arr, dtype=dtype)  # initialize an empty dataset
+                    # print_mem_info()
+                    outdset[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
+                    # print_mem_info()
                 else:
                     f.create_dataset("/data", O, data=data, dtype=dtype)
                 empty_dataset = True
@@ -151,7 +162,7 @@ class HDF5_manager:
 
             if _slices != None:
                 if not "/data" in f.keys():
-                    null_arr = np.zeros(cs, dtype=dtype)
+                    null_arr = np.empty(cs, dtype=dtype)
                     outdset = f.create_dataset("/data", cs, data=null_arr, dtype=dtype) 
                 else:
                     outdset = f["/data"]
