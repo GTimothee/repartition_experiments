@@ -124,8 +124,6 @@ def read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input
     nb_opening_seeks_tmp = 0
     nb_inside_seeks_tmp = 0
 
-    if data == None:
-        data = np.empty(copy.deepcopy(buffer.get_shape()), dtype=np.float16)
 
     for involume_index in involumes_list:
         involume = involumes[involume_index]
@@ -285,6 +283,7 @@ def write_or_cache(outvolume, vol_to_write, buffer, cache, data):
             print("equals")  
 
         # write
+        print_mem_info()
         t2, initialized = write_in_outfile2(data, buffer_slices, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, False)
         if DEBUG:
             print("write")
@@ -353,7 +352,7 @@ def process_buffer(data, arrays_dict, buffers, buffer, voxel_tracker, buffers_to
     # voxel tracker
     data_shape = buffer.get_shape()
     buffer_size = data_shape[0]*data_shape[1]*data_shape[2]
-    voxel_tracker.add_voxels(buffer_size)
+    
     data_movement = 0
     tmp_write = 0
 
@@ -392,7 +391,7 @@ def process_buffer(data, arrays_dict, buffers, buffer, voxel_tracker, buffers_to
         print_mem_info()
 
     # stats
-    data_movement -= buffer_size
+    # data_movement -= buffer_size
     voxel_tracker.add_voxels(data_movement)
     print('[tracker] end of buffer -> predicted:', voxel_tracker.nb_voxels*2/1000000)
 
@@ -414,7 +413,11 @@ def _run_keep(arrays_dict, buffers, buffers_to_infiles, buffer_to_outfiles):
     _monitor.set_delay(0.5)
     _monitor.start()
     
-    buffer_data = None
+    buffer_shape = buffers[0].get_shape()
+    buffer_size = buffer_shape[0]*buffer_shape[1]*buffer_shape[2]*2
+    buffer_data = np.empty(copy.deepcopy(buffer_shape), dtype=np.float16)
+    voxel_tracker.add_voxels(buffer_size)
+
     for buffer_index in range(nb_buffers):
         print("\nBUFFER ", buffer_index, '/', nb_buffers)
         if DEBUG:
@@ -422,7 +425,7 @@ def _run_keep(arrays_dict, buffers, buffers_to_infiles, buffer_to_outfiles):
             
         buffer = buffers[buffer_index]
         nb_opening_seeks_tmp, nb_inside_seeks_tmp, t1, t2 = process_buffer(buffer_data, arrays_dict, buffers, buffer, voxel_tracker, buffers_to_infiles, buffer_to_outfiles, cache)
-
+        
         read_time += t1
         write_time += t2
         nb_infile_openings += nb_opening_seeks_tmp
@@ -492,9 +495,6 @@ def keep_algorithm(arg_R, arg_O, arg_I, arg_B, volumestokeep, arg_file_format, a
         'version': 1,
         'disable_existing_loggers': True,
     })
-
-    
-    
 
     # initialize utility variables
     global outdir_path, R, O, I, B, file_format, input_dirpath, sanity_check, addition
