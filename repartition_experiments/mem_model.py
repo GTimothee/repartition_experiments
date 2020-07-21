@@ -44,7 +44,7 @@ def model(case, m):
                     return tuple(B), [1]
 
                 print(f'--------Storing F2 and F3--------')
-                phi2 = floor( (m - theta[1] * (omega[2] + Lambd[2])) / ((n+1) * Lambd[2]))
+                phi2 = floor( (m - theta[1] * (omega[2] - (Lambd[2]*n))) / ((n+1) * Lambd[2]))
                 print(f'Max value for lambdaj - thetaj: {phi2}')
                 print(f'Max value for Bj: {B[1] + phi2}')
 
@@ -96,6 +96,11 @@ def get_arguments():
         type=str, 
         help='')
 
+    parser.add_argument('nb_gig', 
+        action='store', 
+        type=float, 
+        help='')
+
     return parser.parse_args()
 
 
@@ -117,10 +122,9 @@ if __name__ == "__main__":
     from repartition_experiments.algorithms.keep_algorithm import get_input_aggregate
 
     ONE_GIG = 1000000000
-    nb_gig = 16
 
     for k, case in cases.items():
         print(f"\n-------Processing case {k}")
-        B, volumestokeep = model(case[0], nb_gig * ONE_GIG / 2) # WARNING: m is a number of voxels, not bytes
+        B, volumestokeep = model(case[0], args.nb_gig * ONE_GIG / 2) # WARNING: m is a number of voxels, not bytes
         print(f'Buffer shape for ref {case[0]["ref"]}: {B}')
         print(f'Volumes to keep for ref {case[0]["ref"]}: {volumestokeep}')

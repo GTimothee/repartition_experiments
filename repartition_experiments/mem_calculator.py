@@ -57,6 +57,7 @@ def compute_memory(R, O, I, B, volumestokeep):
     # find omega and theta max
     omega_max = [0,0,0]
     T_max = [0,0,0]
+    T_min = [1000000000000,1000000000000,1000000000000]
     for buffer_index in buffers_volumes.keys():
         _3d_index = numeric_to_3d_pos(buffer_index, buffers_partition, order='C')
         T, Cs = get_theta(buffers_volumes, buffer_index, _3d_index, O, B)
@@ -66,6 +67,8 @@ def compute_memory(R, O, I, B, volumestokeep):
                 omega_max[i] = Cs[i]
             if T[i] > T_max[i]:
                 T_max[i] = T[i]
+            if T[i] < T_min[i]:
+                T_min[i] = T[i]
 
     print("omega max found:", omega_max)
     print("theta max found:", T_max)
@@ -76,12 +79,12 @@ def compute_memory(R, O, I, B, volumestokeep):
     N = R[1]/B[1] * R[2]/B[2]
 
     i, j, k = 0, 1, 2
-    F1 = omega_max[k] * T_max[j] * T_max[i]
-    F2 = T_max[k] * omega_max[j] * T_max[i]
-    F3 = omega_max[k] * omega_max[j] * T_max[i]
-    F4 = T_max[k] * T_max[j] * omega_max[i]
-    F5 = omega_max[k] * T_max[j] * omega_max[i]
-    F6 = T_max[k] * omega_max[1] * omega_max[i]
+    F1 = omega_max[k] * T_min[j] * T_min[i]
+    F2 = T_min[k] * omega_max[j] * T_min[i]
+    F3 = omega_max[k] * omega_max[j] * T_min[i]
+    F4 = T_min[k] * T_min[j] * omega_max[i]
+    F5 = omega_max[k] * T_min[j] * omega_max[i]
+    F6 = T_min[k] * omega_max[1] * omega_max[i]
     F7 = omega_max[k] * omega_max[j] * omega_max[i]
 
     print('F1:', F1)
