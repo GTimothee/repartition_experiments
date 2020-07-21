@@ -90,18 +90,11 @@ def hypercubes_overlap(hypercube1, hypercube2):
 
     lowercorner1, uppercorner1 = hypercube1.get_corners()
     lowercorner2, uppercorner2 = hypercube2.get_corners()
-    nb_dims = len(uppercorner1)
     
-    nb_matching_dims = 0
-    for i in range(nb_dims):
+    for i in range(len(uppercorner1)):
         if uppercorner1[i] <= lowercorner2[i] or \
             uppercorner2[i] <= lowercorner1[i]:
             return False
-        elif uppercorner1[i] == uppercorner2[i] and lowercorner1[i] == lowercorner2[i]:
-            nb_matching_dims += 1 
-
-    if nb_matching_dims == nb_dims: # if corners are the same
-        return True
 
     return True
 

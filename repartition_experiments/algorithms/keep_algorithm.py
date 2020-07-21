@@ -188,35 +188,33 @@ def add_to_cache(cache, vol_to_write, data, buffer_slices, outvolume_index, over
         array has shape volumetowrite, missing parts are full of zeros
     """
     s = buffer_slices
-    s_in = to_basis(overlap_vol_in_R, vol_to_write).get_slices()
 
     # add list in cache for outfile index if nothing for this file in cache yet
     if not outvolume_index in cache.keys():
-        print("add key")
         cache[outvolume_index] = list()
         if DEBUG:
+            print("add key")
             print_mem_info()
 
     # if cache already contains part of the outfile part, we add data to it 
     for element in cache[outvolume_index]:
-        vol_to_write_tmp, volumes_list, array, tracker = element
+        vol_to_write_tmp, volumes_list, arrays_list, tracker = element
 
         if equals(vol_to_write, vol_to_write_tmp):
             volumes_list.append(overlap_vol_in_R)
-            array[s_in[0][0]:s_in[0][1],s_in[1][0]:s_in[1][1],s_in[2][0]:s_in[2][1]] = copy.deepcopy(data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]])
+            arrays_list.append(copy.deepcopy(data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]]))
             tracker.add_volume(overlap_vol_in_R)
-            element = (vol_to_write_tmp, volumes_list, array, tracker)  # update element
+            element = (vol_to_write_tmp, volumes_list, arrays_list, tracker)  # update element
             return 
 
     # add new element
     if DEBUG:
         print_mem_info()
-    array = np.empty(copy.deepcopy(vol_to_write.get_shape()), dtype=np.float16)
-    array[s_in[0][0]:s_in[0][1],s_in[1][0]:s_in[1][1],s_in[2][0]:s_in[2][1]] = copy.deepcopy(data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]])
+    arrays_list = [copy.deepcopy(data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]])]
     volumes_list = [overlap_vol_in_R]
     tracker = Tracker()
     tracker.add_volume(overlap_vol_in_R)
-    cache[outvolume_index].append((vol_to_write, volumes_list, array, tracker))    
+    cache[outvolume_index].append((vol_to_write, volumes_list, arrays_list, tracker))      
 
 
 def get_overlap_volume(v1, v2):
@@ -238,14 +236,18 @@ def complete(cache, vol_to_write, outvolume_index):
 
     is_complete = False
     to_del = -1
-    target = None
+    arr = None
     for i, e in enumerate(cache[outvolume_index]):
-        v, v_list, array, tracker = e 
+        v, v_list, a_list, tracker = e 
         if equals(vol_to_write, v):
             if tracker.is_complete(vol_to_write.get_corners()): 
                 
-                target = array
-                del array
+                arr = np.empty(copy.deepcopy(vol_to_write.get_shape()), dtype=np.float16)
+                for v_tmp, a_tmp in zip(v_list, a_list):
+                    s = to_basis(v_tmp, vol_to_write).get_slices()
+                    arr[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = np.copy(a_tmp)
+                    del a_tmp
+
                 to_del = i
                 is_complete = True
                 break
@@ -253,7 +255,7 @@ def complete(cache, vol_to_write, outvolume_index):
     if to_del != -1:
         del cache[outvolume_index][to_del]
     
-    return is_complete, target
+    return is_complete, arr
 
 
 
@@ -394,7 +396,7 @@ def process_buffer(data, arrays_dict, buffers, buffer, voxel_tracker, buffers_to
     # stats
     # data_movement -= buffer_size
     voxel_tracker.add_voxels(data_movement)
-    print('[tracker] end of buffer -> predicted:', voxel_tracker.nb_voxels*2/1000000)
+    # print('[tracker] end of buffer -> predicted:', voxel_tracker.nb_voxels*2/1000000)
 
     return nb_opening_seeks_tmp, nb_inside_seeks_tmp, t1, tmp_write
 

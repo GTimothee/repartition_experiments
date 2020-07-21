@@ -81,10 +81,9 @@ class HDF5_manager:
         input_file = os.path.join(dirpath, filename)
 
         if slices == None:
-            print("read all")
+            # print("read all")
             with h5py.File(input_file, 'r') as f:
-                data = f['/data'][:,:,:]
-                return data
+                return f['/data'][:,:,:]
 
         s = slices
         # print("read part")
@@ -99,14 +98,12 @@ class HDF5_manager:
         """
         if slices == None:
             with h5py.File(filepath, 'r') as f:
-                dset = f['/data']
-                data = dset[:,:,:]
-                return data
+                return f['/data'][:,:,:]
 
         s = slices
         with h5py.File(filepath, 'r') as f:
-            dset = f['/data']
-            data = dset[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] 
+            data = np.empty((s[0][1]-s[0][0],s[1][1]-s[1][0],s[2][1]-s[2][0]), dtype=np.float16)
+            f['/data'].read_direct(data, np.s_[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]])
         return data
 
 
@@ -131,24 +128,13 @@ class HDF5_manager:
         with h5py.File(outfilepath, mode) as f:
             if not "/data" in f.keys():
                 if O != data.shape:
-                    # print("write 1")
-                    # print("right here")
-                    # print_mem_info()
-                    null_arr = np.empty(O, dtype=dtype)
-                    # null_arr[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
-                    
-                    outdset = f.create_dataset("/data", O, data=null_arr, dtype=dtype)  # initialize an empty dataset
-                    # print_mem_info()
+                    outdset = f.create_dataset("/data", O, data=np.empty(O, dtype=dtype), dtype=dtype)  # initialize an empty dataset
                     outdset[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
-                    # print_mem_info()
                 else:
-                    # print("write 2")
                     f.create_dataset("/data", O, data=data, dtype=dtype)
                 empty_dataset = True
             else:
-                # print("write 3")
-                outdset = f["/data"]
-                outdset[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
+                f["/data"][s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
 
         return empty_dataset
 
