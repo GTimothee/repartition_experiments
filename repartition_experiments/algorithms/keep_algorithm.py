@@ -37,7 +37,7 @@ def remove_from_cache(cache, outfile_index, volume_to_write):
     del volumes_in_cache[target]
     cache[outfile_index] = volumes_in_cache
 
-@profile
+
 def write_in_outfile(data_part, vol_to_write, file_manager, outdir_path, outvolume, outfile_shape, outfiles_partition, cache, from_cache):
     """ Writes an output file part which is ready to be written.
 
@@ -59,7 +59,7 @@ def write_in_outfile(data_part, vol_to_write, file_manager, outdir_path, outvolu
 
     return t2, empty_dataset
 
-@profile
+
 def write_in_outfile2(data, buffer_slices, vol_to_write, file_manager, outdir_path, outvolume, outfile_shape, outfiles_partition, cache, from_cache):
     """ Writes an output file part which is ready to be written.
 
@@ -83,7 +83,7 @@ def write_in_outfile2(data, buffer_slices, vol_to_write, file_manager, outdir_pa
 
     return t2, empty_dataset
 
-@profile
+
 def get_buffers_to_infiles(buffers, involumes):
     """ Returns a dictionary mapping each buffer (numeric) index to the list of input files from which it needs to load data.
     """
@@ -97,7 +97,7 @@ def get_buffers_to_infiles(buffers, involumes):
 
     return buffers_to_infiles
 
-@profile
+
 def read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input_dirpath, R, I):
     """ Read a buffer from several input files.
 
@@ -156,7 +156,7 @@ def read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input
 
     return data, t1, nb_opening_seeks_tmp, nb_inside_seeks_tmp
 
-@profile
+
 def equals(v1, v2):
     """ Test if two volumes have same coordinates and shape
     """
@@ -178,7 +178,7 @@ def equals(v1, v2):
     
     return True
 
-@profile
+
 def add_to_cache(cache, vol_to_write, data, buffer_slices, outvolume_index, overlap_vol_in_R, datapart_volume):
     """
     cache: 
@@ -218,20 +218,20 @@ def add_to_cache(cache, vol_to_write, data, buffer_slices, outvolume_index, over
     tracker.add_volume(overlap_vol_in_R)
     cache[outvolume_index].append((vol_to_write, volumes_list, array, tracker))    
 
-@profile
+
 def get_overlap_volume(v1, v2):
     pair = get_overlap_subarray(v1, v2)  # overlap coordinates in basis of R
     p1, p2 = tuple(pair[0]), tuple(pair[1])
     return Volume(0, p1, p2)
 
-@profile
+
 def get_data_to_write(vol_to_write, buff_volume, data):
     """ get intersection between the buffer volume and the volume to write into outfile
     """
     v1 = get_overlap_volume(vol_to_write, buff_volume) 
     return v1, to_basis(v1, buff_volume).get_slices()
 
-@profile
+
 def complete(cache, vol_to_write, outvolume_index):
     """ Test if a volume to write is complete in cache i.e. can be written
     """
@@ -256,7 +256,7 @@ def complete(cache, vol_to_write, outvolume_index):
     return is_complete, target
 
 
-@profile
+
 def print_mem_info():
     global start_mem
 
@@ -271,7 +271,7 @@ def print_mem_info():
         d = d - start_mem
     print(d)
 
-@profile
+
 def write_or_cache(outvolume, vol_to_write, buffer, cache, data):
     data_to_write_vol, buffer_slices = get_data_to_write(vol_to_write, buffer, data)
     buff_write = 0
@@ -348,7 +348,7 @@ def write_or_cache(outvolume, vol_to_write, buffer, cache, data):
 
     return buff_write, volume_written, data_moved
 
-@profile
+
 def process_buffer(data, arrays_dict, buffers, buffer, voxel_tracker, buffers_to_infiles, buffer_to_outfiles, cache):
     # voxel tracker
     data_shape = buffer.get_shape()
@@ -398,7 +398,7 @@ def process_buffer(data, arrays_dict, buffers, buffer, voxel_tracker, buffers_to
 
     return nb_opening_seeks_tmp, nb_inside_seeks_tmp, t1, tmp_write
 
-@profile
+
 def _run_keep(arrays_dict, buffers, buffers_to_infiles, buffer_to_outfiles):
     cache = dict()
     voxel_tracker = VoxelTracker()
@@ -483,7 +483,7 @@ def end_sanity_check():
 
 start_mem = None
 
-@profile
+
 def keep_algorithm(arg_R, arg_O, arg_I, arg_B, volumestokeep, arg_file_format, arg_outdir_path, arg_input_dirpath, arg_addition, arg_sanity_check=False):
     """
         cache: dict,
