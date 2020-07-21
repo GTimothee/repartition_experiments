@@ -202,7 +202,7 @@ def add_to_cache(cache, vol_to_write, data, buffer_slices, outvolume_index, over
 
         if equals(vol_to_write, vol_to_write_tmp):
             volumes_list.append(overlap_vol_in_R)
-            arrays_list.append(copy.deepcopy(data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]]))
+            arrays_list.append(data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]])
             tracker.add_volume(overlap_vol_in_R)
             element = (vol_to_write_tmp, volumes_list, arrays_list, tracker)  # update element
             return 
@@ -210,7 +210,7 @@ def add_to_cache(cache, vol_to_write, data, buffer_slices, outvolume_index, over
     # add new element
     if DEBUG:
         print_mem_info()
-    arrays_list = [copy.deepcopy(data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]])]
+    arrays_list = [data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]]]
     volumes_list = [overlap_vol_in_R]
     tracker = Tracker()
     tracker.add_volume(overlap_vol_in_R)
