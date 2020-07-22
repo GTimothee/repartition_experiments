@@ -2,30 +2,6 @@ import sys, json, argparse
 
 DEBUG = False
 
-def get_theta(buffers_volumes, buffer_index, _3d_index, O, B):
-    T = list()
-    Cs = list()
-    for dim in range(len(buffers_volumes[buffer_index].p1)):
-        if B[dim] < O[dim]:
-            C = 0 
-        else:            
-            C = ((_3d_index[dim]+1) * B[dim]) % O[dim]
-            if C == 0 and B[dim] != O[dim]:  # particular case 
-                C = O[dim]
-
-        if C < 0:
-            raise ValueError("modulo should not return negative value")
-
-        Cs.append(C)
-        T.append(B[dim] - C)   
-    
-    if DEBUG: 
-        print(f'\nProcessing buffer {buffer_index}')
-        print(f'C: {Cs}')
-        print(f'theta: {T}')
-
-    return T, Cs
-
 
 def get_arguments():
     """ Get arguments from console command.
@@ -127,7 +103,7 @@ if __name__ == "__main__":
         if "PYTHONPATH" in k:
             sys.path.insert(0, v)
 
-    from repartition_experiments.algorithms.utils import get_named_volumes, get_blocks_shape, numeric_to_3d_pos
+    from repartition_experiments.algorithms.utils import get_named_volumes, get_blocks_shape, numeric_to_3d_pos, get_theta
     from repartition_experiments.algorithms.keep_algorithm import get_input_aggregate
 
     if args.cases_config != "none":

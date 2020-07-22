@@ -112,18 +112,20 @@ def get_arrays_dict(buff_to_vols, buffers_volumes, outfiles_volumes, outfiles_pa
             if not crossed:
                 print("volume miss:")
                 volume_in_buffer.print()
-                
-    # below lies a sanity check
-    outfileskeys = list()
-    for k, v in outfiles_volumes.items():
-        outfileskeys.append(v.index)
-    arraysdictkeys = list(array_dict.keys())
-    missing_keys = set(outfileskeys) - set(arraysdictkeys)
-    if not len(array_dict.keys()) == len(outfileskeys):
-        print(f'len(array_dict.keys()): {len(arraysdictkeys)}')
-        print(f'len(outfileskeys): {len(outfileskeys)}')
-        print(f'nb missing keys: {len(missing_keys)}')
-        raise ValueError("Something is wrong, not all output files will be written")
+    
+
+    if DEBUG_LOCAL:
+        # below lies a sanity check
+        outfileskeys = list()
+        for k, v in outfiles_volumes.items():
+            outfileskeys.append(v.index)
+        arraysdictkeys = list(array_dict.keys())
+        missing_keys = set(outfileskeys) - set(arraysdictkeys)
+        if not len(array_dict.keys()) == len(outfileskeys):
+            print(f'len(array_dict.keys()): {len(arraysdictkeys)}')
+            print(f'len(outfileskeys): {len(outfileskeys)}')
+            print(f'nb missing keys: {len(missing_keys)}')
+            raise ValueError("Something is wrong, not all output files will be written")
     return array_dict, buffer_to_outfiles
 
 
@@ -452,8 +454,8 @@ def get_buff_to_vols(R, B, O, buffers_volumes, buffers_partition):
                 v.print()
             print('\n')
 
-        first_sanity_check(buffers_volumes, buffer_index, volumes_list)
-        second_sanity_check(B, O, volumes_list)
+            first_sanity_check(buffers_volumes, buffer_index, volumes_list)
+            second_sanity_check(B, O, volumes_list)
 
         buff_to_vols[buffer_index] = volumes_list
         
@@ -486,25 +488,28 @@ def compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partititon
     buff_to_vols = get_buff_to_vols(R, B, O, buffers_volumes, buffers_partition)
     arrays_dict, buffer_to_outfiles = get_arrays_dict(buff_to_vols, buffers_volumes, outfiles_volumes, outfiles_partititon) 
 
-    # sanity check
-    outvolumes_trackers_preprocess = dict()
-    for index, outvol in outfiles_volumes.items():
-        outvolumes_trackers_preprocess[index] = Tracker()
-    for k, v_list in arrays_dict.items():
-        for v in v_list:
-            outvolumes_trackers_preprocess[k].add_volume(v)
-        assert outvolumes_trackers_preprocess[k].is_complete(outfiles_volumes[k].get_corners())
+
+    if DEBUG_LOCAL:
+        # sanity check
+        outvolumes_trackers_preprocess = dict()
+        for index, outvol in outfiles_volumes.items():
+            outvolumes_trackers_preprocess[index] = Tracker()
+        for k, v_list in arrays_dict.items():
+            for v in v_list:
+                outvolumes_trackers_preprocess[k].add_volume(v)
+            assert outvolumes_trackers_preprocess[k].is_complete(outfiles_volumes[k].get_corners())
 
     merge_cached_volumes(arrays_dict, volumestokeep, outfiles_volumes)
 
-    # sanity check
-    outvolumes_trackers_preprocess = dict()
-    for index, outvol in outfiles_volumes.items():
-        outvolumes_trackers_preprocess[index] = Tracker()
-    for k, v_list in arrays_dict.items():
-        for v in v_list:
-            outvolumes_trackers_preprocess[k].add_volume(v)
-        assert outvolumes_trackers_preprocess[k].is_complete(outfiles_volumes[k].get_corners())
+    if DEBUG_LOCAL:
+        # sanity check
+        outvolumes_trackers_preprocess = dict()
+        for index, outvol in outfiles_volumes.items():
+            outvolumes_trackers_preprocess[index] = Tracker()
+        for k, v_list in arrays_dict.items():
+            for v in v_list:
+                outvolumes_trackers_preprocess[k].add_volume(v)
+            assert outvolumes_trackers_preprocess[k].is_complete(outfiles_volumes[k].get_corners())
 
     # compute number of seeks
     nb_file_openings = 0

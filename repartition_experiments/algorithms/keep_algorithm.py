@@ -11,6 +11,7 @@ DEBUG = False
 
 import gc
 
+
 def get_input_aggregate(O, I):
     lambd = list()
     dimensions = len(O)
@@ -441,6 +442,8 @@ def _run_keep(arrays_dict, buffers, buffers_to_infiles, buffer_to_outfiles):
             if buffer_index == 1:
                 sys.exit()
 
+        buffer_data = np.empty(copy.deepcopy(buffer_shape), dtype=np.float16)
+
     file_manager.close_infiles()
 
     _monitor.stop()
@@ -484,6 +487,7 @@ def end_sanity_check():
 
 
 start_mem = None
+
 
 
 def keep_algorithm(arg_R, arg_O, arg_I, arg_B, volumestokeep, arg_file_format, arg_outdir_path, arg_input_dirpath, arg_addition, arg_sanity_check=False):

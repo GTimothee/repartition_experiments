@@ -64,6 +64,26 @@ class Volume:
         print(f"Volume name: {self.index}, ({self.p1[0]}:{self.p2[0]},{self.p1[1]}:{self.p2[1]},{self.p1[2]}:{self.p2[2]}), shape:({self.p2[0]-self.p1[0]},{self.p2[1]-self.p1[1]},{self.p2[2]-self.p1[2]})")
 
 
+def get_theta(buffers_volumes, buffer_index, _3d_index, O, B):
+    T = list()
+    Cs = list()
+    for dim in range(len(buffers_volumes[buffer_index].p1)):
+        if B[dim] < O[dim]:
+            C = 0 
+        else:            
+            C = ((_3d_index[dim]+1) * B[dim]) % O[dim]
+            if C == 0 and B[dim] != O[dim]:  # particular case 
+                C = O[dim]
+
+        if C < 0:
+            raise ValueError("modulo should not return negative value")
+
+        Cs.append(C)
+        T.append(B[dim] - C)   
+
+    return T, Cs
+
+
 def get_opened_files():
     proc = psutil.Process()
     print(f"Number of opened files: {len(proc.open_files())}") 
