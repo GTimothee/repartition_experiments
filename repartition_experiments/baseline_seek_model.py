@@ -4,8 +4,6 @@ def get_cuts(big_block, small_block):
     def get_cuts_by_dim(big_block, small_block, i):
         nb_max = int(big_block[i] / small_block[i])
         cuts = list(tuple([small_block[i]*j for j in range(nb_max+1)]))
-        print(cuts)
-        cuts.remove(0)
         return cuts
 
     return [get_cuts_by_dim(big_block, small_block, i) for i in range(3)]
@@ -55,7 +53,11 @@ if __name__ == "__main__":
         nb_infile_seeks = (R[0]/I[0])*(R[1]/I[1])*(R[2]/I[2])
 
         o_cuts = get_cuts(R, O)
+        print(o_cuts)
         i_cuts = get_cuts(R, I)
+        print(i_cuts)
+
+        # remove duplicates (where there is match betw O and I)
         duplicates = list()
         for o, i in zip(o_cuts, i_cuts):
             tmp_list = list()

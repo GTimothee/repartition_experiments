@@ -42,12 +42,10 @@ def write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path,
     else:
         pass
 
-    print("DONT_WRITE: ", DONT_WRITE)
-    
     if DONT_WRITE:
-        print(f"Overlap shape: {overlap_shape}")
-        print(f"Outfile shape: {O}")
-        print(f"Number seeks: {nb_outfile_seeks_tmp}")
+        # print(f"Overlap shape: {overlap_shape}")
+        # print(f"Outfile shape: {O}")
+        # print(f"Number seeks: {nb_outfile_seeks_tmp}")
         return overlap_shape, 0, nb_outfile_seeks_tmp
 
     slices = [(lowcorner[0], upcorner[0]), (lowcorner[1], upcorner[1]), (lowcorner[2], upcorner[2])]
