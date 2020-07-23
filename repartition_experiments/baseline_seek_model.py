@@ -3,7 +3,8 @@ import argparse, json, sys, os
 def get_cuts(big_block, small_block):
     def get_cuts_by_dim(big_block, small_block, i):
         nb_max = int(big_block[i] / small_block[i])
-        cuts = list(tuple([small_block[i]*j for j in range(nb_max+1)]))
+        cuts = list(tuple([small_block[i]*j for j in range(nb_max)])) # stop before R[dim]
+        cuts.remove(0) # remove 0
         return cuts
 
     return [get_cuts_by_dim(big_block, small_block, i) for i in range(3)]
@@ -58,28 +59,44 @@ if __name__ == "__main__":
         print(i_cuts)
 
         # remove duplicates (where there is match betw O and I)
-        duplicates = list()
+        d = list()
         for o, i in zip(o_cuts, i_cuts):
-            tmp_list = list()
-            for e in o:
-                if e in i:
-                    tmp_list.append(e)
-            duplicates.append(tmp_list)
-        for i, tmp_list in enumerate(duplicates):
-            for e in tmp_list:
-                o_cuts[i].remove(e)
-                i_cuts[i].remove(e)
+            d_dim = 0
+            last_was_cut = False
+            
+            values = o + i
+            values.sort()
+
+            print(f"values: {values}")
+            print(f"len values {len(values)}")
+            j = 0
+            while j < len(values): 
+                print(f"j: {j}")    
+                if j == (len(values) - 1) or values[j] != values[j+1]:
+                    print("a")
+                    if last_was_cut:
+                        d_dim += 1
+                    else:
+                        d_dim += 2
+                        last_was_cut = True
+                    j += 1
+                else:
+                    print("b")
+                    last_was_cut = False 
+                    j += 2
+
+            print(f"d_dim: {d_dim}")
+            d.append(d_dim)
         
-        d = [len(tuple(o+i)) for o, i in zip(o_cuts, i_cuts)]
         alpha = [1 if d_tmp > 0 else 0 for d_tmp in d]
 
         print(f"d: {d}")
-        a = (d[2]+2)*R[0]*R[1]*alpha[2]
-        b = (d[1]+2)*R[0]*(R[2]/I[2])*(1-alpha[2])*alpha[1]
-        c = (d[0]+2)*(R[1]/I[1])*(R[2]/I[2])*(1-alpha[2])*(1-alpha[1])*alpha[0]
+        a = (d[2])*R[0]*R[1]*alpha[2]
+        b = (d[1])*R[0]*(R[2]/I[2])*(1-alpha[2])*alpha[1]
+        c = (d[0])*(R[1]/I[1])*(R[2]/I[2])*(1-alpha[2])*(1-alpha[1])*alpha[0]
         nb_outfile_seeks = a + b + c
 
-        print(f"Running basleine algorithm...")
+        print(f"Running baseline algorithm...")
         t_read, t_write, seek_data = baseline_rechunk(indir_path, outdir_path, O, I, R, 'HDF5', False, debug_mode=False, clean_out_dir=False, dont_write=True)
         nb_outfile_openings_exp, nb_outfile_seeks_exp, nb_infile_openings_exp, nb_infile_seeks_exp = seek_data 
 
@@ -88,5 +105,7 @@ if __name__ == "__main__":
         print(f"nb infile seeks: {nb_infile_seeks} (reality: {nb_infile_openings_exp}+{nb_infile_seeks_exp})")
         print(f"nb outfile seeks: {nb_outfile_seeks} (reality: {nb_outfile_openings_exp}+{nb_outfile_seeks_exp})")
 
-        sys.exit()
+        if k == "case 1_1":
+            sys.exit()
+        # assert nb_outfile_seeks == nb_outfile_seeks_exp
         
