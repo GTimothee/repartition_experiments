@@ -3,12 +3,14 @@ import numpy as np
 
 from repartition_experiments.algorithms.utils import _3d_to_numeric_pos, get_file_manager, get_blocks_shape, get_named_volumes, hypercubes_overlap, get_overlap_subarray, numeric_to_3d_pos, Volume
 from repartition_experiments.algorithms.utils import get_opened_files
+from repartition_experiments.algorithms.tracker import Tracker
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__ + 'baseline')
 
 DEBUG_LOCAL = False
 DONT_WRITE = False
+tracker = None
 
 def get_overlap_volume(v1, v2):
     pair = get_overlap_subarray(v1, v2)  # overlap coordinates in basis of R
@@ -16,7 +18,7 @@ def get_overlap_volume(v1, v2):
     return Volume(0, p1, p2)
 
 
-def write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager, addition):
+def write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager, addition, tracker):
     """ Write intersection of input file and output file into output file.
 
     Arguments:
@@ -30,7 +32,11 @@ def write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path,
         file_manager: object to read/write into files using a specific file format
     """
     lowcorner, upcorner = get_overlap_subarray(involume, outvolume)  # find subarray crossing both files in the basis of the original image
-    overlap_shape = get_overlap_volume(involume, outvolume).get_shape()
+    overlap_vol = get_overlap_volume(involume, outvolume)
+    overlap_shape = overlap_vol.get_shape()
+    if DONT_WRITE:
+        tracker.add_volume(overlap_vol)
+
     nb_outfile_seeks_tmp = 0
     s = overlap_shape
     if s[2] != O[2]:
@@ -111,6 +117,8 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, addition, de
     """
     global DEBUG_LOCAL
     global DONT_WRITE
+    global tracker
+    tracker = Tracker()
     DEBUG_LOCAL = True if debug_mode else False
     DONT_WRITE = True if dont_write else False
 
@@ -150,13 +158,16 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, addition, de
         
         for outvolume in outfiles_volumes:
             if hypercubes_overlap(involume, outvolume):
-                shape, t2, nb_outfile_seeks_tmp = write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager, addition)
+                shape, t2, nb_outfile_seeks_tmp = write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager, addition, tracker)
                 t_write += t2
                 vols_written.append(shape)
                 nb_outfile_openings += 1
                 nb_outfile_seeks += nb_outfile_seeks_tmp
         
         file_manager.close_infiles()
+
+    if DONT_WRITE:
+        assert tracker.is_complete(((0,0,0), R))
 
     # print("\nShapes written:")
     # for row in vols_written: 
