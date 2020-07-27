@@ -161,7 +161,7 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, addition, de
                 shape, t2, nb_outfile_seeks_tmp = write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager, addition, tracker)
                 t_write += t2
                 vols_written.append(shape)
-                nb_outfile_openings += 1
+                # nb_outfile_openings += 1 already included in nb_outfile_seeks
                 nb_outfile_seeks += nb_outfile_seeks_tmp
         
         file_manager.close_infiles()

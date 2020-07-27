@@ -66,7 +66,6 @@ if __name__ == "__main__":
             o_cuts = get_cuts(R, O)
             i_cuts = get_cuts(R, I)
 
-            # remove duplicates (where there is match betw O and I)
             nb_nocostly = [0,0,0]
             d = list()
             dim_index = 0
@@ -131,7 +130,7 @@ if __name__ == "__main__":
             print(f"alpha: {alpha}")
             print(f"parts: {a}, {b}, {c}")
             print(f"nb infile seeks: {nb_infile_seeks} (reality: {nb_infile_openings_exp}+{nb_infile_seeks_exp})")
-            print(f"nb outfile seeks: {nb_outfile_seeks} (reality: {nb_outfile_openings_exp}+{nb_outfile_seeks_exp})")
+            print(f"nb outfile seeks: {nb_outfile_seeks} (reality: {nb_outfile_seeks_exp})")
 
             # if k == "case 1_1":
             #     sys.exit()

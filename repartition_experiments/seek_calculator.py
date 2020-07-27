@@ -33,17 +33,79 @@ def load_json(filepath):
         return json.load(f)
 
 
+def preprocess(b_cuts, i_cuts):
+    """ 
+        b: buffer
+        i: blocks
+    """
+
+    nb_nocostly = [0,0,0]
+    d = list()
+    dim_index = 0
+    for b, i in zip(b_cuts, i_cuts):
+        d_dim = 0
+        
+        i = list(map(lambda x: (0, x), i))
+        b = list(map(lambda x: (1, x), b))
+        values = i+b
+        values.sort(key=lambda x:x[1])
+
+        print(f"values: {values}")
+        print(f"len values {len(values)}")
+        j = 0
+        last_buffer_cut_index = -1
+        while j < len(values): # for each cut
+            print(f"j: {j}")    
+            
+            # test if not costly
+            cond1 = (values[j][1] == values[j+1][1])
+            lower_b = b[last_buffer_cut_index][1] if last_buffer_cut_index > -1 else 0
+            cond2 = (values[j][0] == 0 and values[j][1] - I[dim_index] >= lower_b)
+
+            if not cond2:
+                print(f"{values[j][1] - O[dim_index]}<{lower_b}")
+
+            # if not costly
+            if cond2:
+                print("not costly")
+                nb_nocostly[dim_index] += 1
+                
+            # if costly
+            else:
+                print("costly")
+                d_dim += 1
+
+            if values[j][0] == 1 or cond1:
+                last_buffer_cut_index += 1
+
+            if cond1:
+                j += 2
+            else:
+                j += 1  
+
+        print(f"d_dim: {d_dim}")
+        d.append(d_dim)
+        dim_index += 1
+
+    return d, nb_nocostly
+
+
 def compute_infile_seeks(R, B, I):
 
     b_cuts = get_cuts(R, B)
     i_cuts = get_cuts(R, I)
-    d = [len(b+i) for b, i in zip(b_cuts, i_cuts)]
+
+    d, nb_nocostly = preprocess(b_cuts, i_cuts)
+    
     alpha = [1 if d_tmp > 0 else 0 for d_tmp in d]
 
-    a = (d[2]+1)*R[0]*R[1]*alpha[2]
-    b = (d[1]+1)*R[0]*(R[2]/B[2])*(1-alpha[2])*alpha[1]
-    c = (d[0]+1)*(R[1]/B[1])*(R[2]/B[2])*(1-alpha[2])*(1-alpha[1])*alpha[0]
-    return a+b+c
+    print(f"d: {d}")
+    print(f"nb_nocostly: {nb_nocostly}")
+    a = (d[2])*R[0]*R[1]
+    b = (d[1])*R[0]*nb_nocostly[2]
+    c = (d[0])*nb_nocostly[1]*nb_nocostly[2]
+
+    return a + b + c
 
 
 if __name__ == "__main__":
