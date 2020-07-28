@@ -33,61 +33,6 @@ def load_json(filepath):
         return json.load(f)
 
 
-def preprocess(b_cuts, i_cuts):
-    """ 
-        b: buffer
-        i: blocks
-    """
-
-    nb_nocostly = [0,0,0]
-    d = list()
-    dim_index = 0
-    for b, i in zip(b_cuts, i_cuts):
-        d_dim = 0
-        
-        i = list(map(lambda x: (0, x), i))
-        b = list(map(lambda x: (1, x), b))
-        values = i+b
-        values.sort(key=lambda x:x[1])
-
-        print(f"values: {values}")
-        print(f"len values {len(values)}")
-        j = 0
-        last_buffer_cut_index = -1
-        while j < len(values): # for each cut
-            print(f"j: {j}")    
-            
-            # test if not costly
-            cond1 = (values[j][1] == values[j+1][1])
-            lower_b = b[last_buffer_cut_index][1] if last_buffer_cut_index > -1 else 0
-            cond2 = (values[j][0] == 0 and values[j][1] - I[dim_index] >= lower_b)
-
-            if not cond2:
-                print(f"{values[j][1] - O[dim_index]}<{lower_b}")
-
-            # if not costly
-            if cond2:
-                print("not costly")
-                nb_nocostly[dim_index] += 1
-                
-            # if costly
-            else:
-                print("costly")
-                d_dim += 1
-
-            if values[j][0] == 1 or cond1:
-                last_buffer_cut_index += 1
-
-            if cond1:
-                j += 2
-            else:
-                j += 1  
-
-        print(f"d_dim: {d_dim}")
-        d.append(d_dim)
-        dim_index += 1
-
-    return d, nb_nocostly
 
 
 def compute_infile_seeks(R, B, I):
