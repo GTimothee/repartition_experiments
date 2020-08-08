@@ -50,29 +50,29 @@ def preprocess(buffer_cuts, block_cuts, block_shape):
         values = o+i
         values.sort(key=lambda x:x[1])
 
-        print(f"values: {values}")
-        print(f"len values {len(values)}")
+        # print(f"values: {values}")
+        # print(f"len values {len(values)}")
         j = 0
         last_infile_cut_index = -1
         while j < len(values): # for each cut
-            print(f"j: {j}")    
+            # print(f"j: {j}")    
             
             # test if not costly
             cond1 = (values[j][1] == values[j+1][1])
             lower_i = i[last_infile_cut_index][1] if last_infile_cut_index > -1 else 0
             cond2 = (values[j][0] == 0 and values[j][1] - block_shape[dim_index] >= lower_i)
 
-            if not cond2:
-                print(f"{values[j][1] - block_shape[dim_index]}<{lower_i}")
+            # if not cond2:
+                # print(f"{values[j][1] - block_shape[dim_index]}<{lower_i}")
 
             # if not costly
             if cond2:
-                print("not costly")
+                # print("not costly")
                 nb_nocostly[dim_index] += 1
                 
             # if costly
             else:
-                print("costly")
+                # print("costly")
                 d_dim += 1
 
             if values[j][0] == 1 or cond1:

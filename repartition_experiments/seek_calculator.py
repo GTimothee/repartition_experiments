@@ -1,5 +1,6 @@
 import math, argparse, json, sys, time
 
+
 def get_divisors(n) : 
     i = 1
     divisors = list()
@@ -25,6 +26,16 @@ def get_arguments():
         type=str, 
         help='Path to configuration file containing paths of data directories.')
 
+    parser.add_argument('cases_config', 
+        action='store', 
+        type=str, 
+        help='')
+
+    parser.add_argument('case_name', 
+        action='store', 
+        type=str, 
+        help='')
+
     return parser.parse_args()
 
 
@@ -33,19 +44,14 @@ def load_json(filepath):
         return json.load(f)
 
 
-
-
 def compute_infile_seeks(R, B, I):
-
     b_cuts = get_cuts(R, B)
     i_cuts = get_cuts(R, I)
 
-    d, nb_nocostly = preprocess(b_cuts, i_cuts)
-    
-    alpha = [1 if d_tmp > 0 else 0 for d_tmp in d]
-
+    d, nb_nocostly = preprocess(b_cuts, i_cuts, I)
     print(f"d: {d}")
     print(f"nb_nocostly: {nb_nocostly}")
+
     a = (d[2])*R[0]*R[1]
     b = (d[1])*R[0]*nb_nocostly[2]
     c = (d[0])*nb_nocostly[1]*nb_nocostly[2]
@@ -56,6 +62,7 @@ def compute_infile_seeks(R, B, I):
 if __name__ == "__main__":
     args = get_arguments()
     paths = load_json(args.paths_config)
+    cases = load_json(args.cases_config)
     
     for k, v in paths.items():
         if "PYTHONPATH" in k:
@@ -64,7 +71,7 @@ if __name__ == "__main__":
     from repartition_experiments.algorithms.policy import compute_zones
     from repartition_experiments.algorithms.keep_algorithm import get_input_aggregate
     from repartition_experiments.algorithms.utils import get_volumes, numeric_to_3d_pos, get_theta
-    from repartition_experiments.baseline_seek_model import get_cuts
+    from repartition_experiments.baseline_seek_model import get_cuts, preprocess
 
     import logging
     import logging.config
@@ -73,10 +80,12 @@ if __name__ == "__main__":
         'disable_existing_loggers': True,
     })
 
-    R = (1400,1400,1400)
-    I = (70,70,70)
-    O = (100,100,100)
-    divisors = get_divisors(R[0])
+    if not args.case_name in cases.keys():
+        print("bad case name")
+        sys.exit(0)
+    case = cases[args.case_name][0]
+    R, I, O  = case["R"], case["I"], case["O"]
+    divisors = get_divisors(R[0]) # assuming R[0]=R[1]=R[2]
 
     # buffer cannot be bigger than lambda
     lambd = get_input_aggregate(O, I)
@@ -96,10 +105,20 @@ if __name__ == "__main__":
     all_buffers.extend(increasing_i)
     all_buffers.extend(increasing_j)
 
-    all_buffers = set(all_buffers)
-    print(f"Number buffer shapes to test: {len(all_buffers)}")
+    # for b in all_buffers:
+    #     print(b)
+
+    # sys.exit(0)
+
+    buff_treated = []
+    print(f"Number buffer shapes to test: {len(tuple(all_buffers))}")
     for B in all_buffers:
         print(f"\n--------------\ncase: {B}")
+
+        if B in buff_treated:
+            continue
+        else:
+            buff_treated.append(B)
 
         # compute theta max
         buffers_partition, buffers = get_volumes(R, B)
