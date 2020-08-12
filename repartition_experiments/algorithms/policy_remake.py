@@ -46,7 +46,7 @@ def get_grads(R, O, B, dims_to_keep):
             if j == len(grads[i]) - 1:
                 break 
 
-            if grads[i][j+1][1] == "b" or grads[i][j+1][1] == "ob": # TODO: rajouter les b qui matchent o
+            if grads[i][j+1][1] == "b" or grads[i][j+1][1] == "ob":
                 remainder_markers[i].add((e[0], "t")) # theta
     
     return grads, [sorted(g) for g in grads_o], [sorted(g) for g in remainder_markers]
@@ -66,6 +66,8 @@ def get_outfiles_parts(grads, grads_o, remainder_markers, _3d_to_numeric_pos_dic
     logger.debug(dims_to_keep)
 
     prev_i = 0
+    mark_i = "None"
+    x_i = 0
     for i in range(0, len(grads[0])):
 
         prev_j = 0
@@ -80,26 +82,41 @@ def get_outfiles_parts(grads, grads_o, remainder_markers, _3d_to_numeric_pos_dic
                     if 2 in dims_to_keep and mark_j == "F1":
                         logger.debug("fuse in k")
                         continue 
-                    elif 1 in dims_to_keep and mark_j == "F2/F3":
-                        logger.debug("fuse in j")
-                        continue
 
                 # else
                 logger.debug("adding")
                 d = add_to_dict(d, grads_o, Volume(0, (prev_i, prev_j, prev_k), (grads[0][i][0], grads[1][j][0], grads[2][k][0])), _3d_to_numeric_pos_dict)
                 prev_k = grads[2][k][0]
             
-            marker = remainder_markers[1][x_j]
+            if 1 in dims_to_keep and mark_j == "F2/F3":
+                logger.debug("fuse in j")
+                continue
+
+            marker_j = remainder_markers[1][x_j]
             logger.debug("i,j,k: " + str(i) + "," + str(j) + "," + str(k))
-            logger.debug("marker: " + str(marker))
-            if marker[1] == "b":
+            logger.debug("marker_j: " + str(marker_j))
+            if marker_j[1] == "b":
                 mark_j = "F1"
             else:
                 mark_j = "F2/F3"
-            if marker[0] == grads[1][j][0]:
+            if marker_j[0] == grads[1][j][0]:
                 x_j += 1
 
             prev_j = grads[1][j][0]
+
+        if 0 in dims_to_keep and mark_j == "F4":
+            logger.debug("fuse in i")
+            continue
+
+        marker_i = remainder_markers[0][x_i]
+        logger.debug("marker_i: " + str(marker_i))
+        if marker_i[1] == "b":
+            mark_i = "None"
+        else:
+            mark_i = "F4"
+        if marker_i[0] == grads[0][i][0]:
+            x_i += 1
+
         prev_i = grads[0][i][0]
 
     return d
