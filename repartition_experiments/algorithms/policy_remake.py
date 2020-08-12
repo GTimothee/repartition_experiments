@@ -142,7 +142,7 @@ def get_pos_association_dict(volumestokeep, outfiles_partititon):
     return _3d_to_numeric_pos_dict
 
 
-def compute_zones(B, O, R, volumestokeep, outfiles_partititon): #, buffers_partition, outfiles_partititon, buffers_volumes, outfiles_volumes):
+def compute_zones(B, O, R, volumestokeep, outfiles_partititon):
     """ Main function of the module. Compute the "arrays" and "regions" dictionary for the resplit case.
 
     Arguments:
@@ -154,5 +154,9 @@ def compute_zones(B, O, R, volumestokeep, outfiles_partititon): #, buffers_parti
     """
     _3d_to_numeric_pos_dict = get_pos_association_dict(volumestokeep, outfiles_partititon)
     dims_to_keep = get_dims_to_keep(volumestokeep)
-    return get_outfiles_parts(*get_grads(R, O, B, dims_to_keep), _3d_to_numeric_pos_dict, dims_to_keep)
-    # return arrays_dict, buffer_to_outfiles, nb_file_openings, nb_inside_seeks
+
+    arrays_dict =  get_outfiles_parts(*get_grads(R, O, B, dims_to_keep), _3d_to_numeric_pos_dict, dims_to_keep)
+    buffer_to_outfiles = None
+    nb_file_openings = None
+    nb_inside_seeks = None
+    return arrays_dict, buffer_to_outfiles, nb_file_openings, nb_inside_seeks
