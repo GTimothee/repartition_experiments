@@ -68,7 +68,7 @@ if __name__ == "__main__":
         if "PYTHONPATH" in k:
             sys.path.insert(0, v)
             
-    from repartition_experiments.algorithms.policy import compute_zones
+    from repartition_experiments.algorithms.policy_remake import compute_zones
     from repartition_experiments.algorithms.keep_algorithm import get_input_aggregate
     from repartition_experiments.algorithms.utils import get_volumes, numeric_to_3d_pos, get_theta
     from repartition_experiments.baseline_seek_model import get_cuts, preprocess
@@ -110,6 +110,8 @@ if __name__ == "__main__":
 
     # sys.exit(0)
 
+    total_time = time.time()
+
     buff_treated = []
     print(f"Number buffer shapes to test: {len(tuple(all_buffers))}")
     for B in all_buffers:
@@ -143,7 +145,9 @@ if __name__ == "__main__":
 
         outfiles_partition, outvolumes = get_volumes(R, O)
         t = time.time()
-        _, _, nb_file_openings, nb_inside_seeks = compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partition, buffers, outvolumes)
+        # _, _, nb_file_openings, nb_inside_seeks = compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partition, buffers, outvolumes)
+        _, _, nb_file_openings, nb_inside_seeks = compute_zones(B, O, R, volumestokeep, outfiles_partition, outvolumes)
+
         t = time.time() - t
         print(f"processing time 1: {t}")
         t = time.time()
@@ -153,3 +157,6 @@ if __name__ == "__main__":
         print(f"nb outfiles seeks: {nb_file_openings + nb_inside_seeks}")
         print(f"nb infiles seeks: {nb_infile_seeks}")
         print(f"nb seeks: {nb_file_openings + nb_inside_seeks + nb_infile_seeks}")
+
+    total_time = time.time() - total_time
+    print(f"Total time: {total_time} seconds")

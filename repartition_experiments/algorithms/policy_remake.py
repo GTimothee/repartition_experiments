@@ -1,4 +1,5 @@
 from .utils import Volume
+from .tracker import Tracker
 import logging, copy
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
@@ -85,7 +86,7 @@ def get_outfiles_parts(grads, grads_o, remainder_markers, _3d_to_numeric_pos_dic
 
                 # else
                 logger.debug("adding")
-                add_to_dict(d, grads_o, Volume(0, (prev_i, prev_j, prev_k), (grads[0][i][0], grads[1][j][0], grads[2][k][0])), _3d_to_numeric_pos_dict)
+                d = add_to_dict(d, grads_o, Volume(0, (prev_i, prev_j, prev_k), (grads[0][i][0], grads[1][j][0], grads[2][k][0])), _3d_to_numeric_pos_dict)
                 prev_k = grads[2][k][0]
             
             marker = remainder_markers[1][x_j]
@@ -130,6 +131,8 @@ def add_to_dict(d, grads_o, volume, _3d_to_numeric_pos_dict):
         d[outfile_pos] = list()
     d[outfile_pos].append(volume)
 
+    return d
+
 
 def get_pos_association_dict(volumestokeep, outfiles_partititon):
     index = 0
@@ -142,7 +145,7 @@ def get_pos_association_dict(volumestokeep, outfiles_partititon):
     return _3d_to_numeric_pos_dict
 
 
-def compute_zones(B, O, R, volumestokeep, outfiles_partititon):
+def compute_zones(B, O, R, volumestokeep, outfiles_partititon, out_volumes):
     """ Main function of the module. Compute the "arrays" and "regions" dictionary for the resplit case.
 
     Arguments:
@@ -151,12 +154,46 @@ def compute_zones(B, O, R, volumestokeep, outfiles_partititon):
         O: output file shape
         R: shape of reconstructed image
         volumestokeep: volumes to be kept by keep strategy
+        out_volumes: dict outfile numeric position -> Volume
     """
     _3d_to_numeric_pos_dict = get_pos_association_dict(volumestokeep, outfiles_partititon)
     dims_to_keep = get_dims_to_keep(volumestokeep)
 
     arrays_dict =  get_outfiles_parts(*get_grads(R, O, B, dims_to_keep), _3d_to_numeric_pos_dict, dims_to_keep)
+    
+    print(f"arrays_dict nb keys: {len(arrays_dict.keys())}")
+
+    # TODO
     buffer_to_outfiles = None
-    nb_file_openings = None
-    nb_inside_seeks = None
+
+    # sanity check
+    print("sanity check...")
+    for k, subvol_list in arrays_dict.items():
+        t = Tracker()
+        for v in subvol_list:
+            t.add_volume(v)
+        assert t.is_complete(out_volumes[k].get_corners())
+
+    # compute number of seeks
+    print("computing nb seeks...")
+    nb_file_openings = 0
+    nb_inside_seeks = 0
+    for outfile_index, volumes_list in arrays_dict.items():
+        nb_file_openings += len(volumes_list)
+        outfile_shape = outfiles_volumes[outfile_index].get_shape()
+
+        for v in volumes_list:
+            s = v.get_shape()
+            
+            if s[2] != outfile_shape[2]:
+                nb_inside_seeks += s[0]*s[1]
+            elif s[1] != outfile_shape[1]:
+                nb_inside_seeks += s[0]
+            elif s[0] != outfile_shape[0]:
+                nb_inside_seeks += 1
+            else:
+                pass
+
+    print(f"nb seeks: {nb_file_openings}, {nb_inside_seeks}")
+
     return arrays_dict, buffer_to_outfiles, nb_file_openings, nb_inside_seeks
