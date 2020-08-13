@@ -17,7 +17,7 @@ def get_dims_to_keep(volumestokeep):
         return list()
 
 
-def get_grads(R, O, B, dims_to_keep):
+def get_grads(R, O, B):
     """ Grads corresponds to all the out borders of both output files and buffers.
 
     # créer liste de tuples
@@ -25,19 +25,22 @@ def get_grads(R, O, B, dims_to_keep):
     # faire un map sur les grads_b et faire un add au lieu de ci-dessous
     """
     
+    print("args: ", R, O, B)
     grads_o = [{e for e in range(O[i], R[i]+O[i], O[i])} for i in range(3)] 
     grads_b = [{(e, "b") for e in range(B[i], R[i]+B[i], B[i])} for i in range(3)] 
+
+    grads_o_copy = copy.deepcopy(grads_o)
 
     grads = [set(), set(), set()] 
     for i in range(3):
         for e in grads_b[i]:
-            if e[0] not in grads_o[i]:
+            if e[0] not in grads_o_copy[i]:
                 grads[i].add(e)
             else:
                 grads[i].add((e[0],"ob"))
-                grads_o[i].remove(e[0])
+                grads_o_copy[i].remove(e[0])
 
-        grads[i] = set(map(lambda e: (e,"o"), grads_o[i]))
+        grads[i] = set(map(lambda e: (e,"o"), grads_o_copy[i])).union(grads[i])
     
     remainder_markers = grads_b
     grads = [sorted(g, key=lambda e: e[0]) for g in grads]
@@ -49,6 +52,8 @@ def get_grads(R, O, B, dims_to_keep):
             if grads[i][j+1][1] == "b" or grads[i][j+1][1] == "ob":
                 remainder_markers[i].add((e[0], "t")) # theta
     
+    # print(f"grads: {grads}")
+
     return grads, [sorted(g) for g in grads_o], [sorted(g) for g in remainder_markers]
 
 
@@ -70,30 +75,51 @@ def get_outfiles_parts(grads, grads_o, remainder_markers, _3d_to_numeric_pos_dic
     x_i = 0
     for i in range(0, len(grads[0])):
 
+        if grads[0][i][1] == "b" and 0 in dims_to_keep and mark_j == "F4":
+            logger.debug("fuse in i")
+
+            marker_i = remainder_markers[0][x_i]
+            logger.debug("marker_i: " + str(marker_i))
+            if marker_i[1] == "b":
+                mark_i = "None"
+            else:
+                mark_i = "F4"
+            if marker_i[0] == grads[0][i][0]:
+                x_i += 1
+            continue
+
         prev_j = 0
         mark_j = "F1"
         x_j = 0
         for j in range(0, len(grads[1])):
             logger.debug("current grad j : " + str(grads[1][j]))
             logger.debug("mark j : " + str(mark_j))
+
+            if grads[1][j][1] == "b" and 1 in dims_to_keep and mark_j == "F2/F3":
+                logger.debug("fuse in j")
+
+                marker_j = remainder_markers[1][x_j]
+                logger.debug("marker_j: " + str(marker_j))
+                if marker_j[1] == "b":
+                    mark_j = "F1"
+                else:
+                    mark_j = "F2/F3"
+                if marker_j[0] == grads[1][j][0]:
+                    x_j += 1
+                continue
+
             prev_k = 0
             for k in range(0, len(grads[2])):
-                if grads[2][k][1] == "b":
-                    if 2 in dims_to_keep and mark_j == "F1":
-                        logger.debug("fuse in k")
-                        continue 
+                if grads[2][k][1] == "b" and 2 in dims_to_keep and mark_j == "F1":
+                    logger.debug("fuse in k")
+                    continue 
 
                 # else
                 logger.debug("adding")
                 d = add_to_dict(d, grads_o, Volume(0, (prev_i, prev_j, prev_k), (grads[0][i][0], grads[1][j][0], grads[2][k][0])), _3d_to_numeric_pos_dict)
                 prev_k = grads[2][k][0]
-            
-            if 1 in dims_to_keep and mark_j == "F2/F3":
-                logger.debug("fuse in j")
-                continue
 
             marker_j = remainder_markers[1][x_j]
-            logger.debug("i,j,k: " + str(i) + "," + str(j) + "," + str(k))
             logger.debug("marker_j: " + str(marker_j))
             if marker_j[1] == "b":
                 mark_j = "F1"
@@ -103,10 +129,6 @@ def get_outfiles_parts(grads, grads_o, remainder_markers, _3d_to_numeric_pos_dic
                 x_j += 1
 
             prev_j = grads[1][j][0]
-
-        if 0 in dims_to_keep and mark_j == "F4":
-            logger.debug("fuse in i")
-            continue
 
         marker_i = remainder_markers[0][x_i]
         logger.debug("marker_i: " + str(marker_i))
@@ -162,7 +184,7 @@ def get_pos_association_dict(volumestokeep, outfiles_partititon):
     return _3d_to_numeric_pos_dict
 
 
-def compute_zones(B, O, R, volumestokeep, outfiles_partititon, out_volumes):
+def compute_zones_remake(B, O, R, volumestokeep, outfiles_partititon, out_volumes):
     """ Main function of the module. Compute the "arrays" and "regions" dictionary for the resplit case.
 
     Arguments:
@@ -176,9 +198,9 @@ def compute_zones(B, O, R, volumestokeep, outfiles_partititon, out_volumes):
     _3d_to_numeric_pos_dict = get_pos_association_dict(volumestokeep, outfiles_partititon)
     dims_to_keep = get_dims_to_keep(volumestokeep)
 
-    arrays_dict =  get_outfiles_parts(*get_grads(R, O, B, dims_to_keep), _3d_to_numeric_pos_dict, dims_to_keep)
+    arrays_dict =  get_outfiles_parts(*get_grads(R, O, B), _3d_to_numeric_pos_dict, dims_to_keep)
     
-    print(f"arrays_dict nb keys: {len(arrays_dict.keys())}")
+    # print(f"arrays_dict nb keys: {len(arrays_dict.keys())}")
 
     # TODO
     buffer_to_outfiles = None
@@ -197,7 +219,7 @@ def compute_zones(B, O, R, volumestokeep, outfiles_partititon, out_volumes):
     nb_inside_seeks = 0
     for outfile_index, volumes_list in arrays_dict.items():
         nb_file_openings += len(volumes_list)
-        outfile_shape = outfiles_volumes[outfile_index].get_shape()
+        outfile_shape = out_volumes[outfile_index].get_shape()
 
         for v in volumes_list:
             s = v.get_shape()

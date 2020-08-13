@@ -68,7 +68,8 @@ if __name__ == "__main__":
         if "PYTHONPATH" in k:
             sys.path.insert(0, v)
             
-    from repartition_experiments.algorithms.policy_remake import compute_zones
+    from repartition_experiments.algorithms.policy_remake import compute_zones_remake
+    from repartition_experiments.algorithms.policy import compute_zones
     from repartition_experiments.algorithms.keep_algorithm import get_input_aggregate
     from repartition_experiments.algorithms.utils import get_volumes, numeric_to_3d_pos, get_theta
     from repartition_experiments.baseline_seek_model import get_cuts, preprocess
@@ -110,7 +111,8 @@ if __name__ == "__main__":
 
     # sys.exit(0)
 
-    total_time = time.time()
+    total_time_old = 0
+    total_time_new = 0
 
     buff_treated = []
     print(f"Number buffer shapes to test: {len(tuple(all_buffers))}")
@@ -145,11 +147,32 @@ if __name__ == "__main__":
 
         outfiles_partition, outvolumes = get_volumes(R, O)
         t = time.time()
-        # _, _, nb_file_openings, nb_inside_seeks = compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partition, buffers, outvolumes)
-        _, _, nb_file_openings, nb_inside_seeks = compute_zones(B, O, R, volumestokeep, outfiles_partition, outvolumes)
-
+        arrays_dict_old, _, nb_file_openings, nb_inside_seeks = compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partition, buffers, outvolumes)
         t = time.time() - t
-        print(f"processing time 1: {t}")
+        print(f"processing time old: {t}")
+        total_time_old += t
+        
+        t = time.time()
+        arrays_dict_new, _, nb_file_openings, nb_inside_seeks = compute_zones_remake(B, O, R, volumestokeep, outfiles_partition, outvolumes)
+        t = time.time() - t
+        print(f"processing time new: {t}")
+        total_time_new += t
+
+        # verification
+        assert len(arrays_dict_old.keys()) == len(arrays_dict_new.keys())
+        for k, old_list in arrays_dict_old.items():
+            new_list = arrays_dict_new[k]
+            for v_old in old_list:
+                t_old = v_old.get_corners()
+                is_in = False
+                for v_new in new_list:
+                    t_new = v_new.get_corners()
+                    if t_old[0] == t_new[0] and t_old[1] == t_new[1]:
+                        is_in = True
+                        break
+                assert is_in
+        print("verification succeeded")
+
         t = time.time()
         nb_infile_seeks = compute_infile_seeks(R, B, I)
         t = time.time() - t
