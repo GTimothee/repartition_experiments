@@ -94,16 +94,16 @@ if __name__ == "__main__":
 
         outfiles_partition, outvolumes = get_volumes(R, O)
         t = time.time()
-        arrays_dict_old, _, nb_file_openings, nb_inside_seeks = compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partition, buffers, outvolumes)
-        t = time.time() - t
-        print(f"processing time old: {t}")
-        total_time_old += t
-        
-        t = time.time()
         arrays_dict_new, _, nb_file_openings, nb_inside_seeks = compute_zones_remake(B, O, R, volumestokeep, outfiles_partition, outvolumes)
         t = time.time() - t
         print(f"processing time new: {t}")
         total_time_new += t
+
+        t = time.time()
+        arrays_dict_old, _, nb_file_openings, nb_inside_seeks = compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partition, buffers, outvolumes)
+        t = time.time() - t
+        print(f"processing time old: {t}")
+        total_time_old += t
 
         # verification
         assert len(arrays_dict_old.keys()) == len(arrays_dict_new.keys())
@@ -117,7 +117,18 @@ if __name__ == "__main__":
                     if t_old[0] == t_new[0] and t_old[1] == t_new[1]:
                         is_in = True
                         break
-                assert is_in
+                
+                try:
+                    assert is_in
+                except:
+                    print(f"Mismatch----")
+                    print(f"new list:")
+                    for v_new in new_list:
+                        v_new.print()
+                    print(f"old list:")
+                    for v in old_list:
+                        v.print()
+                    sys.exit(1)
         print("verification succeeded")
 
         t = time.time()

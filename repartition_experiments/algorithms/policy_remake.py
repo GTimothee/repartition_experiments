@@ -1,9 +1,12 @@
 from .utils import Volume
 from .tracker import Tracker
-import logging, copy
+import logging, copy, sys
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__ + 'policy_remake')
+
+
+DEBUG = False
 
 
 def get_dims_to_keep(volumestokeep):
@@ -63,23 +66,26 @@ def get_outfiles_parts(grads, grads_o, remainder_markers, _3d_to_numeric_pos_dic
         grads_o: list of list of values
     """
     d = dict()
-    logger.debug("grads before merge:")
-    logger.debug(grads)
-    logger.debug("remainder_markers:")
-    logger.debug(remainder_markers)
-    logger.debug("dims to keep:")
-    logger.debug(dims_to_keep)
+    if DEBUG:
+        print("grads before merge:")
+        print(grads)
+        print("remainder_markers:")
+        print(remainder_markers)
+        print("dims to keep:")
+        print(dims_to_keep)
 
     prev_i = 0
     mark_i = "None"
     x_i = 0
     for i in range(0, len(grads[0])):
 
-        if grads[0][i][1] == "b" and 0 in dims_to_keep and mark_j == "F4":
-            logger.debug("fuse in i")
-
+        if grads[0][i][1] == "b" and 0 in dims_to_keep and mark_i == "F4":
             marker_i = remainder_markers[0][x_i]
-            logger.debug("marker_i: " + str(marker_i))
+
+            if DEBUG:
+                print("fuse in i")
+                print("marker_i: " + str(marker_i))
+
             if marker_i[1] == "b":
                 mark_i = "None"
             else:
@@ -92,14 +98,20 @@ def get_outfiles_parts(grads, grads_o, remainder_markers, _3d_to_numeric_pos_dic
         mark_j = "F1"
         x_j = 0
         for j in range(0, len(grads[1])):
-            logger.debug("current grad j : " + str(grads[1][j]))
-            logger.debug("mark j : " + str(mark_j))
+            if DEBUG:
+                print("current grad j : " + str(grads[1][j]))
+                print("mark j : " + str(mark_j))
 
+            fuse_in_j = False
             if grads[1][j][1] == "b" and 1 in dims_to_keep and mark_j == "F2/F3":
-                logger.debug("fuse in j")
+                fuse_in_j = True
+                if DEBUG:
+                    print("fuse in j")
 
+            if fuse_in_j:
                 marker_j = remainder_markers[1][x_j]
-                logger.debug("marker_j: " + str(marker_j))
+                if DEBUG:
+                    print("marker_j: " + str(marker_j))
                 if marker_j[1] == "b":
                     mark_j = "F1"
                 else:
@@ -111,16 +123,25 @@ def get_outfiles_parts(grads, grads_o, remainder_markers, _3d_to_numeric_pos_dic
             prev_k = 0
             for k in range(0, len(grads[2])):
                 if grads[2][k][1] == "b" and 2 in dims_to_keep and mark_j == "F1":
-                    logger.debug("fuse in k")
+                    if DEBUG:
+                        print("fuse in k")
+                        print(f"pass buffer marker: {grads[2][k][0]}")
+                    continue 
+                elif grads[2][k][1] == "b" and 2 in dims_to_keep and mark_j == "F2/F3" and 1 in dims_to_keep:
+                    if DEBUG:
+                        print("fuse in k bec fuse in j")
+                        print(f"pass buffer marker: {grads[2][k][0]}")
                     continue 
 
                 # else
-                logger.debug("adding")
+                if grads[2][k][0] == 140:
+                    print(f"{(prev_i, prev_j, prev_k)} {(grads[0][i][0], grads[1][j][0], grads[2][k][0])} added!")
                 d = add_to_dict(d, grads_o, Volume(0, (prev_i, prev_j, prev_k), (grads[0][i][0], grads[1][j][0], grads[2][k][0])), _3d_to_numeric_pos_dict)
                 prev_k = grads[2][k][0]
 
             marker_j = remainder_markers[1][x_j]
-            logger.debug("marker_j: " + str(marker_j))
+            if DEBUG:
+                print("marker_j: " + str(marker_j))
             if marker_j[1] == "b":
                 mark_j = "F1"
             else:
@@ -131,7 +152,8 @@ def get_outfiles_parts(grads, grads_o, remainder_markers, _3d_to_numeric_pos_dic
             prev_j = grads[1][j][0]
 
         marker_i = remainder_markers[0][x_i]
-        logger.debug("marker_i: " + str(marker_i))
+        if DEBUG:
+            print("marker_i: " + str(marker_i))
         if marker_i[1] == "b":
             mark_i = "None"
         else:
@@ -183,8 +205,6 @@ def get_pos_association_dict(volumestokeep, outfiles_partititon):
                 index += 1
     return _3d_to_numeric_pos_dict
 
-
-DEBUG=False
 
 def compute_zones_remake(B, O, R, volumestokeep, outfiles_partititon, out_volumes):
     """ Main function of the module. Compute the "arrays" and "regions" dictionary for the resplit case.
