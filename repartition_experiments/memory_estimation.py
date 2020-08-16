@@ -18,29 +18,35 @@ def load_json(filepath):
     with open(filepath) as f:
         return json.load(f)
 
-
+DEBUG=False
 def compute_max_mem(R, B, O, nb_bytes_per_voxel):
     buffers_partition = get_blocks_shape(R, B)
     buffers_volumes = get_named_volumes(buffers_partition, B)
 
-    print(f"Image partition by B: {buffers_partition}")
     k_remainder_list = [0]
     j_remainder_list = [0] * buffers_partition[2]
     i_remainder_list = [0] * (buffers_partition[2] * buffers_partition[1])
-    print(f"Lists initialization...")
-    print(f"k: {k_remainder_list}")
-    print(f"j: {j_remainder_list}")
-    print(f"i: {i_remainder_list}")
+
+    if DEBUG:
+        print(f"Image partition by B: {buffers_partition}")
+        print(f"Lists initialization...")
+        print(f"k: {k_remainder_list}")
+        print(f"j: {j_remainder_list}")
+        print(f"i: {i_remainder_list}")
 
     nb_voxels_max = 0 
     nb_voxels = B[0] * B[1] * B[2]
-    print(f"Initialization nb voxels (=1 buffer): {nb_voxels}")
+
+    if DEBUG:
+        print(f"Initialization nb voxels (=1 buffer): {nb_voxels}")
     i, j, k = 0, 1, 2
     for buffer_index in buffers_volumes.keys():
-        print(f"Processing buffer {buffer_index}")
+        if DEBUG:
+            print(f"Processing buffer {buffer_index}")
         _3d_index = numeric_to_3d_pos(buffer_index, buffers_partition, order='C')
         theta, omega = get_theta(buffers_volumes, buffer_index, _3d_index, O, B)
-        print(f"3d buffer index: {_3d_index}")
+        if DEBUG:
+            print(f"3d buffer index: {_3d_index}")
 
         F1 = omega[k] * theta[j] * theta[i]
         F2 = theta[k] * omega[j] * theta[i]
@@ -71,8 +77,9 @@ def compute_max_mem(R, B, O, nb_bytes_per_voxel):
 
         index_j = _3d_index[2]
         index_i = _3d_index[1]*len(j_remainder_list) + _3d_index[2]
-        print(f"Indices: {index_j}, {index_i}")
-        print(f"Lengths: {len(j_remainder_list)}, {len(i_remainder_list)}")
+        if DEBUG:
+            print(f"Indices: {index_j}, {index_i}")
+            print(f"Lengths: {len(j_remainder_list)}, {len(i_remainder_list)}")
 
         nb_voxels -= k_remainder_list[0] + j_remainder_list[index_j] + i_remainder_list[index_i]
 
@@ -82,16 +89,18 @@ def compute_max_mem(R, B, O, nb_bytes_per_voxel):
 
         nb_voxels += k_remainder_list[0] + j_remainder_list[index_j] + i_remainder_list[index_i]
 
-        print(f"k: {k_remainder_list}")
-        print(f"j: {j_remainder_list}")
-        print(f"i: {i_remainder_list}")
-        print(f"Number of voxels: {nb_voxels}")
+        if DEBUG:
+            print(f"k: {k_remainder_list}")
+            print(f"j: {j_remainder_list}")
+            print(f"i: {i_remainder_list}")
+            print(f"Number of voxels: {nb_voxels}")
 
         if nb_voxels > nb_voxels_max:
             nb_voxels_max = nb_voxels
 
-    print(f"Number of voxels max: {nb_voxels_max}")
-    print(f"RAM consumed: {nb_voxels_max * nb_bytes_per_voxel}")
+    if DEBUG:
+        print(f"Number of voxels max: {nb_voxels_max}")
+        print(f"RAM consumed: {nb_voxels_max * nb_bytes_per_voxel}")
     return nb_voxels_max * nb_bytes_per_voxel
 
 

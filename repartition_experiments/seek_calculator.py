@@ -18,6 +18,7 @@ def get_divisors(n) :
     divisors.sort()
     return divisors
 
+DEBUG=False
 
 def get_arguments():
     """ Get arguments from console command.
@@ -52,8 +53,9 @@ def compute_infile_seeks(R, B, I):
     i_cuts = get_cuts(R, I)
 
     d, nb_nocostly = preprocess(b_cuts, i_cuts, I)
-    print(f"d: {d}")
-    print(f"nb_nocostly: {nb_nocostly}")
+    if DEBUG:
+        print(f"d: {d}")
+        print(f"nb_nocostly: {nb_nocostly}")
 
     a = (d[2])*R[0]*R[1]
     b = (d[1])*R[0]*nb_nocostly[2]
@@ -113,19 +115,22 @@ def compute_nb_seeks(B, O, R, I):
     t1 = time.time()
     arrays_dict_new, _, nb_file_openings, nb_inside_seeks = compute_zones_remake(B, O, R, volumestokeep, outfiles_partition, outvolumes)
     t1 = time.time() - t1
-    print(f"processing time compute_zones_remake: {t1}")
+    if DEBUG:
+        print(f"processing time compute_zones_remake: {t1}")
 
     # compute infiles seeks
     t2 = time.time()
     nb_infile_seeks = compute_infile_seeks(R, B, I)
     t2 = time.time() - t2
-    print(f"processing time compute_infile_seeks: {t2}")
+    if DEBUG:
+        print(f"processing time compute_infile_seeks: {t2}")
 
-    print(f"nb outfiles seeks: {nb_file_openings + nb_inside_seeks}")
-    print(f"nb infiles seeks: {nb_infile_seeks}")
+        print(f"nb outfiles seeks: {nb_file_openings + nb_inside_seeks}")
+        print(f"nb infiles seeks: {nb_infile_seeks}")
 
     total_seeks = nb_file_openings + nb_inside_seeks + nb_infile_seeks
-    print(f"nb seeks: {total_seeks}")
+    if DEBUG:
+        print(f"nb seeks: {total_seeks}")
 
     return total_seeks, t1+t2
 

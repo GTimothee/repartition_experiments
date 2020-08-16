@@ -49,19 +49,29 @@ def find_best_buffer(m, case, nb_bytes_per_voxel):
 
     best_buff = None
     min_seeks = -1
+    max_try = 10
+    nb_try = 0
     for B in buffer_candidates:
+        print(f"New buffer candidate {B}")
         max_mem = compute_max_mem(R, B, O, nb_bytes_per_voxel)
 
         if max_mem <= m:
+            print("Computing nb seeks...")
             nb_seeks, seek_time = compute_nb_seeks(B, O, R, I)
 
+            print(f"Seek computation time: {seek_time} seconds.")
             if min_seeks != -1 and nb_seeks < min_seeks or min_seeks == -1:
+                print(f"New optimal buffer shape found: {B} => {nb_seeks} seeks. Processing time: {seek_time} seconds.")
                 min_seeks = nb_seeks
                 best_buff = B
-                print(f"Buffer shape {B} => {nb_seeks} seeks. Processing time: {seek_time} seconds.")
+            else:
+                print(f"Not better")
+                nb_try += 1
+                if nb_try == max_try:
+                    break
         
-    print(f"Best buffer shape found: {B} for {nb_seeks} seeks.")
-    return B, nb_seeks
+    print(f"Best buffer shape found: {best_buff} for {min_seeks} seeks.")
+    return best_buff, min_seeks
     
 
 
@@ -89,5 +99,5 @@ if __name__ == "__main__":
     })
 
     case = cases[args.case_name][0]
-    print(f"Processing case {args.case_name}")
+    print(f"Processing {args.case_name}")
     find_best_buffer(args.nb_gig * 1000000000 / args.nb_bytes_per_voxel, case, args.nb_bytes_per_voxel)

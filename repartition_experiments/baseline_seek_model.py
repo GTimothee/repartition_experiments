@@ -83,7 +83,7 @@ def preprocess(buffer_cuts, block_cuts, block_shape):
             else:
                 j += 1  
 
-        print(f"d_dim: {d_dim}")
+        # print(f"d_dim: {d_dim}")
         d.append(d_dim)
         dim_index += 1
 

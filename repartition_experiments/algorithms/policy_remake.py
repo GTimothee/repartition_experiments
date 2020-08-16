@@ -24,8 +24,8 @@ def get_grads(R, O, B):
     # ne pas ajouter de b si jamais il existe déjà dans grads_o -> on ne le considère pas comme une bordure d'intérêt car il n'y a pas de remainder volume du coup
     # faire un map sur les grads_b et faire un add au lieu de ci-dessous
     """
-    
-    print("args: ", R, O, B)
+    if DEBUG:
+        print("args: ", R, O, B)
     grads_o = [{e for e in range(O[i], R[i]+O[i], O[i])} for i in range(3)] 
     grads_b = [{(e, "b") for e in range(B[i], R[i]+B[i], B[i])} for i in range(3)] 
 
@@ -184,6 +184,8 @@ def get_pos_association_dict(volumestokeep, outfiles_partititon):
     return _3d_to_numeric_pos_dict
 
 
+DEBUG=False
+
 def compute_zones_remake(B, O, R, volumestokeep, outfiles_partititon, out_volumes):
     """ Main function of the module. Compute the "arrays" and "regions" dictionary for the resplit case.
 
@@ -206,15 +208,17 @@ def compute_zones_remake(B, O, R, volumestokeep, outfiles_partititon, out_volume
     buffer_to_outfiles = None
 
     # sanity check
-    print("sanity check...")
-    for k, subvol_list in arrays_dict.items():
-        t = Tracker()
-        for v in subvol_list:
-            t.add_volume(v)
-        assert t.is_complete(out_volumes[k].get_corners())
+    if DEBUG:
+        print("sanity check...")
+        for k, subvol_list in arrays_dict.items():
+            t = Tracker()
+            for v in subvol_list:
+                t.add_volume(v)
+            assert t.is_complete(out_volumes[k].get_corners())
 
     # compute number of seeks
-    print("computing nb seeks...")
+    if DEBUG:
+        print("computing nb seeks...")
     nb_file_openings = 0
     nb_inside_seeks = 0
     for outfile_index, volumes_list in arrays_dict.items():
@@ -233,6 +237,7 @@ def compute_zones_remake(B, O, R, volumestokeep, outfiles_partititon, out_volume
             else:
                 pass
 
-    print(f"nb seeks: {nb_file_openings}, {nb_inside_seeks}")
+    if DEBUG:
+        print(f"nb seeks: {nb_file_openings}, {nb_inside_seeks}")
 
     return arrays_dict, buffer_to_outfiles, nb_file_openings, nb_inside_seeks
