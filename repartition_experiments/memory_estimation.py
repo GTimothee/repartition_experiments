@@ -101,7 +101,7 @@ def compute_max_mem(R, B, O, nb_bytes_per_voxel):
     if DEBUG:
         print(f"Number of voxels max: {nb_voxels_max}")
         print(f"RAM consumed: {nb_voxels_max * nb_bytes_per_voxel}")
-    return nb_voxels_max * nb_bytes_per_voxel
+    return nb_voxels_max
 
 
 if __name__ == "__main__":

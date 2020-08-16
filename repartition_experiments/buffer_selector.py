@@ -1,4 +1,4 @@
-import logging, json, sys, argparse
+import logging, json, sys, argparse, os
 
 
 def get_arguments():
@@ -33,7 +33,7 @@ def get_arguments():
         help='')
 
     return parser.parse_args()
-
+    
 
 def find_best_buffer(m, case, nb_bytes_per_voxel):
     """
@@ -55,9 +55,14 @@ def find_best_buffer(m, case, nb_bytes_per_voxel):
         print(f"New buffer candidate {B}")
         max_mem = compute_max_mem(R, B, O, nb_bytes_per_voxel)
 
+        print(f"Memory available: {m} (in voxels), {m*nb_bytes_per_voxel/1000000} (in MB)")
+        print(f"Maximum memory to be consumed: {max_mem} (in voxels), {max_mem*nb_bytes_per_voxel/1000000} (in MB)")
+
         if max_mem <= m:
             print("Computing nb seeks...")
-            nb_seeks, seek_time = compute_nb_seeks(B, O, R, I)
+            seeks_tuple, seek_time = compute_nb_seeks(B, O, R, I)
+            nb_file_openings, nb_inside_seeks, nb_infile_seeks = seeks_tuple
+            nb_seeks = nb_file_openings + nb_inside_seeks + nb_infile_seeks
 
             print(f"Seek computation time: {seek_time} seconds.")
             if min_seeks != -1 and nb_seeks < min_seeks or min_seeks == -1:
@@ -74,10 +79,10 @@ def find_best_buffer(m, case, nb_bytes_per_voxel):
     return best_buff, min_seeks
     
 
-
 def load_json(filepath):
     with open(filepath) as f:
         return json.load(f)
+
 
 if __name__ == "__main__":
     args = get_arguments()
@@ -91,6 +96,7 @@ if __name__ == "__main__":
     from repartition_experiments.seek_calculator import compute_nb_seeks, get_buffer_candidates
     from repartition_experiments.memory_estimation import compute_max_mem
     from repartition_experiments.algorithms.keep_algorithm import get_input_aggregate
+    from repartition_experiments.algorithms.keep_algorithm import keep_algorithm
 
     import logging.config
     logging.config.dictConfig({
@@ -100,4 +106,5 @@ if __name__ == "__main__":
 
     case = cases[args.case_name][0]
     print(f"Processing {args.case_name}")
-    find_best_buffer(args.nb_gig * 1000000000 / args.nb_bytes_per_voxel, case, args.nb_bytes_per_voxel)
+    ONE_GIG = 1000000000
+    find_best_buffer(args.nb_gig * ONE_GIG / args.nb_bytes_per_voxel, case, args.nb_bytes_per_voxel)
