@@ -1,28 +1,15 @@
 import argparse, logging, json, sys
 from .algorithms.utils import get_blocks_shape, get_named_volumes, numeric_to_3d_pos, get_theta
 
-def get_arguments():
-    """ Get arguments from console command.
-    """
-    parser = argparse.ArgumentParser(description="")
-    
-    parser.add_argument('paths_config', 
-        action='store', 
-        type=str, 
-        help='Path to configuration file containing paths of data directories.')
-
-    return parser.parse_args()
-
-
-def load_json(filepath):
-    with open(filepath) as f:
-        return json.load(f)
 
 DEBUG=False
 def compute_max_mem(R, B, O, nb_bytes_per_voxel):
+    """ Algorithm to compute the maximum amount of memory to be consumed by the keep algorithm.
+    """
     buffers_partition = get_blocks_shape(R, B)
     buffers_volumes = get_named_volumes(buffers_partition, B)
 
+    # create lists of remainders
     k_remainder_list = [0]
     j_remainder_list = [0] * buffers_partition[2]
     i_remainder_list = [0] * (buffers_partition[2] * buffers_partition[1])
@@ -102,33 +89,3 @@ def compute_max_mem(R, B, O, nb_bytes_per_voxel):
         print(f"Number of voxels max: {nb_voxels_max}")
         print(f"RAM consumed: {nb_voxels_max * nb_bytes_per_voxel}")
     return nb_voxels_max
-
-
-if __name__ == "__main__":
-
-    args = get_arguments()
-    paths = load_json(args.paths_config)
-    
-    for k, v in paths.items():
-        if "PYTHONPATH" in k:
-            sys.path.insert(0, v)
-            
-    from repartition_experiments.algorithms.keep_algorithm import get_input_aggregate
-    from repartition_experiments.algorithms.utils import get_volumes, numeric_to_3d_pos, get_theta
-    from repartition_experiments.baseline_seek_model import get_cuts, preprocess
-    from repartition_experiments.algorithms.utils import get_named_volumes, get_blocks_shape, numeric_to_3d_pos, get_theta
-    from repartition_experiments.algorithms.keep_algorithm import get_input_aggregate
-
-    import logging
-    import logging.config
-    logging.config.dictConfig({
-        'version': 1,
-        'disable_existing_loggers': True,
-    })
-
-    R = (1,120,120)
-    B = (1,60,60)
-    O = (1,40,40)
-    nb_bytes_per_voxel = 2
-
-    compute_max_mem()
