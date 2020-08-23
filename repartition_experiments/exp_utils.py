@@ -26,8 +26,13 @@ def create_input_chunks(cs, partition, data_dir, file_format):
     for i in range(partition[0]):
         for j in range(partition[1]):
             for k in range(partition[2]):
-                data = np.random.uniform(size=cs)
-                file_manager.write_data(i, j, k, data_dir, data, _slices, cs)
+                arr = da.random.random(size=cs)
+                arr = arr.astype(np.float16)
+                out_filename = f'{i}_{j}_{k}.hdf5'
+                outfilepath = os.path.join(outdir_path, out_filename)
+                da.to_hdf5(outfilepath, '/data', arr, chunks=None, compression=None)
+                # data = np.random.uniform(size=cs)
+                # file_manager.write_data(i, j, k, data_dir, data, _slices, cs)
 
 
 def create_empty_dir(dir_path):
