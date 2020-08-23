@@ -52,7 +52,7 @@ def get_grads(R, O, B):
             if j == len(grads[i]) - 1:
                 break 
 
-            if grads[i][j+1][1] == "b" or grads[i][j+1][1] == "ob":
+            if (grads[i][j+1][1] == "b" or grads[i][j+1][1] == "ob") and e[1] != "b" and e[1] != "ob":
                 remainder_markers[i].add((e[0], "t")) # theta
     
     # print(f"grads: {grads}")
@@ -134,8 +134,6 @@ def get_outfiles_parts(grads, grads_o, remainder_markers, _3d_to_numeric_pos_dic
                     continue 
 
                 # else
-                if grads[2][k][0] == 140:
-                    print(f"{(prev_i, prev_j, prev_k)} {(grads[0][i][0], grads[1][j][0], grads[2][k][0])} added!")
                 d = add_to_dict(d, grads_o, Volume(0, (prev_i, prev_j, prev_k), (grads[0][i][0], grads[1][j][0], grads[2][k][0])), _3d_to_numeric_pos_dict)
                 prev_k = grads[2][k][0]
 
@@ -206,7 +204,7 @@ def get_pos_association_dict(volumestokeep, outfiles_partititon):
     return _3d_to_numeric_pos_dict
 
 
-def compute_zones_remake(B, O, R, volumestokeep, outfiles_partititon, out_volumes):
+def compute_zones_remake(B, O, R, volumestokeep, outfiles_partititon, out_volumes, buffers):
     """ Main function of the module. Compute the "arrays" and "regions" dictionary for the resplit case.
 
     Arguments:
@@ -223,9 +221,6 @@ def compute_zones_remake(B, O, R, volumestokeep, outfiles_partititon, out_volume
     arrays_dict =  get_outfiles_parts(*get_grads(R, O, B), _3d_to_numeric_pos_dict, dims_to_keep)
     
     # print(f"arrays_dict nb keys: {len(arrays_dict.keys())}")
-
-    # TODO
-    buffer_to_outfiles = None
 
     # sanity check
     if DEBUG:
@@ -259,5 +254,13 @@ def compute_zones_remake(B, O, R, volumestokeep, outfiles_partititon, out_volume
 
     if DEBUG:
         print(f"nb seeks: {nb_file_openings}, {nb_inside_seeks}")
+
+    buffer_to_outfiles = dict()
+    for outvolume in out_volumes:
+        for buffer in buffers:
+            if hypercubes_overlap(outvolume, buffer):
+                if not buffer.index in buffer_to_outfiles:
+                    buffer_to_outfiles[buffer.index] = list()
+                buffer_to_outfiles[buffer.index].append(outvolume.index)
 
     return arrays_dict, buffer_to_outfiles, nb_file_openings, nb_inside_seeks

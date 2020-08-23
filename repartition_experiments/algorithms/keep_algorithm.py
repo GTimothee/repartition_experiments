@@ -418,7 +418,7 @@ def _run_keep(arrays_dict, buffers, buffers_to_infiles, buffer_to_outfiles):
     _monitor.start()
     
     buffer_shape = buffers[0].get_shape()
-    buffer_size = buffer_shape[0]*buffer_shape[1]*buffer_shape[2]*2
+    buffer_size = buffer_shape[0] * buffer_shape[1] * buffer_shape[2] * 2
     buffer_data = np.empty(copy.deepcopy(buffer_shape), dtype=np.float16)
     voxel_tracker.add_voxels(buffer_size)
 
@@ -521,7 +521,7 @@ def keep_algorithm(arg_R, arg_O, arg_I, arg_B, volumestokeep, arg_file_format, a
 
     print("Preprocessing...")
     tpp = time.time()
-    arrays_dict, buffer_to_outfiles, nb_outfile_openings, nb_outfile_inside_seeks = compute_zones(B, O, R, volumestokeep, buffers_partition, outfiles_partition, buffers, outvolumes)
+    arrays_dict, buffer_to_outfiles, nb_outfile_openings, nb_outfile_inside_seeks = compute_zones_remake(B, O, R, volumestokeep, outfiles_partititon, outvolumes, buffers)
     buffers_to_infiles = get_buffers_to_infiles(buffers, involumes)
     tpp = time.time() - tpp
     print("Preprocessing time: ", tpp)
