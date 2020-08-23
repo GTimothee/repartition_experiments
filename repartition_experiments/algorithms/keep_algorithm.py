@@ -1,6 +1,6 @@
 import math, time, csv, psutil, sys, copy, os
 import numpy as np
-from repartition_experiments.algorithms.policy import compute_zones
+from repartition_experiments.algorithms.policy_remake import compute_zones_remake
 from repartition_experiments.algorithms.utils import get_partition, get_named_volumes, get_overlap_subarray, get_file_manager, numeric_to_3d_pos, Volume, hypercubes_overlap, included_in, get_volumes, to_basis
 from repartition_experiments.algorithms.tracker import Tracker
 from repartition_experiments.algorithms.utils import get_opened_files
@@ -521,7 +521,7 @@ def keep_algorithm(arg_R, arg_O, arg_I, arg_B, volumestokeep, arg_file_format, a
 
     print("Preprocessing...")
     tpp = time.time()
-    arrays_dict, buffer_to_outfiles, nb_outfile_openings, nb_outfile_inside_seeks = compute_zones_remake(B, O, R, volumestokeep, outfiles_partititon, outvolumes, buffers)
+    arrays_dict, buffer_to_outfiles, nb_outfile_openings, nb_outfile_inside_seeks = compute_zones_remake(B, O, R, volumestokeep, outfiles_partition, outvolumes, buffers)
     buffers_to_infiles = get_buffers_to_infiles(buffers, involumes)
     tpp = time.time() - tpp
     print("Preprocessing time: ", tpp)

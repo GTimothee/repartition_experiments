@@ -1,4 +1,4 @@
-from .utils import Volume
+from .utils import Volume, hypercubes_overlap
 from .tracker import Tracker
 import logging, copy, sys
 
@@ -256,8 +256,8 @@ def compute_zones_remake(B, O, R, volumestokeep, outfiles_partititon, out_volume
         print(f"nb seeks: {nb_file_openings}, {nb_inside_seeks}")
 
     buffer_to_outfiles = dict()
-    for outvolume in out_volumes:
-        for buffer in buffers:
+    for outvolume in out_volumes.values():
+        for buffer in buffers.values():
             if hypercubes_overlap(outvolume, buffer):
                 if not buffer.index in buffer_to_outfiles:
                     buffer_to_outfiles[buffer.index] = list()
