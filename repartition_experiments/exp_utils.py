@@ -34,6 +34,7 @@ def create_input_chunks(cs, partition, data_dir, file_format):
                 arr = da.random.random(size=cs)
                 arr = arr.astype(np.float16)
                 out_filename = f'{i}_{j}_{k}.hdf5'
+                print(f"Building {out_filename} with shape {cs}")
                 outfilepath = os.path.join(data_dir, out_filename)
                 da.to_hdf5(outfilepath, '/data', arr, chunks=None, compression=None)
                 # data = np.random.uniform(size=cs)
