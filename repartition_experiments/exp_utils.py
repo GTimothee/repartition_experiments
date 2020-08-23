@@ -31,11 +31,14 @@ def create_input_chunks(cs, partition, data_dir, file_format):
     for i in range(partition[0]):
         for j in range(partition[1]):
             for k in range(partition[2]):
+                print(f"Creating random array... shape: {cs}")
                 arr = da.random.random(size=cs)
+                print(f"Done, converting to float16...")
                 arr = arr.astype(np.float16)
                 out_filename = f'{i}_{j}_{k}.hdf5'
                 print(f"Building {out_filename} with shape {cs}")
                 outfilepath = os.path.join(data_dir, out_filename)
+                print(f"Storing...")
                 da.to_hdf5(outfilepath, '/data', arr, chunks=None, compression=None)
                 # data = np.random.uniform(size=cs)
                 # file_manager.write_data(i, j, k, data_dir, data, _slices, cs)
