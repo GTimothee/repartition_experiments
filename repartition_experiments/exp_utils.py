@@ -57,9 +57,9 @@ def create_input_chunks_distributed(cs, partition, data_dir, file_format):
         sys.exit(1)
 
     for i in range(6):
-        for filepath in os.listdir('/disk' + str(i) + '/gtimothee'):
-            if filepath.endswith(".json") or filepath.endswith(".hdf5"):
-                os.remove(filepath)
+        for filename in os.listdir('/disk' + str(i) + '/gtimothee'):
+            if filename.endswith(".json") or filename.endswith(".hdf5"):
+                os.remove(os.path.join('/disk' + str(i) + '/gtimothee', filename))
     print(f"Creating input chunks...")
 
     stored = 0 # in bytes
