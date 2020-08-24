@@ -65,13 +65,13 @@ def create_input_chunks_distributed(cs, partition, data_dir, file_format):
     stored = 0 # in bytes
     one_chunk_size = cs[0] * cs[1] * cs[2] * 2 # 2 = nb bytes per voxel
     disk_index = 0
-    one_disk_size = 440000000000 # 440GB
+    one_disk_size = 400000000000 # 440GB
     repartition_dict = dict()
 
     for i in range(partition[0]):
         for j in range(partition[1]):
             for k in range(partition[2]):
-                if stored + one_chunk_size > one_disk_size:
+                if stored + one_chunk_size >= one_disk_size:
                     disk_index += 1
 
                 print(f"Creating random array... shape: {cs}")
