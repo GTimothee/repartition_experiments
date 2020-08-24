@@ -131,7 +131,8 @@ def create_case(args):
     print(R, I)
 
     indir_path, outdir_path = os.path.join(paths["ssd_path"], 'indir'), os.path.join(paths["ssd_path"], 'outdir')
-
+    partition = get_blocks_shape(R, I)
+    
     if args.distributed:
         create_input_chunks_distributed(I, partition, indir_path, args.file_format)
         return
@@ -145,7 +146,6 @@ def create_case(args):
         create_empty_dir(outdir_path)
         clustered_writes(origarr_filepath, R, I, bpv, R_size, args.file_format, indir_path)
     else:
-        partition = get_blocks_shape(R, I)
         create_input_chunks(I, partition, indir_path, args.file_format)
 
 
