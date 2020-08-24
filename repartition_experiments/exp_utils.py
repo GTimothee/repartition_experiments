@@ -73,6 +73,7 @@ def create_input_chunks_distributed(cs, partition, data_dir, file_format):
             for k in range(partition[2]):
                 if stored + one_chunk_size >= one_disk_size:
                     disk_index += 1
+                    stored = 0
 
                 print(f"Creating random array... shape: {cs}")
                 arr = da.random.uniform(size=cs)
