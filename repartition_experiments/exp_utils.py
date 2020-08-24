@@ -87,7 +87,7 @@ def create_input_chunks_distributed(cs, partition, data_dir, file_format):
                 da.to_hdf5(outfilepath, '/data', arr, chunks=None, compression=None)
 
                 stored += one_chunk_size
-                repartition_dict[(i,j,k)] = outfilepath
+                repartition_dict[str((i,j,k))] = outfilepath
 
     print(f"Writing repartition file...")
     json_file = os.path.join('/disk0', 'gtimothee', 'repartition_dict.json')

@@ -159,7 +159,7 @@ def read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input
                 raise ValueError("Unable to open json file")
             
             t_tmp = time.time()
-            data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = file_manager.read_data_from_fp(repartition_dict[(i,j,k)], slices)
+            data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = file_manager.read_data_from_fp(repartition_dict[str((i,j,k))], slices)
             t1 += time.time() - t_tmp
         else:
             t_tmp = time.time()

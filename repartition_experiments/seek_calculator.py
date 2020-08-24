@@ -84,8 +84,9 @@ def compute_nb_seeks(B, O, R, I):
 
     # compute outfiles seeks
     outfiles_partition, outvolumes = get_volumes(R, O)
+    _, buffers = get_volumes(R, B)
     t1 = time.time()
-    arrays_dict_new, _, nb_file_openings, nb_inside_seeks = compute_zones_remake(B, O, R, volumestokeep, outfiles_partition, outvolumes)
+    arrays_dict_new, _, nb_file_openings, nb_inside_seeks = compute_zones_remake(B, O, R, volumestokeep, outfiles_partition, outvolumes, buffers)
     t1 = time.time() - t1
     if DEBUG:
         print(f"processing time compute_zones_remake: {t1}")

@@ -77,7 +77,7 @@ def find_best_buffer(m, case, nb_bytes_per_voxel):
                 if nb_try == max_try:
                     break
         
-    print(f"Best buffer shape found: {best_buff} for {min_seeks} seeks. Max mem consumed: {max_mem} (in voxels), {max_mem_consumed*nb_bytes_per_voxel/1000000} MB")
+    print(f"Best buffer shape found: {best_buff} for {min_seeks} seeks. Max mem consumed: {max_mem_consumed} (in voxels), {max_mem_consumed*nb_bytes_per_voxel/1000000} MB")
     return best_buff, min_seeks
     
 
