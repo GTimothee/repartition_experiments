@@ -32,7 +32,7 @@ def create_input_chunks(cs, partition, data_dir, file_format):
         for j in range(partition[1]):
             for k in range(partition[2]):
                 print(f"Creating random array... shape: {cs}")
-                arr = da.random.random(size=cs)
+                arr = da.random.uniform(size=cs)
                 print(f"Done, converting to float16...")
                 arr = arr.astype(np.float16)
                 out_filename = f'{i}_{j}_{k}.hdf5'
