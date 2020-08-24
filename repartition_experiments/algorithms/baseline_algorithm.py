@@ -137,7 +137,7 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, addition, di
 
     if distributed:
         repartition_dict = None
-        with open(os.path.join('disk0', 'gtimothee', 'repartition_dict.json')) as f:
+        with open(os.path.join('/disk0', 'gtimothee', 'repartition_dict.json')) as f:
             repartition_dict = json.load(f)
         if repartition_dict == None:
             raise ValueError("Unable to open json file")

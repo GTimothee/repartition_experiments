@@ -63,55 +63,6 @@ def get_arguments():
 def load_json(filepath):
     with open(filepath) as f:
         return json.load(f)
-
-
-# TODO: refactor
-def create_input_chunks_distributed(cs, partition, data_dir, file_format):
-    """ for HDF5 only for now
-        cs: chunk shape
-        file_format: file format
-        data_dir: to store the file
-    """
-    if not file_format == "HDF5":
-        print("File format not supported yet. Aborting...")
-        sys.exit(1)
-
-    create_empty_dir(data_dir)
-    print(f"Creating input chunks...")
-
-    stored = 0 # in bytes
-    one_chunk_size = cs[0] * cs[1] * cs[2] * 2 # 2 = nb bytes per voxel
-    disk_index = 0
-    one_disk_size = 440000000000 # 440GB
-    repartition_dict = dict()
-
-    for i in range(partition[0]):
-        for j in range(partition[1]):
-            for k in range(partition[2]):
-                if stored + one_chunk_size > one_disk_size:
-                    disk_index += 1
-
-                print(f"Creating random array... shape: {cs}")
-                arr = da.random.uniform(size=cs)
-                print(f"Done, converting to float16...")
-                arr = arr.astype(np.float16)
-                out_filename = f'{i}_{j}_{k}.hdf5'
-                print(f"Building {out_filename} with shape {cs}")
-                data_dirpath = os.path.join('/disk' + str(disk_index), 'gtimothee')
-                outfilepath = os.path.join(data_dirpath, out_filename)
-                print(f"Storing on {data_dirpath}...")
-                da.to_hdf5(outfilepath, '/data', arr, chunks=None, compression=None)
-
-                stored += one_chunk_size
-                repartition_dict[(i,j,k)] = outfilepath
-
-    print(f"Writing repartition file...")
-    json_file = os.path.join('disk0', 'gtimothee', 'repartition_dict.json')
-    if os.path.isfile(json_file):
-        os.remove(json_file)
-
-    with open(json_file, 'w+') as outfile:
-        json.dump(repartition_dict, outfile)
                 
 
 def create_case(args):
@@ -121,7 +72,7 @@ def create_case(args):
         if "PYTHONPATH" in k:
             sys.path.insert(0, v)
 
-    from repartition_experiments.exp_utils import create_empty_dir, create_input_chunks
+    from repartition_experiments.exp_utils import create_empty_dir, create_input_chunks, create_input_chunks_distributed
     from repartition_experiments.algorithms.clustered_writes import clustered_writes
     from repartition_experiments.algorithms.utils import get_file_manager, get_blocks_shape
 
@@ -132,7 +83,7 @@ def create_case(args):
 
     indir_path, outdir_path = os.path.join(paths["ssd_path"], 'indir'), os.path.join(paths["ssd_path"], 'outdir')
     partition = get_blocks_shape(R, I)
-    
+
     if args.distributed:
         create_input_chunks_distributed(I, partition, indir_path, args.file_format)
         return

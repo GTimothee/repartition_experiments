@@ -153,7 +153,7 @@ def read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input
 
         if global_distributed:
             repartition_dict = None
-            with open(os.path.join('disk0', 'gtimothee', 'repartition_dict.json')) as f:
+            with open(os.path.join('/disk0', 'gtimothee', 'repartition_dict.json')) as f:
                 repartition_dict = json.load(f)
             if repartition_dict == None:
                 raise ValueError("Unable to open json file")
