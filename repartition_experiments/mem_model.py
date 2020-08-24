@@ -2,11 +2,11 @@ from math import floor
 import argparse, json, os, sys
 
 
-def model(case):
+def model(case, m):
     # WARNING: m is a number of voxels, not bytes
     print(f'\n--------Running new case--------')
     
-    R, I, O, m = case["R"], case["I"], case["O"], case["m"]
+    R, I, O = case["R"], case["I"], case["O"]
 
     partitionI = get_blocks_shape(R, I)  # partition of R by I
     n = partitionI[2]
@@ -44,7 +44,7 @@ def model(case):
                     return tuple(B), [1]
 
                 print(f'--------Storing F2 and F3--------')
-                phi2 = floor( (m - theta[1] * (omega[2] + Lambd[2])) / ((n+1) * Lambd[2]))
+                phi2 = floor( (m - theta[1] * (omega[2] - (Lambd[2]*n))) / ((n+1) * Lambd[2]))
                 print(f'Max value for lambdaj - thetaj: {phi2}')
                 print(f'Max value for Bj: {B[1] + phi2}')
 
@@ -91,6 +91,16 @@ def get_arguments():
         type=str, 
         help='Path to configuration file containing paths of data directories.')
 
+    parser.add_argument('cases_config', 
+        action='store', 
+        type=str, 
+        help='')
+
+    parser.add_argument('nb_gig', 
+        action='store', 
+        type=float, 
+        help='')
+
     return parser.parse_args()
 
 
@@ -99,54 +109,10 @@ def load_json(filepath):
         return json.load(f)
 
 
-if __name__ == "__main__":
-    # WARNING: m is a number of voxels, not bytes
-
-    # test cases below:
-    # cases = [
-    #     {   
-    #         'R': (1,120,120),
-    #         'I': (1,60,60),
-    #         'O': (1,40,40),
-    #         'm': 60*40 + (40*20), # buffer size + F1
-    #         'Bexpected': (1,40,60)
-    #     },{
-    #         'R': (1,120,120),
-    #         'I': (1,60,60),
-    #         'O': (1,40,40),
-    #         'm': 60*60 + 40*20 + n*60*20,  # buffer size + F1 + n(F2+F3)
-    #         'Bexpected': (1,60,60)
-    #     },{
-    #         'R': (120,120,120),
-    #         'I': (60,60,60),
-    #         'O': (40,40,40),
-    #         'm': 60*60*40 + 40*20*40 + n*60*20*40,  # buffer size + F1 + n(F2+F3)
-    #         'Bexpected': (40,60,60)
-    #     },{
-    #         'R': (120,120,120),
-    #         'I': (60,60,60),
-    #         'O': (40,40,40),
-    #         'm': 60*60 + 40*20 + n*60*20,  # buffer size + F1 + n(F2+F3)
-    #         'Bexpected': (1,60,60)
-    #     },{
-    #         'R': (120,120,120),
-    #         'I': (60,60,60),
-    #         'O': (40,40,40),
-    #         'm': 60*60*60 + 40*20*40 + n*60*20*40 + N*20*60*60,  # buffer size + F1 + n(F2+F3) + N(F4+F5+F6+F7)
-    #         'Bexpected': (60,60,60)
-    #     }
-    # ]
-    # for case in cases:
-    #     B = model(case, n, N)
-    #     print(f'Final buffer shape: {B}')
-    #     try:
-    #         assert case["Bexpected"] == B
-    #         print("Success.")
-    #     except:
-    #         print('Bad output.')     
-    
+if __name__ == "__main__":    
     args = get_arguments()
     paths = load_json(args.paths_config)
+    cases = load_json(args.cases_config)
 
     for k, v in paths.items():
         if "PYTHONPATH" in k:
@@ -156,60 +122,9 @@ if __name__ == "__main__":
     from repartition_experiments.algorithms.keep_algorithm import get_input_aggregate
 
     ONE_GIG = 1000000000
-    nb_gig = 5
-    cases = [
-        {
-            'R': (3500,3500,3500),
-            'I': (875,875,875),
-            'O': (3500,3500,3500),
-            'm': nb_gig*ONE_GIG/2,
-            'ref': 0
-        },{
-            'R': (3500,3500,3500),
-            'I': (350,350,350),
-            'O': (3500,3500,3500),
-            'm': nb_gig*ONE_GIG/2,
-            'ref': 1
-        },{
-            'R': (3500,3500,3500),
-            'I': (875,875,875),
-            'O': (875,875,3500),
-            'm': nb_gig*ONE_GIG/2,
-            'ref': 2
-        },{
-            'R': (3500,3500,3500),
-            'I': (350,350,350),
-            'O': (350,350,3500),
-            'm': nb_gig*ONE_GIG/2,
-            'ref': 3
-        },{
-            'R': (3500,3500,3500),
-            'I': (875,875,875),
-            'O': (875,3500,875),
-            'm': nb_gig*ONE_GIG/2,
-            'ref': 4
-        },{
-            'R': (3500,3500,3500),
-            'I': (350,350,350),
-            'O': (350,3500,350),
-            'm': nb_gig*ONE_GIG/2,
-            'ref': 5
-        },{
-            'R': (3500,3500,3500),
-            'I': (875,875,875),
-            'O': (3500,875,875),
-            'm': nb_gig*ONE_GIG/2,
-            'ref': 6
-        },{
-            'R': (3500,3500,3500),
-            'I': (350,350,350),
-            'O': (3500,350,350),
-            'm': nb_gig*ONE_GIG/2,
-            'ref': 7
-        }
-    ]
 
-    for case in cases:
-        B, volumestokeep = model(case)
-        print(f'Buffer shape for ref {case["ref"]}: {B}')
-        print(f'Volumes to keep for ref {case["ref"]}: {volumestokeep}')
+    for k, case in cases.items():
+        print(f"\n-------Processing case {k}")
+        B, volumestokeep = model(case[0], args.nb_gig * ONE_GIG / 2) # WARNING: m is a number of voxels, not bytes
+        print(f'Buffer shape for ref {case[0]["ref"]}: {B}')
+        print(f'Volumes to keep for ref {case[0]["ref"]}: {volumestokeep}')

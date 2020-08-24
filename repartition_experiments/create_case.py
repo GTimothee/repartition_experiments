@@ -50,14 +50,69 @@ def get_arguments():
         default=False,
         help='do not create original array and split, just creates the splits directly')
 
-    return parser.parse_args()
 
+    parser.add_argument('-d', '--distributed', 
+        action='store_true', 
+        dest='distributed',
+        default=False,
+        help='if array is bigger than size of one disk, store parts on several disks and generate a summary file to be used by keep algorithm')
+
+    return parser.parse_args()
 
 
 def load_json(filepath):
     with open(filepath) as f:
         return json.load(f)
 
+
+# TODO: refactor
+def create_input_chunks_distributed(cs, partition, data_dir, file_format):
+    """ for HDF5 only for now
+        cs: chunk shape
+        file_format: file format
+        data_dir: to store the file
+    """
+    if not file_format == "HDF5":
+        print("File format not supported yet. Aborting...")
+        sys.exit(1)
+
+    create_empty_dir(data_dir)
+    print(f"Creating input chunks...")
+
+    stored = 0 # in bytes
+    one_chunk_size = cs[0] * cs[1] * cs[2] * 2 # 2 = nb bytes per voxel
+    disk_index = 0
+    one_disk_size = 440000000000 # 440GB
+    repartition_dict = dict()
+
+    for i in range(partition[0]):
+        for j in range(partition[1]):
+            for k in range(partition[2]):
+                if stored + one_chunk_size > one_disk_size:
+                    disk_index += 1
+
+                print(f"Creating random array... shape: {cs}")
+                arr = da.random.uniform(size=cs)
+                print(f"Done, converting to float16...")
+                arr = arr.astype(np.float16)
+                out_filename = f'{i}_{j}_{k}.hdf5'
+                print(f"Building {out_filename} with shape {cs}")
+                data_dirpath = os.path.join(data_dir, '/disk' + str(disk_index), 'gtimothee')
+                outfilepath = os.path.join(data_dirpath, out_filename)
+                print(f"Storing on {data_dirpath}...")
+                da.to_hdf5(outfilepath, '/data', arr, chunks=None, compression=None)
+
+                stored += one_chunk_size
+                repartition_dict[(i,j,k)] = outfilepath
+
+    print(f"Writing repartition file...")
+    json_file = os.path.join(data_dir, 'disk0', 'gtimothee', 'repartition_dict.json')
+    if os.path.isfile(json_file):
+        os.remove(json_file)
+
+    with open(json_file, 'w+') as outfile:
+        json.dump(repartition_dict, outfile)
+                
 
 def create_case(args):
     paths = load_json(args.paths_config)
@@ -76,6 +131,11 @@ def create_case(args):
     print(R, I)
 
     indir_path, outdir_path = os.path.join(paths["ssd_path"], 'indir'), os.path.join(paths["ssd_path"], 'outdir')
+
+    if args.distributed:
+        create_input_chunks_distributed(I, partition, indir_path, args.file_format)
+        return
+
     if not args.splits_only:
         origarr_filepath = create_input_file(R, paths["ssd_path"], fm)
         print("creating input file...", origarr_filepath)

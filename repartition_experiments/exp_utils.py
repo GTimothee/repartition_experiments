@@ -1,5 +1,6 @@
 import sys, os, shutil, json
 import numpy as np
+import dask.array as da
 
 from repartition_experiments.file_formats.hdf5 import HDF5_manager
 from repartition_experiments.algorithms.utils import get_blocks_shape
@@ -22,12 +23,25 @@ def create_input_chunks(cs, partition, data_dir, file_format):
         print("File format not supported yet. Aborting...")
         sys.exit(1)
 
+    print(f"Creating input chunks at {data_dir}")
+
+    create_empty_dir(data_dir)
+
     _slices = ((0,cs[0]), (0,cs[1]), (0,cs[2]))
     for i in range(partition[0]):
         for j in range(partition[1]):
             for k in range(partition[2]):
-                data = np.random.uniform(size=cs)
-                file_manager.write_data(i, j, k, data_dir, data, _slices, cs)
+                print(f"Creating random array... shape: {cs}")
+                arr = da.random.uniform(size=cs)
+                print(f"Done, converting to float16...")
+                arr = arr.astype(np.float16)
+                out_filename = f'{i}_{j}_{k}.hdf5'
+                print(f"Building {out_filename} with shape {cs}")
+                outfilepath = os.path.join(data_dir, out_filename)
+                print(f"Storing...")
+                da.to_hdf5(outfilepath, '/data', arr, chunks=None, compression=None)
+                # data = np.random.uniform(size=cs)
+                # file_manager.write_data(i, j, k, data_dir, data, _slices, cs)
 
 
 def create_empty_dir(dir_path):

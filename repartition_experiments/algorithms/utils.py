@@ -64,6 +64,26 @@ class Volume:
         print(f"Volume name: {self.index}, ({self.p1[0]}:{self.p2[0]},{self.p1[1]}:{self.p2[1]},{self.p1[2]}:{self.p2[2]}), shape:({self.p2[0]-self.p1[0]},{self.p2[1]-self.p1[1]},{self.p2[2]-self.p1[2]})")
 
 
+def get_theta(buffers_volumes, buffer_index, _3d_index, O, B):
+    T = list()
+    Cs = list()
+    for dim in range(len(buffers_volumes[buffer_index].p1)):
+        if B[dim] < O[dim]:
+            C = 0 
+        else:            
+            C = ((_3d_index[dim]+1) * B[dim]) % O[dim]
+            if C == 0 and B[dim] != O[dim]:  # particular case 
+                C = O[dim]
+
+        if C < 0:
+            raise ValueError("modulo should not return negative value")
+
+        Cs.append(C)
+        T.append(B[dim] - C)   
+
+    return T, Cs
+
+
 def get_opened_files():
     proc = psutil.Process()
     print(f"Number of opened files: {len(proc.open_files())}") 
@@ -90,18 +110,11 @@ def hypercubes_overlap(hypercube1, hypercube2):
 
     lowercorner1, uppercorner1 = hypercube1.get_corners()
     lowercorner2, uppercorner2 = hypercube2.get_corners()
-    nb_dims = len(uppercorner1)
     
-    nb_matching_dims = 0
-    for i in range(nb_dims):
+    for i in range(len(uppercorner1)):
         if uppercorner1[i] <= lowercorner2[i] or \
             uppercorner2[i] <= lowercorner1[i]:
             return False
-        elif uppercorner1[i] == uppercorner2[i] and lowercorner1[i] == lowercorner2[i]:
-            nb_matching_dims += 1 
-
-    if nb_matching_dims == nb_dims: # if corners are the same
-        return True
 
     return True
 

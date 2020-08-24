@@ -3,12 +3,14 @@ import numpy as np
 
 from repartition_experiments.algorithms.utils import _3d_to_numeric_pos, get_file_manager, get_blocks_shape, get_named_volumes, hypercubes_overlap, get_overlap_subarray, numeric_to_3d_pos, Volume
 from repartition_experiments.algorithms.utils import get_opened_files
+from repartition_experiments.algorithms.tracker import Tracker
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__ + 'baseline')
 
 DEBUG_LOCAL = False
-
+DONT_WRITE = False
+tracker = None
 
 def get_overlap_volume(v1, v2):
     pair = get_overlap_subarray(v1, v2)  # overlap coordinates in basis of R
@@ -16,7 +18,7 @@ def get_overlap_volume(v1, v2):
     return Volume(0, p1, p2)
 
 
-def write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager, addition):
+def write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager, addition, tracker):
     """ Write intersection of input file and output file into output file.
 
     Arguments:
@@ -30,6 +32,27 @@ def write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path,
         file_manager: object to read/write into files using a specific file format
     """
     lowcorner, upcorner = get_overlap_subarray(involume, outvolume)  # find subarray crossing both files in the basis of the original image
+    overlap_vol = get_overlap_volume(involume, outvolume)
+    overlap_shape = overlap_vol.get_shape()
+    if DONT_WRITE:
+        tracker.add_volume(overlap_vol)
+
+    nb_outfile_seeks_tmp = 0
+    s = overlap_shape
+    if s[2] != O[2]:
+        nb_outfile_seeks_tmp += s[0]*s[1]
+    elif s[1] != O[1]:
+        nb_outfile_seeks_tmp += s[0]
+    elif s[0] != O[0]:
+        nb_outfile_seeks_tmp += 1
+    else:
+        pass
+
+    if DONT_WRITE:
+        print(f"Overlap shape: {overlap_shape}")
+        print(f"Outfile shape: {O}")
+        print(f"Number seeks: {nb_outfile_seeks_tmp}")
+        return overlap_shape, 0, nb_outfile_seeks_tmp
 
     slices = [(lowcorner[0], upcorner[0]), (lowcorner[1], upcorner[1]), (lowcorner[2], upcorner[2])]
     offset_in = involume.get_corners()[0]  # lower corner
@@ -59,23 +82,13 @@ def write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path,
         subarr_data = subarr_data + 1
 
     t2 = time.time()
-    file_manager.write_data(i, j, k, outdir_path, subarr_data, slices_in_outfile, O)
+    if not DONT_WRITE:
+        file_manager.write_data(i, j, k, outdir_path, subarr_data, slices_in_outfile, O)
     t2 = time.time() - t2
+
     
     if DEBUG_LOCAL: 
         file_manager.test_write(outfile_path, slices_in_outfile, subarr_data)
-
-    overlap_shape = get_overlap_volume(involume, outvolume).get_shape()
-    nb_outfile_seeks_tmp = 0
-    s = overlap_shape
-    if s[2] != O[2]:
-        nb_outfile_seeks_tmp += s[0]*s[1]
-    elif s[1] != O[1]:
-        nb_outfile_seeks_tmp += s[0]
-    elif s[0] != O[0]:
-        nb_outfile_seeks_tmp += 1
-    else:
-        pass
 
     return overlap_shape, t2, nb_outfile_seeks_tmp
 
@@ -97,14 +110,20 @@ def get_volume(infilepath, infiles_volumes, infiles_partition):
     return infiles_volumes[numeric_pos]
 
 
-def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, addition, debug_mode=False, clean_out_dir=False):
+def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, addition, debug_mode=False, clean_out_dir=False, dont_write=False):
     """ Naive rechunk implementation in plain python.
     The input directory is supposed to contain the input files (output of the split process).
     WARNING: Does not clean the output directory after use by default.
     """
+    global DEBUG_LOCAL
+    global DONT_WRITE
+    global tracker
+    tracker = Tracker()
     DEBUG_LOCAL = True if debug_mode else False
+    DONT_WRITE = True if dont_write else False
 
     print("Addition mode:", addition)
+    print("DONT_WRITE: ", DONT_WRITE)
 
     O, I, R = tuple(O), tuple(I), tuple(R)
 
@@ -130,23 +149,29 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, addition, de
 
         involume = get_volume(input_file, infiles_volumes, infiles_partition)
         t1 = time.time()
-        data = file_manager.read_data_from_fp(input_file, slices=None)
+        if not DONT_WRITE:
+            data = file_manager.read_data_from_fp(input_file, slices=None)
+        else:
+            data = None
         t1 = time.time() - t1
         t_read += t1
         
         for outvolume in outfiles_volumes:
             if hypercubes_overlap(involume, outvolume):
-                shape, t2, nb_outfile_seeks_tmp = write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager, addition)
+                shape, t2, nb_outfile_seeks_tmp = write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path, O, file_manager, addition, tracker)
                 t_write += t2
                 vols_written.append(shape)
-                nb_outfile_openings += 1
+                # nb_outfile_openings += 1 already included in nb_outfile_seeks
                 nb_outfile_seeks += nb_outfile_seeks_tmp
         
         file_manager.close_infiles()
 
-    print("\nShapes written:")
-    for row in vols_written: 
-        print(row)
+    if DONT_WRITE:
+        assert tracker.is_complete(((0,0,0), R))
+
+    # print("\nShapes written:")
+    # for row in vols_written: 
+    #     print(row)
 
     if clean_out_dir:
         print("Cleaning output directory")

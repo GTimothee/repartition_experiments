@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": ["repartition_experiments/experiment.py", "repartition_experiments/local_paths_config.json", "repartition_experiments/mid_cases_config.json", "keep", "case 1_3"]
+        }
+    ]
+}

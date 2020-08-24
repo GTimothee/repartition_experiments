@@ -1,4 +1,4 @@
-import atexit, os, h5py, glob, logging
+import atexit, os, h5py, glob, logging, psutil
 import numpy as np
 from h5py import Dataset
 import dask.array as da
@@ -7,6 +7,11 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__ + 'hdf5_filemanager')
 
 SOURCE_FILES = list() # opened files to be closed after processing
+
+def print_mem_info():
+    mem = psutil.virtual_memory()
+    d = (mem.total - mem.available) /1024 /1024
+    print(d)
 
 
 @atexit.register
@@ -76,15 +81,15 @@ class HDF5_manager:
         input_file = os.path.join(dirpath, filename)
 
         if slices == None:
+            # print("read all")
             with h5py.File(input_file, 'r') as f:
-                dset = f['/data']
-                data = dset[:,:,:]
-                return data
+                return f['/data'][:,:,:]
 
         s = slices
+        # print("read part")
         with h5py.File(input_file, 'r') as f:
-            dset = f['/data']
-            data = dset[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] 
+            data = np.empty((s[0][1]-s[0][0],s[1][1]-s[1][0],s[2][1]-s[2][0]), dtype=np.float16)
+            f['/data'].read_direct(data, np.s_[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]])
         return data
 
 
@@ -93,14 +98,12 @@ class HDF5_manager:
         """
         if slices == None:
             with h5py.File(filepath, 'r') as f:
-                dset = f['/data']
-                data = dset[:,:,:]
-                return data
+                return f['/data'][:,:,:]
 
         s = slices
         with h5py.File(filepath, 'r') as f:
-            dset = f['/data']
-            data = dset[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] 
+            data = np.empty((s[0][1]-s[0][0],s[1][1]-s[1][0],s[2][1]-s[2][0]), dtype=np.float16)
+            f['/data'].read_direct(data, np.s_[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]])
         return data
 
 
@@ -125,15 +128,13 @@ class HDF5_manager:
         with h5py.File(outfilepath, mode) as f:
             if not "/data" in f.keys():
                 if O != data.shape:
-                    null_arr = np.zeros(O, dtype=dtype)
-                    null_arr[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
-                    outdset = f.create_dataset("/data", O, data=null_arr, dtype=dtype)  # initialize an empty dataset
+                    outdset = f.create_dataset("/data", O, data=np.empty(O, dtype=dtype), dtype=dtype)  # initialize an empty dataset
+                    outdset[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
                 else:
                     f.create_dataset("/data", O, data=data, dtype=dtype)
                 empty_dataset = True
             else:
-                outdset = f["/data"]
-                outdset[s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
+                f["/data"][s2[0][0]:s2[0][1],s2[1][0]:s2[1][1],s2[2][0]:s2[2][1]] = data
 
         return empty_dataset
 
@@ -151,7 +152,7 @@ class HDF5_manager:
 
             if _slices != None:
                 if not "/data" in f.keys():
-                    null_arr = np.zeros(cs, dtype=dtype)
+                    null_arr = np.empty(cs, dtype=dtype)
                     outdset = f.create_dataset("/data", cs, data=null_arr, dtype=dtype) 
                 else:
                     outdset = f["/data"]
