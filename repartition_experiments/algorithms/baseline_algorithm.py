@@ -110,7 +110,7 @@ def get_volume(infilepath, infiles_volumes, infiles_partition):
     return infiles_volumes[numeric_pos]
 
 
-def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, addition, debug_mode=False, clean_out_dir=False, dont_write=False):
+def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, addition, distributed, debug_mode=False, clean_out_dir=False, dont_write=False):
     """ Naive rechunk implementation in plain python.
     The input directory is supposed to contain the input files (output of the split process).
     WARNING: Does not clean the output directory after use by default.
@@ -134,7 +134,16 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, addition, de
     outfiles_partition = get_blocks_shape(R, O)
     outfiles_volumes = get_named_volumes(outfiles_partition, O)
     outfiles_volumes = outfiles_volumes.values()
-    input_files = file_manager.get_input_files(indir_path)
+
+    if distributed:
+        repartition_dict = None
+        with open(os.path.join('disk0', 'gtimothee', 'repartition_dict.json')) as f:
+            repartition_dict = json.load(f)
+        if repartition_dict == None:
+            raise ValueError("Unable to open json file")
+        input_files = repartition_dict.values()
+    else:
+        input_files = file_manager.get_input_files(indir_path)
 
     t_read = 0
     t_write = 0

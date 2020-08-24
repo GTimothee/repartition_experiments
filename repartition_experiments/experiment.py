@@ -66,6 +66,12 @@ def get_arguments():
         help='in gigabytes'
     )
 
+    parser.add_argument('-d', '--distributed', 
+        action='store_true', 
+        dest='distributed',
+        default=False,
+        help='if input chunks distributed on several disks.')
+
     return parser.parse_args()
 
 
@@ -161,7 +167,7 @@ def experiment(args):
             _monitor.set_delay(15)
             _monitor.start()
             t = time.time()
-            tread, twrite, seeks_data = baseline_rechunk(indir_path, outdir_path, O, I, R, args.file_format, args.addition)
+            tread, twrite, seeks_data = baseline_rechunk(indir_path, outdir_path, O, I, R, args.file_format, args.addition, args.distributed)
             t = time.time() - t 
             _monitor.stop()
             piles = _monitor.get_mem_piles()
@@ -173,7 +179,7 @@ def experiment(args):
             voxel_tracker = None
         elif args.model == "keep":
             t = time.time()                    
-            tpp, tread, twrite, seeks_data, voxel_tracker, piles = keep_algorithm(R, O, I, B, volumestokeep, args.file_format, outdir_path, indir_path, args.addition)
+            tpp, tread, twrite, seeks_data, voxel_tracker, piles = keep_algorithm(R, O, I, B, volumestokeep, args.file_format, outdir_path, indir_path, args.addition, args.distributed)
             t = time.time() - t - tpp
             max_voxels = voxel_tracker.get_max()
             print(f"Processing time: {t}")

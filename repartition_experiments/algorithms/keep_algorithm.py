@@ -501,7 +501,7 @@ start_mem = None
 
 
 
-def keep_algorithm(arg_R, arg_O, arg_I, arg_B, volumestokeep, arg_file_format, arg_outdir_path, arg_input_dirpath, arg_addition, arg_sanity_check=False):
+def keep_algorithm(arg_R, arg_O, arg_I, arg_B, volumestokeep, arg_file_format, arg_outdir_path, arg_input_dirpath, arg_addition, arg_global_distributed, arg_sanity_check=False):
     """
         cache: dict,
             outfile_index -> list of volumes to write 
@@ -520,6 +520,7 @@ def keep_algorithm(arg_R, arg_O, arg_I, arg_B, volumestokeep, arg_file_format, a
     global buffers_partition, infiles_partition, outfiles_partition
     global buffers, involumes, outvolumes
     global file_manager
+    global global_distributed
     
     outdir_path, file_format, input_dirpath = arg_outdir_path, arg_file_format, arg_input_dirpath
     R, O, I, B = tuple(arg_R), tuple(arg_O), tuple(arg_I), tuple(arg_B)
@@ -529,6 +530,7 @@ def keep_algorithm(arg_R, arg_O, arg_I, arg_B, volumestokeep, arg_file_format, a
     file_manager = get_file_manager(file_format)
     sanity_check = arg_sanity_check
     addition = arg_addition
+    global_distributed = arg_global_distributed
 
     print("Preprocessing...")
     tpp = time.time()
