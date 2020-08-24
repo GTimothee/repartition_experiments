@@ -57,7 +57,7 @@ def create_input_chunks_distributed(cs, partition, data_dir, file_format):
         sys.exit(1)
 
     for i in range(6):
-        create_empty_dir('/disk'+str(i))
+        create_empty_dir('/disk'+str(i)+'/gtimothee')
     print(f"Creating input chunks...")
 
     stored = 0 # in bytes
