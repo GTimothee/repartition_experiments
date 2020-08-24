@@ -149,11 +149,22 @@ def read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input
         # get infile 3d position, get slices to read from overlap volume, read data
         i, j, k = numeric_to_3d_pos(involume.index, get_partition(R, I), order='C')
         slices = intersection_read.get_slices()
-
         s = to_basis(intersection_in_R, buffer).get_slices()
-        t_tmp = time.time()
-        data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = file_manager.read_data(i, j, k, input_dirpath, slices)
-        t1 += time.time() - t_tmp
+
+        if global_distributed:
+            repartition_dict = None
+            with open(os.path.join('disk0', 'gtimothee', 'repartition_dict.json')) as f:
+                repartition_dict = json.load(f)
+            if repartition_dict == None:
+                raise ValueError("Unable to open json file")
+            
+            t_tmp = time.time()
+            data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = file_manager.read_data_from_fp(repartition_dict[(i,j,k)], slices)
+            t1 += time.time() - t_tmp
+        else:
+            t_tmp = time.time()
+            data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = file_manager.read_data(i, j, k, input_dirpath, slices)
+            t1 += time.time() - t_tmp
 
     return data, t1, nb_opening_seeks_tmp, nb_inside_seeks_tmp
 

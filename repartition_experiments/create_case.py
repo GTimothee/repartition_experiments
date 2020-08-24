@@ -97,7 +97,7 @@ def create_input_chunks_distributed(cs, partition, data_dir, file_format):
                 arr = arr.astype(np.float16)
                 out_filename = f'{i}_{j}_{k}.hdf5'
                 print(f"Building {out_filename} with shape {cs}")
-                data_dirpath = os.path.join(data_dir, '/disk' + str(disk_index), 'gtimothee')
+                data_dirpath = os.path.join('/disk' + str(disk_index), 'gtimothee')
                 outfilepath = os.path.join(data_dirpath, out_filename)
                 print(f"Storing on {data_dirpath}...")
                 da.to_hdf5(outfilepath, '/data', arr, chunks=None, compression=None)
@@ -106,7 +106,7 @@ def create_input_chunks_distributed(cs, partition, data_dir, file_format):
                 repartition_dict[(i,j,k)] = outfilepath
 
     print(f"Writing repartition file...")
-    json_file = os.path.join(data_dir, 'disk0', 'gtimothee', 'repartition_dict.json')
+    json_file = os.path.join('disk0', 'gtimothee', 'repartition_dict.json')
     if os.path.isfile(json_file):
         os.remove(json_file)
 
