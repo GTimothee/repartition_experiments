@@ -52,6 +52,7 @@ def find_best_buffer(m, case, nb_bytes_per_voxel):
     max_try = 10
     nb_try = 0
     max_mem_consumed = 0
+    best_buff_volumes_to_keep = None
     for B in buffer_candidates:
         print(f"New buffer candidate {B}")
         max_mem = compute_max_mem(R, B, O, nb_bytes_per_voxel)
@@ -61,7 +62,7 @@ def find_best_buffer(m, case, nb_bytes_per_voxel):
 
         if max_mem <= m:
             print("Computing nb seeks...")
-            seeks_tuple, seek_time = compute_nb_seeks(B, O, R, I)
+            seeks_tuple, seek_time, volumestokeep = compute_nb_seeks(B, O, R, I)
             nb_file_openings, nb_inside_seeks, nb_infile_seeks = seeks_tuple
             nb_seeks = nb_file_openings + nb_inside_seeks + nb_infile_seeks
 
@@ -71,13 +72,14 @@ def find_best_buffer(m, case, nb_bytes_per_voxel):
                 min_seeks = nb_seeks
                 best_buff = B
                 max_mem_consumed = max_mem
+                best_buff_volumes_to_keep = volumestokeep
             else:
                 print(f"Not better")
                 nb_try += 1
                 if nb_try == max_try:
                     break
         
-    print(f"Best buffer shape found: {best_buff} for {min_seeks} seeks. Max mem consumed: {max_mem_consumed} (in voxels), {max_mem_consumed*nb_bytes_per_voxel/1000000} MB")
+    print(f"Best buffer shape found: {best_buff}, with volumestokeep: {volumestokeep} for {min_seeks} seeks. Max mem consumed: {max_mem_consumed} (in voxels), {max_mem_consumed*nb_bytes_per_voxel/1000000} MB")
     return best_buff, min_seeks
     
 

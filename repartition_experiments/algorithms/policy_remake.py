@@ -204,7 +204,7 @@ def get_pos_association_dict(volumestokeep, outfiles_partititon):
     return _3d_to_numeric_pos_dict
 
 
-def compute_zones_remake(B, O, R, volumestokeep, outfiles_partititon, out_volumes, buffers):
+def compute_zones_remake(B, O, R, volumestokeep, outfiles_partititon, out_volumes, buffers, get_buffer_to_outfiles):
     """ Main function of the module. Compute the "arrays" and "regions" dictionary for the resplit case.
 
     Arguments:
@@ -256,11 +256,12 @@ def compute_zones_remake(B, O, R, volumestokeep, outfiles_partititon, out_volume
         print(f"nb seeks: {nb_file_openings}, {nb_inside_seeks}")
 
     buffer_to_outfiles = dict()
-    for outvolume in out_volumes.values():
-        for buffer in buffers.values():
-            if hypercubes_overlap(outvolume, buffer):
-                if not buffer.index in buffer_to_outfiles:
-                    buffer_to_outfiles[buffer.index] = list()
-                buffer_to_outfiles[buffer.index].append(outvolume.index)
+    if get_buffer_to_outfiles:
+        for outvolume in out_volumes.values():
+            for buffer in buffers.values():
+                if hypercubes_overlap(outvolume, buffer):
+                    if not buffer.index in buffer_to_outfiles:
+                        buffer_to_outfiles[buffer.index] = list()
+                    buffer_to_outfiles[buffer.index].append(outvolume.index)
 
     return arrays_dict, buffer_to_outfiles, nb_file_openings, nb_inside_seeks

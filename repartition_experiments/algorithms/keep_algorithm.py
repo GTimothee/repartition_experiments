@@ -534,7 +534,7 @@ def keep_algorithm(arg_R, arg_O, arg_I, arg_B, volumestokeep, arg_file_format, a
 
     print("Preprocessing...")
     tpp = time.time()
-    arrays_dict, buffer_to_outfiles, nb_outfile_openings, nb_outfile_inside_seeks = compute_zones_remake(B, O, R, volumestokeep, outfiles_partition, outvolumes, buffers)
+    arrays_dict, buffer_to_outfiles, nb_outfile_openings, nb_outfile_inside_seeks = compute_zones_remake(B, O, R, volumestokeep, outfiles_partition, outvolumes, buffers, True)
     buffers_to_infiles = get_buffers_to_infiles(buffers, involumes)
     tpp = time.time() - tpp
     print("Preprocessing time: ", tpp)
