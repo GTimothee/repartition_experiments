@@ -94,13 +94,50 @@ if __name__ == "__main__":
     args = get_arguments()
     paths = load_json(args.paths_config)
     indir_path, outdir_path = os.path.join(paths["ssd_path"], 'indir'), os.path.join(paths["ssd_path"], 'outdir')
-    cases = load_json(args.cases_config)
+    
 
     for k, v in paths.items():
         if "PYTHONPATH" in k:
             sys.path.insert(0, v)
 
     from repartition_experiments.algorithms.baseline_algorithm import baseline_rechunk
+
+    # cases = load_json(args.cases_config)
+    
+    cases = { # for experiment seeks
+        "case 1_0": [{
+                "R": [3500,3500,3500],
+                "I": [500,500,875],
+                "O": [500,500,500],
+                "ref": 0
+        }],
+        "case 1_1": [{
+                "R": [3500,3500,3500],
+                "I": [500,875,500],
+                "O": [500,500,500],
+                "ref": 1
+        }],
+        "case 1_2": [{
+                "R": [3500,3500,3500],
+                "I": [875,500,500],
+                "O": [500,500,500],
+                "ref": 2
+        }],
+        "case 1_3": [{
+                "R": [3500,3500,3500],
+                "I": [875,875,500],
+                "O": [500,500,500],
+                "ref": 3
+        }],
+        "case 1_4": [{
+                "R": [3500,3500,3500],
+                "I": [875,875,875],
+                "O": [500,500,500],
+                "ref": 4
+        }],
+    }
+    
+    print(f"Selected case {args.case_name}")
 
     if not args.case_name in cases.keys():
         print("bad case name")
@@ -130,18 +167,18 @@ if __name__ == "__main__":
             nb_outfile_seeks = a + b + c
 
             print(f"Running baseline algorithm...")
-            t_read, t_write, seek_data = baseline_rechunk(indir_path, outdir_path, O, I, R, 'HDF5', False, debug_mode=False, clean_out_dir=False, dont_write=True)
-            nb_outfile_openings_exp, nb_outfile_seeks_exp, nb_infile_openings_exp, nb_infile_seeks_exp = seek_data 
+            # t_read, t_write, seek_data = baseline_rechunk(indir_path, outdir_path, O, I, R, 'HDF5', False, debug_mode=False, clean_out_dir=False, dont_write=True)
+            # nb_outfile_openings_exp, nb_outfile_seeks_exp, nb_infile_openings_exp, nb_infile_seeks_exp = seek_data 
 
-            print(f"alpha: {alpha}")
-            print(f"parts: {a}, {b}, {c}")
-            print(f"nb infile seeks: {nb_infile_seeks} (reality: {nb_infile_openings_exp}+{nb_infile_seeks_exp})")
-            print(f"nb outfile seeks: {nb_outfile_seeks} (reality: {nb_outfile_seeks_exp})")
+            # print(f"alpha: {alpha}")
+            # print(f"parts: {a}, {b}, {c}")
+            # print(f"nb infile seeks: {nb_infile_seeks} (reality: {nb_infile_openings_exp}+{nb_infile_seeks_exp})")
+            print(f"nb outfile seeks: {nb_outfile_seeks}") # (reality: {nb_outfile_seeks_exp})")
 
             # if k == "case 1_1":
             #     sys.exit()
-            assert nb_outfile_seeks == nb_outfile_seeks_exp
-            break
+            # assert nb_outfile_seeks == nb_outfile_seeks_exp
+            # break
 
     print("finished.")
         
