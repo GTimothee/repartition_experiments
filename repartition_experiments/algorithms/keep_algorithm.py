@@ -122,7 +122,7 @@ def read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input
 
     involumes_list = buffers_to_infiles[buffer.index]
 
-    print(f"Found list of inblocks crossed: {involumes_list}")
+    # print(f"Found list of inblocks crossed: {involumes_list}")
 
     t1 = 0 
     nb_opening_seeks_tmp = 0
@@ -131,28 +131,28 @@ def read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input
 
     # section in case of distributed mode --------------
     if global_distributed:
-        print(f"Distributed")
+        # print(f"Distributed")
         
         json_filename = '/disk0/gtimothee/repartition_dict.json'
         if not os.path.isfile(json_filename):
-            print("cannot find association dict json file")
+            # print("cannot find association dict json file")
             sys.exit(1)
         else:
-            print(f"json file found")
+            pass # print(f"json file found")
 
         try: 
             with open(json_filename) as f:
                 repartition_dict = json.load(f)
         except Exception as e: 
             print(e)
-            print("error (1)")
+            # print("error (1)")
             sys.exit(1)
 
         if repartition_dict == None:
-            print("error (2)")
+            # print("error (2)")
             sys.exit(1)
         else:
-            print(f"Found reparition dict: {repartition_dict}")
+            pass # print(f"Found reparition dict: {repartition_dict}")
     # ----------------------------------------------------
 
     for involume_index in involumes_list:
@@ -175,19 +175,19 @@ def read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input
             pass
         nb_opening_seeks_tmp += 1
         
-        print(f"Preparing read slices...")
+        # print(f"Preparing read slices...")
         # get infile 3d position, get slices to read from overlap volume, read data
         i, j, k = numeric_to_3d_pos(involume.index, get_partition(R, I), order='C')
         slices = intersection_read.get_slices()
         s = to_basis(intersection_in_R, buffer).get_slices()
 
         if global_distributed:
-            print(f"Reading (1)...")
+            # print(f"Reading (1)...")
             t_tmp = time.time()
             data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = file_manager.read_data_from_fp(repartition_dict[str((i,j,k))], slices)
             t1 += time.time() - t_tmp
         else:
-            print(f"Reading (2)...")
+            # print(f"Reading (2)...")
             t_tmp = time.time()
             data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = file_manager.read_data(i, j, k, input_dirpath, slices)
             t1 += time.time() - t_tmp
