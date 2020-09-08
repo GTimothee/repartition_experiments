@@ -162,9 +162,11 @@ def read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input
                     repartition_dict = json.load(f)
                     print(f"Found reparition dict: {repartition_dict}")
             except: 
+                print("error (1)")
                 raise ValueError("Unable to open json file")
 
             if repartition_dict == None:
+                print("error (2)")
                 raise ValueError("Problem with json file")
             else:
                 print(f"Found reparition dict: {repartition_dict}")
