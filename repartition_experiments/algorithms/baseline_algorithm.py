@@ -137,10 +137,28 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, addition, di
 
     if distributed:
         repartition_dict = None
-        with open(os.path.join('/disk0', 'gtimothee', 'repartition_dict.json')) as f:
-            repartition_dict = json.load(f)
+        
+        json_filename = '/disk0/gtimothee/repartition_dict.json'
+        if not os.path.isfile(json_filename):
+            # print("cannot find association dict json file")
+            sys.exit(1)
+        else:
+            pass # print(f"json file found")
+
+        try: 
+            with open(json_filename) as f:
+                repartition_dict = json.load(f)
+        except Exception as e: 
+            print(e)
+            # print("error (1)")
+            sys.exit(1)
+
         if repartition_dict == None:
-            raise ValueError("Unable to open json file")
+            # print("error (2)")
+            sys.exit(1)
+        else:
+            pass # print(f"Found reparition dict: {repartition_dict}")
+
         input_files = repartition_dict.values()
     else:
         input_files = file_manager.get_input_files(indir_path)
