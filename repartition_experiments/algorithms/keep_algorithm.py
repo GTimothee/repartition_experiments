@@ -118,13 +118,15 @@ def read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input
             - Volume.corners(): corners of volume in basis of R
 
     """
+    print(f"Initializing buffer reading...")
 
     involumes_list = buffers_to_infiles[buffer.index]
+
+    print(f"Found list of inblocks crossed: {involumes_list}")
 
     t1 = 0 
     nb_opening_seeks_tmp = 0
     nb_inside_seeks_tmp = 0
-
 
     for involume_index in involumes_list:
         involume = involumes[involume_index]
@@ -145,27 +147,33 @@ def read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input
         else:
             pass
         nb_opening_seeks_tmp += 1
-
+        
+        print(f"Preparing read slices...")
         # get infile 3d position, get slices to read from overlap volume, read data
         i, j, k = numeric_to_3d_pos(involume.index, get_partition(R, I), order='C')
         slices = intersection_read.get_slices()
         s = to_basis(intersection_in_R, buffer).get_slices()
 
         if global_distributed:
+            print(f"Distributed")
             repartition_dict = None
             with open(os.path.join('/disk0', 'gtimothee', 'repartition_dict.json')) as f:
                 repartition_dict = json.load(f)
+                print(f"Found reparition dict: {repartition_dict}")
             if repartition_dict == None:
                 raise ValueError("Unable to open json file")
             
+            print(f"Reading (1)...")
             t_tmp = time.time()
             data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = file_manager.read_data_from_fp(repartition_dict[str((i,j,k))], slices)
             t1 += time.time() - t_tmp
         else:
+            print(f"Reading (2)...")
             t_tmp = time.time()
             data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = file_manager.read_data(i, j, k, input_dirpath, slices)
             t1 += time.time() - t_tmp
 
+    print(f"Successful, returning data...")
     return data, t1, nb_opening_seeks_tmp, nb_inside_seeks_tmp
 
 
@@ -364,6 +372,7 @@ def write_or_cache(outvolume, vol_to_write, buffer, cache, data):
 
 
 def process_buffer(data, arrays_dict, buffers, buffer, voxel_tracker, buffers_to_infiles, buffer_to_outfiles, cache):
+    print(f"Processing buffer...")
     # voxel tracker
     data_shape = buffer.get_shape()
     buffer_size = data_shape[0]*data_shape[1]*data_shape[2]
