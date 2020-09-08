@@ -405,6 +405,7 @@ def process_buffer(data, arrays_dict, buffers, buffer, voxel_tracker, buffers_to
         print("loaded buffer")
         print_mem_info()  
 
+    print(f"Processing data...")
     for outvolume_index in buffer_to_outfiles[buffer.index]:
         outfile_parts_written = list()
 
@@ -429,8 +430,8 @@ def process_buffer(data, arrays_dict, buffers, buffer, voxel_tracker, buffers_to
     # # garbage collection
     # del data
 
+    print("end of buffer")
     if DEBUG:
-        print("end of buffer")
         print_mem_info()
 
     # stats
