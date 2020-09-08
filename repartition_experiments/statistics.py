@@ -190,6 +190,7 @@ def compute_graph_results(results_path, outdir_path, title_main, title_seeks):
     ax.set_title(title_seeks)
     ax.set_xticks(x)
     ax.set_xticklabels(sorted(references))
+    ax.set_ylim(top=1000000000)
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
     fig.tight_layout()
