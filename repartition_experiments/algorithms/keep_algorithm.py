@@ -143,7 +143,8 @@ def read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input
         try: 
             with open(json_filename) as f:
                 repartition_dict = json.load(f)
-        except: 
+        except Exception as e: 
+            print(e)
             print("error (1)")
             sys.exit(1)
 
