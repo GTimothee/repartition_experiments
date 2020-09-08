@@ -127,6 +127,30 @@ def read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input
     t1 = 0 
     nb_opening_seeks_tmp = 0
     nb_inside_seeks_tmp = 0
+    repartition_dict = None
+
+    # section in case of distributed mode --------------
+    if global_distributed:
+        print(f"Distributed")
+        
+        json_filename = '/disk0/gtimothee/repartition_dict.json'
+        if not os.path.isfile(json_filename):
+            print("cannot find association dict json file")
+            sys.exit(1)
+
+        try: 
+            with open(json_filename) as f:
+                repartition_dict = json.load(f)
+        except: 
+            print("error (1)")
+            raise ValueError("Unable to open json file")
+
+        if repartition_dict == None:
+            print("error (2)")
+            raise ValueError("Problem with json file")
+        else:
+            print(f"Found reparition dict: {repartition_dict}")
+    # ----------------------------------------------------
 
     for involume_index in involumes_list:
         involume = involumes[involume_index]
@@ -155,22 +179,6 @@ def read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input
         s = to_basis(intersection_in_R, buffer).get_slices()
 
         if global_distributed:
-            print(f"Distributed")
-            repartition_dict = None
-            try: 
-                with open(os.path.join('/disk0', 'gtimothee', 'repartition_dict.json')) as f:
-                    repartition_dict = json.load(f)
-                    print(f"Found reparition dict: {repartition_dict}")
-            except: 
-                print("error (1)")
-                raise ValueError("Unable to open json file")
-
-            if repartition_dict == None:
-                print("error (2)")
-                raise ValueError("Problem with json file")
-            else:
-                print(f"Found reparition dict: {repartition_dict}")
-
             print(f"Reading (1)...")
             t_tmp = time.time()
             data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = file_manager.read_data_from_fp(repartition_dict[str((i,j,k))], slices)
