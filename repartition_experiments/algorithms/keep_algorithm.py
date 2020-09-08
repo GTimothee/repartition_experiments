@@ -137,17 +137,19 @@ def read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input
         if not os.path.isfile(json_filename):
             print("cannot find association dict json file")
             sys.exit(1)
+        else:
+            print(f"json file found")
 
         try: 
             with open(json_filename) as f:
                 repartition_dict = json.load(f)
         except: 
             print("error (1)")
-            raise ValueError("Unable to open json file")
+            sys.exit(1)
 
         if repartition_dict == None:
             print("error (2)")
-            raise ValueError("Problem with json file")
+            sys.exit(1)
         else:
             print(f"Found reparition dict: {repartition_dict}")
     # ----------------------------------------------------
