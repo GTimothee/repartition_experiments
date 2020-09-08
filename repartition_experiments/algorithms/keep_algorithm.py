@@ -157,12 +157,18 @@ def read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input
         if global_distributed:
             print(f"Distributed")
             repartition_dict = None
-            with open(os.path.join('/disk0', 'gtimothee', 'repartition_dict.json')) as f:
-                repartition_dict = json.load(f)
-                print(f"Found reparition dict: {repartition_dict}")
-            if repartition_dict == None:
+            try: 
+                with open(os.path.join('/disk0', 'gtimothee', 'repartition_dict.json')) as f:
+                    repartition_dict = json.load(f)
+                    print(f"Found reparition dict: {repartition_dict}")
+            except: 
                 raise ValueError("Unable to open json file")
-            
+
+            if repartition_dict == None:
+                raise ValueError("Problem with json file")
+            else:
+                print(f"Found reparition dict: {repartition_dict}")
+
             print(f"Reading (1)...")
             t_tmp = time.time()
             data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]] = file_manager.read_data_from_fp(repartition_dict[str((i,j,k))], slices)
