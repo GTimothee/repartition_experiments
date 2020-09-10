@@ -551,6 +551,7 @@ def keep_algorithm(arg_R, arg_O, arg_I, arg_B, volumestokeep, arg_file_format, a
     global file_manager
     global global_distributed
     
+    print(f"Setting arguments...")
     outdir_path, file_format, input_dirpath = arg_outdir_path, arg_file_format, arg_input_dirpath
     R, O, I, B = tuple(arg_R), tuple(arg_O), tuple(arg_I), tuple(arg_B)
     buffers_partition, buffers = get_volumes(R, B)
