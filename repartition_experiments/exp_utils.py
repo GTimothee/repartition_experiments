@@ -62,19 +62,12 @@ def create_input_chunks_distributed(cs, partition, data_dir, file_format):
                 os.remove(os.path.join('/disk' + str(i) + '/gtimothee', filename))
     print(f"Creating input chunks...")
 
-    stored = 0 # in bytes
-    one_chunk_size = cs[0] * cs[1] * cs[2] * 2 # 2 = nb bytes per voxel
     disk_index = 0
-    one_disk_size = 400000000000 # 440GB
     repartition_dict = dict()
 
     for i in range(partition[0]):
         for j in range(partition[1]):
             for k in range(partition[2]):
-                if stored + one_chunk_size >= one_disk_size:
-                    disk_index += 1
-                    stored = 0
-
                 print(f"Creating random array... shape: {cs}")
                 arr = da.random.uniform(size=cs)
                 print(f"Done, converting to float16...")
@@ -86,8 +79,11 @@ def create_input_chunks_distributed(cs, partition, data_dir, file_format):
                 print(f"Storing on {data_dirpath}...")
                 da.to_hdf5(outfilepath, '/data', arr, chunks=None, compression=None)
 
-                stored += one_chunk_size
                 repartition_dict[str((i,j,k))] = outfilepath
+
+                disk_index += 1
+                if disk_index == 6:
+                    disk_index = 0
 
     print(f"Writing repartition file...")
     json_file = os.path.join('/disk0', 'gtimothee', 'repartition_dict.json')
