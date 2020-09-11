@@ -242,7 +242,10 @@ if __name__ == "__main__":
         else:
             out_filepath = os.path.join(args.outdir_path, f'graph_{key[0]}_{key[1]}_{key[2]}_{key[3]}.png')
             print("creating ", out_filepath)
-            compute_graph_baseline(memory_filepath, out_filepath)
+            try:
+                compute_graph_baseline(memory_filepath, out_filepath)
+            except:
+                continue
 
     # results
     header = None

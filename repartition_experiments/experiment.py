@@ -121,6 +121,14 @@ def experiment(args):
     indir_path, outdir_path = os.path.join(paths["ssd_path"], 'indir'), os.path.join(paths["ssd_path"], 'outdir')
     create_empty_dir(outdir_path)
 
+    if args.distributed:
+        print(f"Distributed mode -> creating the output directories")
+        for i in range(6):
+            for dirpath in os.listdir('/disk' + str(i) + '/gtimothee'):
+                create_empty_dir(dirpath)
+                os.mkdir(os.path.join(dirpath, 'output'))
+                create_empty_dir(os.path.join(dirpath, 'output'))
+
     fm = get_file_manager(args.file_format)
     if args.overwrite:
         fm.remove_all(paths["ssd_path"])
@@ -161,6 +169,8 @@ def experiment(args):
         print("processing...")
         
         flush_cache()
+        print(f"cache flushed")
+        
         if args.model == "baseline":
             _monitor = Monitor(enable_print=False, enable_log=False, save_data=True)
             _monitor.disable_clearconsole()
@@ -178,6 +188,7 @@ def experiment(args):
             tpp = 0
             voxel_tracker = None
         elif args.model == "keep":
+            print(f"Running keep...")
             t = time.time()                    
             tpp, tread, twrite, seeks_data, voxel_tracker, piles = keep_algorithm(R, O, I, B, volumestokeep, args.file_format, outdir_path, indir_path, args.addition, args.distributed)
             t = time.time() - t - tpp
