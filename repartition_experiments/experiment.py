@@ -125,9 +125,6 @@ def experiment(args):
         print(f"Distributed mode -> creating the output directories")
         for i in range(6):
             dirpath = '/disk' + str(i) + '/gtimothee'
-            for filename in os.listdir(dirpath):
-                if filename.endswith(".json") or filename.endswith(".hdf5"):
-                    os.remove(os.path.join(dirpath, filename))
             create_empty_dir(os.path.join(dirpath, 'output'))
 
     fm = get_file_manager(args.file_format)
