@@ -39,7 +39,7 @@ def remove_from_cache(cache, outfile_index, volume_to_write):
     cache[outfile_index] = volumes_in_cache
 
 
-def write_in_outfile(data_part, vol_to_write, file_manager, outdir_path, outvolume, outfile_shape, outfiles_partition, cache, from_cache):
+def write_in_outfile(data_part, vol_to_write, file_manager, outdirs_dict, outvolume, outfile_shape, outfiles_partition, cache, from_cache):
     """ Writes an output file part which is ready to be written.
 
     Arguments: 
@@ -54,6 +54,16 @@ def write_in_outfile(data_part, vol_to_write, file_manager, outdir_path, outvolu
 
     # write
     i, j, k = numeric_to_3d_pos(outvolume.index, outfiles_partition, order='C')
+
+    if (i, j, k) in outdirs_dict.keys():
+        outdir_path = outdirs_dict[(i, j, k)]
+    else:
+        outdir_path = '/disk' + str(outdir_index) + '/gtimothee/output'
+        outdirs_dict[(i, j, k)] = outdir_path
+        outdir_index += 1
+        if outdir_index == 6:
+            outdir_index = 0
+
     t2 = time.time()
     empty_dataset = file_manager.write_data(i, j, k, outdir_path, data_part, slices, outfile_shape)
     t2 = time.time() - t2
@@ -61,7 +71,7 @@ def write_in_outfile(data_part, vol_to_write, file_manager, outdir_path, outvolu
     return t2, empty_dataset
 
 
-def write_in_outfile2(data, buffer_slices, vol_to_write, file_manager, outdir_path, outvolume, outfile_shape, outfiles_partition, cache, from_cache):
+def write_in_outfile2(data, buffer_slices, vol_to_write, file_manager, outdirs_dict, outvolume, outfile_shape, outfiles_partition, cache, from_cache):
     """ Writes an output file part which is ready to be written.
 
     Arguments: 
@@ -78,6 +88,16 @@ def write_in_outfile2(data, buffer_slices, vol_to_write, file_manager, outdir_pa
 
     # write
     i, j, k = numeric_to_3d_pos(outvolume.index, outfiles_partition, order='C')
+
+    if (i, j, k) in outdirs_dict.keys():
+        outdir_path = outdirs_dict[(i, j, k)]
+    else:
+        outdir_path = '/disk' + str(outdir_index) + '/gtimothee/output'
+        outdirs_dict[(i, j, k)] = outdir_path
+        outdir_index += 1
+        if outdir_index == 6:
+            outdir_index = 0
+
     t2 = time.time()
     empty_dataset = file_manager.write_data(i, j, k, outdir_path, data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]], slices, outfile_shape)
     t2 = time.time() - t2
@@ -326,7 +346,7 @@ def write_or_cache(outvolume, vol_to_write, buffer, cache, data):
         # write
         if DEBUG:
             print_mem_info()
-        t2, initialized = write_in_outfile2(data, buffer_slices, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, False)
+        t2, initialized = write_in_outfile2(data, buffer_slices, vol_to_write, file_manager, outdirs_dict, outvolume, O, outfiles_partition, cache, False)
         if DEBUG:
             print("write")
             print_mem_info()
@@ -368,7 +388,7 @@ def write_or_cache(outvolume, vol_to_write, buffer, cache, data):
             if DEBUG:
                 print("[cache write]")
                 print_mem_info()
-            t2, initialized = write_in_outfile(arr, vol_to_write, file_manager, outdir_path, outvolume, O, outfiles_partition, cache, True)
+            t2, initialized = write_in_outfile(arr, vol_to_write, file_manager, outdirs_dict, outvolume, O, outfiles_partition, cache, True)
             del arr
             
             # stats
@@ -550,9 +570,12 @@ def keep_algorithm(arg_R, arg_O, arg_I, arg_B, volumestokeep, arg_file_format, a
     global buffers, involumes, outvolumes
     global file_manager
     global global_distributed
-    
+    global outdirs_dict, outdir_index
+
     print(f"Setting arguments...")
-    outdir_path, file_format, input_dirpath = arg_outdir_path, arg_file_format, arg_input_dirpath
+    outdirs_dict = dict()
+    outdir_index = 0
+    file_format, input_dirpath = arg_file_format, arg_input_dirpath
     R, O, I, B = tuple(arg_R), tuple(arg_O), tuple(arg_I), tuple(arg_B)
     buffers_partition, buffers = get_volumes(R, B)
     infiles_partition, involumes = get_volumes(R, I)
