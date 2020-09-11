@@ -124,10 +124,9 @@ def experiment(args):
     if args.distributed:
         print(f"Distributed mode -> creating the output directories")
         for i in range(6):
-            for dirpath in os.listdir('/disk' + str(i) + '/gtimothee'):
-                create_empty_dir(dirpath)
-                os.mkdir(os.path.join(dirpath, 'output'))
-                create_empty_dir(os.path.join(dirpath, 'output'))
+            dirpath = '/disk' + str(i) + '/gtimothee'
+            create_empty_dir(dirpath)
+            create_empty_dir(os.path.join(dirpath, 'output'))
 
     fm = get_file_manager(args.file_format)
     if args.overwrite:
