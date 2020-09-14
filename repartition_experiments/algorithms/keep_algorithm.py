@@ -57,12 +57,16 @@ def write_in_outfile(data_part, vol_to_write, file_manager, outdirs_dict, outdir
 
     if (i, j, k) in outdirs_dict.keys():
         outdir_path = outdirs_dict[(i, j, k)]
+        print(f"Writing at: {outdir_path}")
     else:
         outdir_path = '/disk' + str(outdir_index) + '/gtimothee/output'
         outdirs_dict[(i, j, k)] = outdir_path
         outdir_index += 1
         if outdir_index == 6:
             outdir_index = 0
+
+        print(f"Writing at: {outdir_path}")
+        print(f"Increasing writing index: {outdir_index}")
 
     t2 = time.time()
     empty_dataset = file_manager.write_data(i, j, k, outdir_path, data_part, slices, outfile_shape)
@@ -91,6 +95,7 @@ def write_in_outfile2(data, buffer_slices, vol_to_write, file_manager, outdirs_d
 
     if (i, j, k) in outdirs_dict.keys():
         outdir_path = outdirs_dict[(i, j, k)]
+        print(f"Writing at: {outdir_path}")
     else:
         outdir_path = '/disk' + str(outdir_index) + '/gtimothee/output'
         outdirs_dict[(i, j, k)] = outdir_path
