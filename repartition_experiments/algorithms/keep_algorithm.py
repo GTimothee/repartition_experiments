@@ -48,6 +48,8 @@ def write_in_outfile(data_part, vol_to_write, file_manager, outdirs_dict, outdir
         vol_to_write: Volume representing data_part in basis of R
         file_manager: to write the data
     """
+    global outdirs_dict, outdir_index
+    
     # get region in output file to write into
     vol_to_write_O_basis = to_basis(vol_to_write, outvolume)
     slices = vol_to_write_O_basis.get_slices()
@@ -84,6 +86,8 @@ def write_in_outfile2(data, buffer_slices, vol_to_write, file_manager, outdirs_d
         vol_to_write: Volume representing data_part in basis of R
         file_manager: to write the data
     """
+    global outdirs_dict, outdir_index
+
     s = buffer_slices
 
     # get region in output file to write into
