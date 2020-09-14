@@ -39,7 +39,7 @@ def remove_from_cache(cache, outfile_index, volume_to_write):
     cache[outfile_index] = volumes_in_cache
 
 
-def write_in_outfile(data_part, vol_to_write, file_manager, outdirs_dict, outdir_index, outvolume, outfile_shape, outfiles_partition, cache, from_cache):
+def write_in_outfile(data_part, vol_to_write, file_manager, outvolume, outfile_shape, outfiles_partition, cache, from_cache):
     """ Writes an output file part which is ready to be written.
 
     Arguments: 
@@ -49,7 +49,7 @@ def write_in_outfile(data_part, vol_to_write, file_manager, outdirs_dict, outdir
         file_manager: to write the data
     """
     global outdirs_dict, outdir_index
-    
+
     # get region in output file to write into
     vol_to_write_O_basis = to_basis(vol_to_write, outvolume)
     slices = vol_to_write_O_basis.get_slices()
@@ -77,7 +77,7 @@ def write_in_outfile(data_part, vol_to_write, file_manager, outdirs_dict, outdir
     return t2, empty_dataset
 
 
-def write_in_outfile2(data, buffer_slices, vol_to_write, file_manager, outdirs_dict, outdir_index, outvolume, outfile_shape, outfiles_partition, cache, from_cache):
+def write_in_outfile2(data, buffer_slices, vol_to_write, file_manager, outvolume, outfile_shape, outfiles_partition, cache, from_cache):
     """ Writes an output file part which is ready to be written.
 
     Arguments: 
@@ -358,7 +358,7 @@ def write_or_cache(outvolume, vol_to_write, buffer, cache, data):
         # write
         if DEBUG:
             print_mem_info()
-        t2, initialized = write_in_outfile2(data, buffer_slices, vol_to_write, file_manager, outdirs_dict, outdir_index, outvolume, O, outfiles_partition, cache, False)
+        t2, initialized = write_in_outfile2(data, buffer_slices, vol_to_write, file_manager, outvolume, O, outfiles_partition, cache, False)
         if DEBUG:
             print("write")
             print_mem_info()
@@ -400,7 +400,7 @@ def write_or_cache(outvolume, vol_to_write, buffer, cache, data):
             if DEBUG:
                 print("[cache write]")
                 print_mem_info()
-            t2, initialized = write_in_outfile(arr, vol_to_write, file_manager, outdirs_dict, outdir_index, outvolume, O, outfiles_partition, cache, True)
+            t2, initialized = write_in_outfile(arr, vol_to_write, file_manager, outvolume, O, outfiles_partition, cache, True)
             del arr
             
             # stats
