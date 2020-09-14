@@ -98,6 +98,9 @@ def write_in_outfile2(data, buffer_slices, vol_to_write, file_manager, outdirs_d
         if outdir_index == 6:
             outdir_index = 0
 
+        print(f"Writing at: {outdir_path}")
+        print(f"Increasing writing index: {outdir_index}")
+
     t2 = time.time()
     empty_dataset = file_manager.write_data(i, j, k, outdir_path, data[s[0][0]:s[0][1],s[1][0]:s[1][1],s[2][0]:s[2][1]], slices, outfile_shape)
     t2 = time.time() - t2
