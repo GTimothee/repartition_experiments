@@ -190,7 +190,10 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, addition, di
     nb_infile_seeks = 0
     nb_outfile_openings = 0
     nb_outfile_seeks = 0
+    buffer_index = 1
     for input_file in input_files:
+        print(f"Treating buffer: {buffer_index}...")
+        buffer_index += 1
         nb_infile_openings += 1
 
         involume = get_volume(input_file, infiles_volumes, infiles_partition)
