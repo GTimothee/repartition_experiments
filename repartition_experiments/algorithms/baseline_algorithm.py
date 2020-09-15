@@ -81,11 +81,25 @@ def write_to_outfile(involume, outvolume, data, outfiles_partition, outdir_path,
     if addition:
         subarr_data = subarr_data + 1
 
+    global outdirs_dict, outdir_index
+
+    if (i, j, k) in outdirs_dict.keys():
+        outdir_path = outdirs_dict[(i, j, k)]
+        print(f"Writing at: {outdir_path}")
+    else:
+        outdir_path = '/disk' + str(outdir_index) + '/gtimothee/output'
+        outdirs_dict[(i, j, k)] = outdir_path
+        outdir_index += 1
+        if outdir_index == 6:
+            outdir_index = 0
+
+        print(f"Writing at: {outdir_path}")
+        print(f"Increasing writing index: {outdir_index}")
+
     t2 = time.time()
     if not DONT_WRITE:
         file_manager.write_data(i, j, k, outdir_path, subarr_data, slices_in_outfile, O)
     t2 = time.time() - t2
-
     
     if DEBUG_LOCAL: 
         file_manager.test_write(outfile_path, slices_in_outfile, subarr_data)
@@ -115,9 +129,14 @@ def baseline_rechunk(indir_path, outdir_path, O, I, R, file_format, addition, di
     The input directory is supposed to contain the input files (output of the split process).
     WARNING: Does not clean the output directory after use by default.
     """
+
+    print(f"Setting arguments...")
     global DEBUG_LOCAL
     global DONT_WRITE
     global tracker
+    global outdirs_dict, outdir_index
+    outdirs_dict = dict()
+    outdir_index = 0
     tracker = Tracker()
     DEBUG_LOCAL = True if debug_mode else False
     DONT_WRITE = True if dont_write else False
