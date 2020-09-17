@@ -147,7 +147,7 @@ def compute_graph_results(results_path, outdir_path, title_main, title_seeks):
     ax.set_title(title_main)
     ax.set_xticks(x)
     ax.set_xticklabels(sorted(references))
-    ax.set_ylim(top=1600)
+    # ax.set_ylim(top=1600) -> for 3500 img results
     ax.legend()
 
     fig.tight_layout()
