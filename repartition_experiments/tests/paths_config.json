@@ -1,6 +1,0 @@
-{
-    "PYTHONPATH_repartition": "/home/user/Documents/workspace/bigdataneurolab/thesis/optimization_project/repartition_experiments",
-    "PYTHONPATH_monitor": "/home/user/Documents/workspace/bigdataneurolab/thesis/optimization_project/monitor",
-    "ssd_path": "./",
-    "outdir_path": "./"
-}

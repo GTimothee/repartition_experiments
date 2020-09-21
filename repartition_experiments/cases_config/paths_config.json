@@ -1,6 +1,0 @@
-{
-    "PYTHONPATH_monitor": "/home/gtimothee/monitor",
-    "PYTHONPATH_repartition": "/home/gtimothee/repartition_experiments",
-    "ssd_path": "/disk2/gtimothee",
-    "outdir_path": "/home/gtimothee/outputs"
-}
