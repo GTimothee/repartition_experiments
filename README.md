@@ -67,3 +67,6 @@ Then,
 2) run the experiment.py script.
 
 To get the graphs from the experiment, run the "statistics.py" script. 
+
+## Figures
+The figures of the paper are available at: https://drive.google.com/drive/folders/1D5LWDyTQoxaq97Ryh6B13NcI7ZsBBvsE?usp=sharing
