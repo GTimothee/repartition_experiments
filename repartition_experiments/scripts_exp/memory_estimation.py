@@ -1,5 +1,5 @@
 import argparse, logging, json, sys
-from .algorithms.utils import get_blocks_shape, get_named_volumes, numeric_to_3d_pos, get_theta
+from ..algorithms.utils import get_blocks_shape, get_named_volumes, numeric_to_3d_pos, get_theta
 
 
 DEBUG=False
@@ -9,7 +9,7 @@ def compute_max_mem(R, B, O, nb_bytes_per_voxel):
     buffers_partition = get_blocks_shape(R, B)
     buffers_volumes = get_named_volumes(buffers_partition, B)
 
-    # create lists of remainders
+    # initialization of lists of remainders
     k_remainder_list = [0]
     j_remainder_list = [0] * buffers_partition[2]
     i_remainder_list = [0] * (buffers_partition[2] * buffers_partition[1])
@@ -35,6 +35,7 @@ def compute_max_mem(R, B, O, nb_bytes_per_voxel):
         if DEBUG:
             print(f"3d buffer index: {_3d_index}")
 
+        # compute size of remainders
         F1 = omega[k] * theta[j] * theta[i]
         F2 = theta[k] * omega[j] * theta[i]
         F3 = omega[k] * omega[j] * theta[i]
@@ -42,7 +43,6 @@ def compute_max_mem(R, B, O, nb_bytes_per_voxel):
         F5 = omega[k] * theta[j] * omega[i]
         F6 = theta[k] * omega[1] * omega[i]
         F7 = omega[k] * omega[j] * omega[i]
-
         if theta[i] >= O[i] and theta[j] >= O[j] and omega[k]  >= O[k]:
             F1 = 0
         if theta[i] >= O[i] and omega[j] >= O[j] and theta[k]  >= O[k]:
@@ -68,12 +68,14 @@ def compute_max_mem(R, B, O, nb_bytes_per_voxel):
             print(f"Indices: {index_j}, {index_i}")
             print(f"Lengths: {len(j_remainder_list)}, {len(i_remainder_list)}")
 
+        # line 20 of algorithm in paper
         nb_voxels -= k_remainder_list[0] + j_remainder_list[index_j] + i_remainder_list[index_i]
 
         k_remainder_list[0] = k_remainder
         j_remainder_list[index_j] = j_remainder
         i_remainder_list[index_i] = i_remainder
 
+        # line 25 of algorithm in paper
         nb_voxels += k_remainder_list[0] + j_remainder_list[index_j] + i_remainder_list[index_i]
 
         if DEBUG:

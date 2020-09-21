@@ -1,3 +1,9 @@
+""" This class has been used to know if all parts of an output block have been written. 
+Indeed, manipulating Volume objects (see algorithms/utils.py) we can use Tracker to add volumes 
+and ask if all parts have been written using the is_complete() method.
+For example, if you want to know if a list of Volumes is a partition of an output block, use is_complete.
+"""
+
 class Tracker:
     def __init__(self):
         self.i_dict = dict()
@@ -18,6 +24,8 @@ class Tracker:
 
 
     def is_complete(self, corners):
+        """ corners: corners of the output block -> output of the Volume.get_corners() method
+        """
         p1, p2 = corners
         return self._iscomplete(self.i_dict, 0, p1, p2)
 

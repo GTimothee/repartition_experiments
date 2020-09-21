@@ -8,12 +8,6 @@ logger = logging.getLogger(__name__ + 'hdf5_filemanager')
 
 SOURCE_FILES = list() # opened files to be closed after processing
 
-def print_mem_info():
-    mem = psutil.virtual_memory()
-    d = (mem.total - mem.available) /1024 /1024
-    print(d)
-
-
 @atexit.register
 def clean_files():
     """ Clean the global list of opened files that are being used to create dask arrays. 

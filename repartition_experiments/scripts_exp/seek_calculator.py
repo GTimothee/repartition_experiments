@@ -1,8 +1,11 @@
 import math, argparse, json, sys, time
-from .algorithms.keep_algorithm import get_input_aggregate
-from .algorithms.utils import get_volumes, numeric_to_3d_pos, get_theta
-from .algorithms.policy_remake import compute_zones_remake
-from .baseline_seek_model import get_cuts, preprocess
+from ..algorithms.keep_algorithm import get_input_aggregate
+from ..algorithms.utils import get_volumes, numeric_to_3d_pos, get_theta
+from ..algorithms.policy_remake import compute_zones_remake
+from ..scripts_paper.baseline_seek_model import get_cuts, preprocess
+
+""" Contains functions to compute the amount of seeks produced by the keep algorithm.
+"""
 
 def get_divisors(n) : 
     i = 1
@@ -61,6 +64,8 @@ def get_buffer_candidates(case):
 
 
 def compute_nb_seeks(B, O, R, I):
+    """ Main function to compute the amount of seeks produced by the keep algorithm.
+    """
     # compute theta max
     buffers_partition, buffers = get_volumes(R, B)
     T_max = [0,0,0]

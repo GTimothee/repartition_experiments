@@ -1,8 +1,9 @@
 import random, argparse, sys, os, json, time, csv
 from time import strftime, gmtime
 import numpy as np
-import dask.array as da
 
+""" Main script to launch experiments
+"""
 
 def flush_cache():
     os.system('sync; echo 3 | sudo tee /proc/sys/vm/drop_caches') 
@@ -75,22 +76,6 @@ def get_arguments():
     return parser.parse_args()
 
 
-def create_input_file(shape, dirname, file_manager):
-    filename = f'{shape[0]}_{shape[1]}_{shape[2]}_original.hdf5'
-    filepath = os.path.join(dirname, filename)
-
-    # if not os.path.isfile(filepath):
-    #     data = np.random.default_rng().random(size=shape, dtype='f')
-    #     file_manager.write(filepath, data, shape, _slices=None)
-
-    if not os.path.isfile(filepath):
-        arr = da.random.random(size=shape)
-        arr = arr.astype(np.float16)
-        da.to_hdf5(filepath, '/data', arr, chunks=None, compression=None)
-
-    return filepath
-
-
 def load_json(filepath):
     with open(filepath) as f:
         return json.load(f)
@@ -98,7 +83,7 @@ def load_json(filepath):
 
 def experiment(args):
     """
-    Notes: 
+    Note: 
     - data type is np.float16
     """
     paths = load_json(args.paths_config)
@@ -108,25 +93,25 @@ def experiment(args):
             sys.path.insert(0, v)
 
     from monitor.monitor import Monitor
-    from repartition_experiments.exp_utils import create_empty_dir, verify_results
+    from repartition_experiments.scripts_exp.exp_utils import create_empty_dir, verify_results
     from repartition_experiments.algorithms.baseline_algorithm import baseline_rechunk
     from repartition_experiments.algorithms.keep_algorithm import keep_algorithm, get_input_aggregate
     from repartition_experiments.algorithms.utils import get_file_manager
     from repartition_experiments.algorithms.clustered_reads import clustered_reads
 
+    # setting
     paths = load_json(args.paths_config)
     cases = load_json(args.cases_config)
     bpv = 2
-
     indir_path, outdir_path = os.path.join(paths["ssd_path"], 'indir'), os.path.join(paths["ssd_path"], 'outdir')
-    create_empty_dir(outdir_path)
 
+    # creating empty output directories
+    create_empty_dir(outdir_path)
     if args.distributed:
         print(f"Distributed mode -> creating the output directories")
         for i in range(6):
             dirpath = '/disk' + str(i) + '/gtimothee'
             create_empty_dir(os.path.join(dirpath, 'output'))
-
     fm = get_file_manager(args.file_format)
     if args.overwrite:
         fm.remove_all(paths["ssd_path"])

@@ -3,13 +3,15 @@ import dask.array as da
 import numpy as np
 import os, sys, json
 
+""" File that creates the input blocks for the experiment.
+To be run before the experiment.
+"""
+
 def create_input_file(shape, dirname, file_manager):
+    """ Creating the original array.
+    """
     filename = f'{shape[0]}_{shape[1]}_{shape[2]}_original.hdf5'
     filepath = os.path.join(dirname, filename)
-
-    # if not os.path.isfile(filepath):
-    #     data = np.random.default_rng().random(size=shape, dtype='f')
-    #     file_manager.write(filepath, data, shape, _slices=None)
 
     if not os.path.isfile(filepath):
         arr = da.random.random(size=shape)
@@ -72,23 +74,23 @@ def create_case(args):
         if "PYTHONPATH" in k:
             sys.path.insert(0, v)
 
-    from repartition_experiments.exp_utils import create_empty_dir, create_input_chunks, create_input_chunks_distributed
+    from repartition_experiments.scripts_exp.exp_utils import create_empty_dir, create_input_chunks, create_input_chunks_distributed
     from repartition_experiments.algorithms.clustered_writes import clustered_writes
     from repartition_experiments.algorithms.utils import get_file_manager, get_blocks_shape
 
+    # preprocessing
     fm = get_file_manager(args.file_format)
     R_stringlist, I_stringlist = args.R.split('_'), args.I.split('_')
     R, I = tuple(map(lambda e: int(e), R_stringlist)), tuple(map(lambda e: int(e), I_stringlist))
     print(R, I)
-
     indir_path, outdir_path = os.path.join(paths["ssd_path"], 'indir'), os.path.join(paths["ssd_path"], 'outdir')
     partition = get_blocks_shape(R, I)
 
-    if args.distributed:
+    if args.distributed:  # only creates the input blocks, without creating the big image first and splitting it, and stores each chunk in a rounding fashion on the different disks of the cluster
         create_input_chunks_distributed(I, partition, indir_path, args.file_format)
         return
 
-    if not args.splits_only:
+    if not args.splits_only: # creating input image and then splitting it.
         origarr_filepath = create_input_file(R, paths["ssd_path"], fm)
         print("creating input file...", origarr_filepath)
         bpv = 2
@@ -96,7 +98,7 @@ def create_case(args):
         create_empty_dir(indir_path)
         create_empty_dir(outdir_path)
         clustered_writes(origarr_filepath, R, I, bpv, R_size, args.file_format, indir_path)
-    else:
+    else:  # only creates the input blocks, without creating the big image first and splitting it
         create_input_chunks(I, partition, indir_path, args.file_format)
 
 

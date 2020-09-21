@@ -96,8 +96,8 @@ if __name__ == "__main__":
         if "PYTHONPATH" in k:
             sys.path.insert(0, v)
             
-    from repartition_experiments.seek_calculator import compute_nb_seeks, get_buffer_candidates
-    from repartition_experiments.memory_estimation import compute_max_mem
+    from repartition_experiments.scripts_exp.seek_calculator import compute_nb_seeks, get_buffer_candidates
+    from repartition_experiments.scripts_exp.memory_estimation import compute_max_mem
     from repartition_experiments.algorithms.keep_algorithm import get_input_aggregate
     from repartition_experiments.algorithms.keep_algorithm import keep_algorithm
 

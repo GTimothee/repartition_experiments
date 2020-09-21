@@ -44,8 +44,6 @@ def create_input_chunks(cs, partition, data_dir, file_format):
                 # file_manager.write_data(i, j, k, data_dir, data, _slices, cs)
 
 
-
-# TODO: refactor
 def create_input_chunks_distributed(cs, partition, data_dir, file_format):
     """ for HDF5 only for now
         cs: chunk shape
