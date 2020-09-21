@@ -4,6 +4,15 @@ import argparse, json, sys, os
 """
 
 def get_cuts(big_block, small_block):
+    """ Get the list of the shape mismatches between big block and small_blocks.
+    The big block is partitioned by the small blocks.
+    In particular, this function is used for computing the cuts of the input image by the buffers. 
+
+    Arguments: 
+    ----------  
+        big_block: shape of big block
+        small_block: shape of a small block
+    """
     def get_cuts_by_dim(big_block, small_block, i):
         nb_max = int(big_block[i] / small_block[i])
         cuts = list(tuple([small_block[i]*j for j in range(nb_max+1)])) # stop before R[dim]
@@ -26,12 +35,12 @@ def get_arguments():
     parser.add_argument('cases_config', 
         action='store', 
         type=str, 
-        help='')
+        help='Path to file containing the cases.')
 
     parser.add_argument('case_name', 
         action='store', 
         type=str, 
-        help='')
+        help='Name of case to run from the cases_config file.')
 
     return parser.parse_args()
 
@@ -42,6 +51,18 @@ def load_json(filepath):
 
 
 def preprocess(buffer_cuts, block_cuts, block_shape):
+    """ Algorithm that commputes the number of cuts (costly and non costly) in order to compute the number of seeks.
+
+    Arguments: 
+    ----------
+        buffer_cuts: list of boundaries of the read buffers
+        block_cuts: list of boundaries of the output blocks
+        block_shape: shape of the output blocks
+
+    Return:
+        d: number of costly cuts, by dimension
+        nb_nocostly: number of non costly cuts
+    """
     nb_nocostly = [0,0,0]
     d = list()
     dim_index = 0

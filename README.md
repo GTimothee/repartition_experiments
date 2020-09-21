@@ -66,4 +66,4 @@ Then,
 1) run the create_case.py algorithm to create the input blocks. By default it writes an entire image, then breaks it into input blocks using the "clustered strategy", but you can write only the input blocks by using the -s option.
 2) run the experiment.py script.
 
-To get the graphs from the experiment, create a directory named "graphs" into your results directory and run the "statistics.py" script. 
+To get the graphs from the experiment, run the "statistics.py" script. 
