@@ -1,5 +1,8 @@
 import argparse, json, sys, os
 
+""" Script used to compute the amount of seeks produced by the baseline algorithm.
+"""
+
 def get_cuts(big_block, small_block):
     def get_cuts_by_dim(big_block, small_block, i):
         nb_max = int(big_block[i] / small_block[i])
@@ -55,24 +58,15 @@ def preprocess(buffer_cuts, block_cuts, block_shape):
         j = 0
         last_infile_cut_index = -1
         while j < len(values): # for each cut
-            # print(f"j: {j}")    
             
             # test if not costly
             cond1 = (values[j][1] == values[j+1][1])
             lower_i = i[last_infile_cut_index][1] if last_infile_cut_index > -1 else 0
             cond2 = (values[j][0] == 0 and values[j][1] - block_shape[dim_index] >= lower_i)
 
-            # if not cond2:
-                # print(f"{values[j][1] - block_shape[dim_index]}<{lower_i}")
-
-            # if not costly
             if cond2:
-                # print("not costly")
                 nb_nocostly[dim_index] += 1
-                
-            # if costly
             else:
-                # print("costly")
                 d_dim += 1
 
             if values[j][0] == 1 or cond1:
@@ -83,7 +77,6 @@ def preprocess(buffer_cuts, block_cuts, block_shape):
             else:
                 j += 1  
 
-        # print(f"d_dim: {d_dim}")
         d.append(d_dim)
         dim_index += 1
 
@@ -102,9 +95,8 @@ if __name__ == "__main__":
 
     from repartition_experiments.algorithms.baseline_algorithm import baseline_rechunk
 
-    # cases = load_json(args.cases_config)
-    
-    cases = { # for experiment seeks
+    # cases = load_json(args.cases_config) <- to use a file as input containing cases
+    cases = { # cases used for the paper (table 1)
         "case 1_0": [{
                 "R": [3500,3500,3500],
                 "I": [500,500,875],
@@ -166,19 +158,7 @@ if __name__ == "__main__":
             c = (d[0])*nb_nocostly[1]*nb_nocostly[2]
             nb_outfile_seeks = a + b + c
 
-            print(f"Running baseline algorithm...")
-            # t_read, t_write, seek_data = baseline_rechunk(indir_path, outdir_path, O, I, R, 'HDF5', False, debug_mode=False, clean_out_dir=False, dont_write=True)
-            # nb_outfile_openings_exp, nb_outfile_seeks_exp, nb_infile_openings_exp, nb_infile_seeks_exp = seek_data 
-
-            # print(f"alpha: {alpha}")
-            # print(f"parts: {a}, {b}, {c}")
-            # print(f"nb infile seeks: {nb_infile_seeks} (reality: {nb_infile_openings_exp}+{nb_infile_seeks_exp})")
-            print(f"nb outfile seeks: {nb_outfile_seeks}") # (reality: {nb_outfile_seeks_exp})")
-
-            # if k == "case 1_1":
-            #     sys.exit()
-            # assert nb_outfile_seeks == nb_outfile_seeks_exp
-            # break
+            print(f"nb outfile seeks: {nb_outfile_seeks}")
 
     print("finished.")
         
