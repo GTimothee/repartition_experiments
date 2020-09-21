@@ -1,0 +1,2 @@
+case_name,run_ref,model,process_time,preprocess_time,read_time,write_time,outfile_openings,outfile_seeks,infile_openings,infile_seeks,max_voxels,success
+case 4_6,6,keep,362.30072474479675,0.3729252815246582,258.44277358055115,63.68392038345337,700,0,400,0,673750000,True
