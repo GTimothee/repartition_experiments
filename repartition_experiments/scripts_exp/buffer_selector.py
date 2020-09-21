@@ -1,5 +1,7 @@
 import logging, json, sys, argparse, os
 
+""" Script to find the best buffer shape given a memory constraint 
+"""
 
 def get_arguments():
     """ Get arguments from console command.
@@ -14,32 +16,29 @@ def get_arguments():
     parser.add_argument('cases_config', 
         action='store', 
         type=str, 
-        help='')
+        help='path to config file containing the case we search the buffer shape for')
 
     parser.add_argument('case_name', 
         action='store', 
         type=str, 
-        help='')
+        help='target case from the cases_config file')
 
     parser.add_argument('nb_gig', 
         action='store', 
         type=int,
-        help='')
+        help='Number of GB available for the algorithm ("m" in the algorithm)')
 
     parser.add_argument('nb_bytes_per_voxel', 
         action='store', 
         type=int, 
         default=2,
-        help='')
+        help='Number of bytes per voxel used in the experiment')
 
     return parser.parse_args()
     
 
 def find_best_buffer(m, case, nb_bytes_per_voxel):
     """
-    parmis les buffers qui sont ok niveau mémoire, 
-    calculer le nombre de seeks de chaque buffer 
-    prendre le buffer qui créé le minimum de seeks
 
     Arguments: 
         m: main memory available for the buffer (in voxels)
