@@ -13,6 +13,8 @@ import gc
 
 
 def get_input_aggregate(O, I):
+    """ Returns the input aggregate's shape
+    """
     lambd = list()
     dimensions = len(O)
     for dim in range(dimensions):
@@ -22,6 +24,12 @@ def get_input_aggregate(O, I):
 
 def remove_from_cache(cache, outfile_index, volume_to_write):
     """ Remove element from cache after it has been written
+
+    Arguments: 
+    ----------
+        cache
+        outfile_index: output block to write
+        volume_to_write: write buffer
     """
     volumes_in_cache = cache[outfile_index]
 
@@ -40,13 +48,17 @@ def remove_from_cache(cache, outfile_index, volume_to_write):
 
 
 def write_in_outfile(data_part, vol_to_write, file_manager, outvolume, outfile_shape, outfiles_partition, cache, from_cache):
-    """ Writes an output file part which is ready to be written.
+    """ Writes an output file part (write buffer) which is ready to be written.
 
-    Arguments: 
+   Arguments: 
     ----------
-        data_part: data to write
-        vol_to_write: Volume representing data_part in basis of R
-        file_manager: to write the data
+        data_part: write buffer's data
+        vol_to_write: write buffer's Volume object
+        file_manager: to read/write with a specific file format
+        outvolume: output block Volume object
+        outfile_shape: output block shape
+        outfiles_partition: tuple of length 3 with number of output blocks per dimension in the original array (ex (3,3,3) means 3 buffers in k in j and in i)
+        cache
     """
     global outdirs_dict, outdir_index
 
@@ -82,9 +94,14 @@ def write_in_outfile2(data, buffer_slices, vol_to_write, file_manager, outvolume
 
     Arguments: 
     ----------
-        data_part: data to write
-        vol_to_write: Volume representing data_part in basis of R
-        file_manager: to write the data
+        data: read buffer data
+        buffer_slices: slices from the buffer to extract the part from buffer that must be written
+        vol_to_write: write buffer's Volume object
+        file_manager: to read/write with a specific file format
+        outvolume: output block Volume object
+        outfile_shape: output block shape
+        outfiles_partition: tuple of length 3 with number of output blocks per dimension in the original array (ex (3,3,3) means 3 buffers in k in j and in i)
+        cache
     """
     global outdirs_dict, outdir_index
 
@@ -136,10 +153,14 @@ def read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input
 
     Arguments: 
     ----------
-        buffer: the buffer to read
+        data: read buffer object (will contain the actual data loaded from input blocks)
+        buffer: read buffer's Volume object
         buffers_to_infiles: dict associating a buffer index to the input files it has to read
         involumes: dict associating a input file index to its Volume object
         file_manager: used to actually read
+        R: shape of original array 
+        I: shape of input block
+        input_dirpath; directory containing the input blocks
 
 
     Returns:
@@ -229,7 +250,7 @@ def read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input
 
 
 def equals(v1, v2):
-    """ Test if two volumes have same coordinates and shape
+    """ Test if two Volumes have same coordinates and shape
     """
     # test coords
     p1, p2 = v1.get_corners()
@@ -251,7 +272,18 @@ def equals(v1, v2):
 
 
 def add_to_cache(cache, vol_to_write, data, buffer_slices, outvolume_index, overlap_vol_in_R, datapart_volume):
-    """
+    """ Add part of write buffer into the cache
+
+    Arguments: 
+    ----------
+        cache
+        vol_to_write: write buffer
+        data: read buffer 
+        buffer_slices: slices from the read buffer containing data of the write buffer 
+        outvolume_index: index of output block of interest
+        overlap_vol_in_R: Volume representing the intersection between the read buffer and the write buffer, in the coordinates system of R (the original image)
+        datapart_volume: overlap_vol_in_R in the coordinates system of the read buffer
+
     cache: 
     ------
         key = outfile index
@@ -295,14 +327,26 @@ def get_overlap_volume(v1, v2):
 
 
 def get_data_to_write(vol_to_write, buff_volume, data):
-    """ get intersection between the buffer volume and the volume to write into outfile
+    """ Get intersection between the buffer volume and the volume to write into outfile
+
+    Arguments: 
+    ----------
+        vol_to_write: write buffer's Volume object
+        buff_volume: read buffer's Volume object
+        data: read buffer
     """
     v1 = get_overlap_volume(vol_to_write, buff_volume) 
     return v1, to_basis(v1, buff_volume).get_slices()
 
 
 def complete(cache, vol_to_write, outvolume_index):
-    """ Test if a volume to write is complete in cache i.e. can be written
+    """ Test if a volume to write (write buffer) is complete in cache i.e. can be written down
+
+    Arguments: 
+    ----------
+        cache: cache dictionary 
+        vol_to_write: write buffer Volume object
+        outvolume_index: index of output block 
     """
 
     is_complete = False
@@ -331,6 +375,8 @@ def complete(cache, vol_to_write, outvolume_index):
 
 
 def print_mem_info():
+    """ For debug purposes
+    """
     global start_mem
 
     process = psutil.Process(os.getpid())
@@ -346,6 +392,15 @@ def print_mem_info():
 
 
 def write_or_cache(outvolume, vol_to_write, buffer, cache, data):
+    """ 
+    Arguments: 
+    ----------
+        outvolume: Volume object representing the output block 
+        vol_to_write: Volume object representing a write buffer which will write into the output block represented by outvolume
+        buffer: Volume object representing the read buffer (its coordinates)
+        cache: dictionary representing the cache
+        data: read buffer
+    """
     data_to_write_vol, buffer_slices = get_data_to_write(vol_to_write, buffer, data)
     buff_write = 0
     volume_written = False
@@ -423,6 +478,21 @@ def write_or_cache(outvolume, vol_to_write, buffer, cache, data):
 
 
 def process_buffer(data, arrays_dict, buffers, buffer, voxel_tracker, buffers_to_infiles, buffer_to_outfiles, cache):
+    """ 
+    Arguments: 
+    ----------
+        data: read buffer to be filled (the buffer object is not destroyed between the read buffers, its content is simply replaced)
+        arrays_dict: dictionary mapping each output block index to its list of write blocks
+        buffers: list of read buffers' Volumes
+        buffer: Volume representing current read buffer
+        voxel_tracker: for monitoring purposes
+        buffers_to_infiles: maps each read buffer index to the list of input blocks it crosses -> to know which input block to read
+        buffer_to_outfiles: maps each read buffer index to the list of output blocks it crosses -> to only search for the write buffers linked to that read buffer
+        cache: dictionary representing the cache
+
+    Description of the cache object: 
+        maps outfile_index (numeric index of an output block) to the list of volumes to write (write buffers)
+    """
     print(f"Processing buffer...")
     # voxel tracker
     data_shape = buffer.get_shape()
@@ -431,21 +501,22 @@ def process_buffer(data, arrays_dict, buffers, buffer, voxel_tracker, buffers_to
     data_movement = 0
     tmp_write = 0
 
-    # read buffer
+    # read buffer -> data contains the loaded data. 
     data, t1, nb_opening_seeks_tmp, nb_inside_seeks_tmp = read_buffer(data, buffer, buffers_to_infiles, involumes, file_manager, input_dirpath, R, I)
-    if DEBUG:
-        print("loaded buffer")
-        print_mem_info()  
 
     print(f"Processing data...")
+
+    # looping over the output blocks related to the current read buffer
     for outvolume_index in buffer_to_outfiles[buffer.index]:
         outfile_parts_written = list()
 
-        # for each part of output file
+        # for each part of output file (for each write buffer)
         for j, outfile_part in enumerate(arrays_dict[outvolumes[outvolume_index].index]):  
             
-            # for each part of buffer
+            # for each part of read buffer
             if hypercubes_overlap(buffer, outfile_part):
+
+                # write write buffer if complete, or put part of write bufer into the cache
                 buff_write, volume_written, data_moved = write_or_cache(outvolumes[outvolume_index], outfile_part, buffer, cache, data)
                 
                 data_movement += data_moved
@@ -459,22 +530,20 @@ def process_buffer(data, arrays_dict, buffers, buffer, voxel_tracker, buffers_to
         for j in outfile_parts_written:
             del arrays_dict[outvolumes[outvolume_index].index][j]
 
-    # # garbage collection
-    # del data
-
-    print("end of buffer")
-    if DEBUG:
-        print_mem_info()
-
-    # stats
-    # data_movement -= buffer_size
     voxel_tracker.add_voxels(data_movement)
-    # print('[tracker] end of buffer -> predicted:', voxel_tracker.nb_voxels*2/1000000)
 
     return nb_opening_seeks_tmp, nb_inside_seeks_tmp, t1, tmp_write
 
 
 def _run_keep(arrays_dict, buffers, buffers_to_infiles, buffer_to_outfiles):
+    """
+    Arguments: 
+    ----------
+        arrays_dict: dictionary mapping each output block index to its list of write blocks
+        buffers: list of Volume objects (see utils.py) representing the read buffers. Each volume contains the coordinates of the buffer in the original image.  
+        buffers_to_infiles: maps each read buffer index to the list of input blocks it crosses -> to know which input block to read
+        buffer_to_outfiles: maps each read buffer index to the list of output blocks it crosses -> to only search for the write buffers linked to that read buffer
+    """
     cache = dict()
     voxel_tracker = VoxelTracker()
     nb_infile_openings = 0
@@ -494,6 +563,7 @@ def _run_keep(arrays_dict, buffers, buffers_to_infiles, buffer_to_outfiles):
     buffer_data = np.empty(copy.deepcopy(buffer_shape), dtype=np.float16)
     voxel_tracker.add_voxels(buffer_size)
 
+    # for each read buffer
     for buffer_index in range(nb_buffers):
         print("\nBUFFER ", buffer_index, '/', nb_buffers)
         if DEBUG:
@@ -564,10 +634,23 @@ start_mem = None
 
 def keep_algorithm(arg_R, arg_O, arg_I, arg_B, volumestokeep, arg_file_format, arg_outdir_path, arg_input_dirpath, arg_addition, arg_global_distributed, arg_sanity_check=False):
     """
-        cache: dict,
-            outfile_index -> list of volumes to write 
-            when a volume to write' part is added into cache: create a zero array of shape volume to write, then write the part that has been loaded
-            when searching for a part: search for outfile index, then for the right volume
+
+        Arguments: 
+        ----------
+            arg_R: shape of reconstructed(/original) image
+            arg_O: output block shape
+            arg_I: input block shape
+            arg_B: read buffer shape
+            volumestokeep: remainder volumes to keep (see case)
+            arg_file_format: file format (HDF5 only for now)
+            arg_outdir_path: in non distributed mode, path to write the output blocks
+            arg_input_dirpath: in non distributed mode, path to read the input blocks
+            arg_global_distributed: activates the distributed mode -> input and output blocks are distributed on several nodes of the cluster
+            arg_sanity_check: boolean, set to True to test if resplit was successful, cannot be used in distributed mode
+
+        Description of the cache object used: 
+            dict,
+            maps outfile_index (numeric index of an output block) to the list of volumes to write (write buffers)
     """
     import logging
     import logging.config
@@ -597,10 +680,11 @@ def keep_algorithm(arg_R, arg_O, arg_I, arg_B, volumestokeep, arg_file_format, a
     addition = arg_addition
     global_distributed = arg_global_distributed
 
+    # compute_zones is used to return the write buffers and a dictionary buffer_to_outfiles which maps each read buffer to the output blocks it overlaps
     print("Preprocessing...")
     tpp = time.time()
     arrays_dict, buffer_to_outfiles, nb_outfile_openings, nb_outfile_inside_seeks = compute_zones_remake(B, O, R, volumestokeep, outfiles_partition, outvolumes, buffers, True)
-    buffers_to_infiles = get_buffers_to_infiles(buffers, involumes)
+    buffers_to_infiles = get_buffers_to_infiles(buffers, involumes) # same than buffer_to_outfiles for input blocks
     tpp = time.time() - tpp
     print("Preprocessing time: ", tpp)
 
@@ -619,10 +703,11 @@ def keep_algorithm(arg_R, arg_O, arg_I, arg_B, volumestokeep, arg_file_format, a
         for index, outvol in outvolumes.items():
             outvolumes_trackers[index] = Tracker()
 
+    # core of the algorithm
     times, ram_pile, swap_pile, nb_infile_openings, nb_infile_inside_seeks, voxel_tracker = _run_keep(arrays_dict, buffers, buffers_to_infiles, buffer_to_outfiles)
 
     if sanity_check:
         end_sanity_check()
                 
-    get_opened_files()
+    get_opened_files()  # sanity check to see how many file objects are still open (monitor if files are closed)
     return tpp, times[0], times[1], [nb_outfile_openings, nb_outfile_inside_seeks, nb_infile_openings, nb_infile_inside_seeks], voxel_tracker, [ram_pile, swap_pile]
