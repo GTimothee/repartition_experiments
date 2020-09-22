@@ -21,12 +21,19 @@ def get_dims_to_keep(volumestokeep):
 
 
 def get_grads(R, O, B):
-    """ Grads corresponds to all the out borders of both output files and buffers.
+    """ Grads corresponds to all the out borders of both output files and buffers. (= cuts)
 
-    # créer liste de tuples
-    # ne pas ajouter de b si jamais il existe déjà dans grads_o -> on ne le considère pas comme une bordure d'intérêt car il n'y a pas de remainder volume du coup
-    # faire un map sur les grads_b et faire un add au lieu de ci-dessous
-    """
+    Outputs (computed): 
+    --------
+        grads: ordered list of all cuts, with different labels (b, o or ob) (1 set per dimension) -> initialization : grads = [set(), set(), set()]
+            list of list of tuples 
+            label b => buffer cut
+            label o => output block cut 
+            label ob => shape match between buffer and output block
+        grads_o: all cuts from output blocks
+            list of list of values
+        remainder_markers: all thetas cuts
+   """
     if DEBUG:
         print("args: ", R, O, B)
     grads_o = [{e for e in range(O[i], R[i]+O[i], O[i])} for i in range(3)] 
@@ -34,36 +41,51 @@ def get_grads(R, O, B):
 
     grads_o_copy = copy.deepcopy(grads_o)
 
+    # creates "grads" (sets of all cuts, with different labels, see below)
+    # foreach grad of grad_b: 
     grads = [set(), set(), set()] 
     for i in range(3):
         for e in grads_b[i]:
-            if e[0] not in grads_o_copy[i]:
+            if e[0] not in grads_o_copy[i]: # add grad to grads if grad not in grads_o (added with label "b" for buffer)
                 grads[i].add(e)
-            else:
+            else: # if grad in both o and b, add tuple: (grad, "ob") to mark (/label) it as a shape match
                 grads[i].add((e[0],"ob"))
                 grads_o_copy[i].remove(e[0])
 
-        grads[i] = set(map(lambda e: (e,"o"), grads_o_copy[i])).union(grads[i])
+        grads[i] = set(map(lambda e: (e,"o"), grads_o_copy[i])).union(grads[i]) # mark all grads_o with an "o" and merge the sets
     
+    # creates a list of thetas values (see the nomenclature in paper)
     remainder_markers = grads_b
     grads = [sorted(g, key=lambda e: e[0]) for g in grads]
-    for i in range(3):
-        for j, e in enumerate(grads[i]):
-            if j == len(grads[i]) - 1:
+    for i in range(3): # in each dimension
+        for j, e in enumerate(grads[i]): # for each grad of grads
+            if j == len(grads[i]) - 1: 
                 break 
 
+            # mark the thetas
             if (grads[i][j+1][1] == "b" or grads[i][j+1][1] == "ob") and e[1] != "b" and e[1] != "ob":
                 remainder_markers[i].add((e[0], "t")) # theta
-    
-    # print(f"grads: {grads}")
 
     return grads, [sorted(g) for g in grads_o], [sorted(g) for g in remainder_markers]
 
 
 def get_outfiles_parts(grads, grads_o, remainder_markers, _3d_to_numeric_pos_dict, dims_to_keep):
-    """
-        grads: list of list of tuples
-        grads_o: list of list of values
+    """ Actually computes the write buffers.
+
+    Arguments: 
+    ----------
+        grads: ordered list of all cuts, with different labels (b, o or ob) (1 set per dimension) -> initialization : grads = [set(), set(), set()]
+            list of list of tuples 
+            label b => buffer cut
+            label o => output block cut 
+            label ob => shape match between buffer and output block
+        grads_o: all cuts from output blocks
+            list of list of values
+        remainder_markers: all thetas cuts
+        _3d_to_numeric_pos_dict: dictionary to converts 3d index to numeric index
+        dims_to_keep: dimensions in which remainder volumes must be kept
+
+    "marker" == "label"
     """
     d = dict()
     if DEBUG:
@@ -184,7 +206,6 @@ def add_to_dict(d, grads_o, volume, _3d_to_numeric_pos_dict):
                 # logger.debug("lower border: " + str(lower_border))
                 # logger.debug("pts: " + str(volume.get_corners()))
 
-
     outfile_pos = _3d_to_numeric_pos_dict[tuple(outfile_pos)]
     if not outfile_pos in d:
         d[outfile_pos] = list()
@@ -194,6 +215,8 @@ def add_to_dict(d, grads_o, volume, _3d_to_numeric_pos_dict):
 
 
 def get_pos_association_dict(volumestokeep, outfiles_partititon):
+    """ Converts 3d index to numeric index
+    """
     index = 0
     _3d_to_numeric_pos_dict = dict()
     for i in range(outfiles_partititon[0]):
@@ -205,7 +228,7 @@ def get_pos_association_dict(volumestokeep, outfiles_partititon):
 
 
 def compute_zones_remake(B, O, R, volumestokeep, outfiles_partititon, out_volumes, buffers, get_buffer_to_outfiles):
-    """ Main function of the module. Compute the "arrays" and "regions" dictionary for the resplit case.
+    """ Compute the write buffers.
 
     Arguments:
     ----------
@@ -213,11 +236,16 @@ def compute_zones_remake(B, O, R, volumestokeep, outfiles_partititon, out_volume
         O: output file shape
         R: shape of reconstructed image
         volumestokeep: volumes to be kept by keep strategy
+        outfiles_partititon: number of outblocks per dimension
         out_volumes: dict outfile numeric position -> Volume
+        buffers: dictionary mapping each read buffer index (following the buffer order k,j,i) to the Volume representing the buffer
+        get_buffer_to_outfiles: if True, also return the buffer_to_outfiles dictionary
     """
+    # preprocessing
     _3d_to_numeric_pos_dict = get_pos_association_dict(volumestokeep, outfiles_partititon)
     dims_to_keep = get_dims_to_keep(volumestokeep)
 
+    # compute the write buffers
     arrays_dict =  get_outfiles_parts(*get_grads(R, O, B), _3d_to_numeric_pos_dict, dims_to_keep)
     
     # print(f"arrays_dict nb keys: {len(arrays_dict.keys())}")
@@ -255,6 +283,7 @@ def compute_zones_remake(B, O, R, volumestokeep, outfiles_partititon, out_volume
     if DEBUG:
         print(f"nb seeks: {nb_file_openings}, {nb_inside_seeks}")
 
+    # create buffer_to_outfiles
     buffer_to_outfiles = dict()
     if get_buffer_to_outfiles:
         for outvolume in out_volumes.values():
