@@ -70,7 +70,7 @@ def get_cuts_lists(R, O, I):
             if cond1:
                 match[dim_index].append(values[j][1])
             elif cond2:
-                nocostly[dim_index].append(values[j][1])
+                match[dim_index].append(values[j][1])
             else:
                 costly[dim_index].append(values[j][1])
 
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     O = (20, 20, 20)
 
     # create figure
-    fig = plt.figure()
+    fig = plt.figure(figsize=(1400,1400))
     ax = fig.add_subplot(111, aspect='equal')
     ax.set(xlim=(0, R[0]), ylim=(0, R[1]))
     ax.set_xlabel('X_1')
@@ -187,38 +187,56 @@ if __name__ == "__main__":
         ax.add_line(line)
 
     sample_cut = None
-    for dim in range(3): 
-        for c in costly[0]:
-            line = Line2D([c,c], [0,R[0]], color=color_cuts, linewidth=1)
-            ax.add_line(line)
-            if sample_cut == None:
-                sample_cut = line
-        for c in costly[1]:
-            line = Line2D([0,R[0]], [c,c], color=color_cuts, linewidth=1)
-            ax.add_line(line)
+    for c in costly[0]:
+        line = Line2D([c,c], [0,R[0]], color=color_cuts, linewidth=1)
+        ax.add_line(line)
+        if sample_cut == None:
+            sample_cut = line
+    for c in costly[1]:
+        line = Line2D([0,R[0]], [c,c], color=color_cuts, linewidth=1)
+        ax.add_line(line)
 
     sample_match = None
-    for dim in range(3): 
-        for c in match[0]:
-            line = Line2D([c,c], [0,R[0]], color=color_match, linewidth=1)
-            ax.add_line(line)
-            if sample_match == None:
-                sample_match = line
-        for c in match[1]:
-            line = Line2D([0,R[0]], [c,c], color=color_match, linewidth=1)
-            ax.add_line(line)
+    for c in match[0]:
+        line = Line2D([c,c], [0,R[0]], color=color_match, linewidth=1)
+        ax.add_line(line)
+        if sample_match == None:
+            sample_match = line
+    for c in match[1]:
+        line = Line2D([0,R[0]], [c,c], color=color_match, linewidth=1)
+        ax.add_line(line)
 
+    x_ticks_ = sorted(list(map(lambda x: (x, 'match'), match[1])) + list(map(lambda x: (x, 'cut'), costly[1])), key=lambda x: x[0])
+    y_ticks_ = sorted(list(map(lambda x: (x, 'match'), match[2])) + list(map(lambda x: (x, 'cut'), costly[2])), key=lambda x: x[0])
 
-    sample_nocostly = None
-    for dim in range(3): 
-        for c in nocostly[0]:
-            line = Line2D([c,c], [0,R[0]], color=color_nocostly, linewidth=1)
-            ax.add_line(line)
-            if sample_nocostly == None:
-                sample_nocostly = line
-        for c in nocostly[1]:
-            line = Line2D([0,R[0]], [c,c], color=color_nocostly, linewidth=1)
-            ax.add_line(line)
+    l1 = list()
+    m_index =0
+    c_index = 0
+    for x in x_ticks_:
+        if x[1] == 'cut':
+            name = 'c' + '_' + str(c_index) + ',' + str(1)
+            c_index += 1
+        else:
+            name = 'm' + '_' + str(m_index) + ',' + str(1)
+            m_index += 1
 
-    plt.legend([sample_inblock, sample_outblock, sample_cut, sample_match, sample_nocostly], ('input block cut', 'output block cut', 'cut', 'shape match', 'nocostly cut'))
+        l1.append( name )
+
+    l2 = list()
+    m_index =0
+    c_index = 0
+    for x in y_ticks_:
+        if x[1] == 'cut':
+            name = 'c' + '_' + str(c_index) + ',' + str(2)
+            c_index += 1
+        else:
+            name = 'm' + '_' + str(m_index) + ',' + str(2)
+            m_index += 1
+
+        l2.append( name )
+
+    plt.xticks([x[0] for x in x_ticks_], l1)
+    plt.yticks([y[0] for y in y_ticks_], l2)
+
+    plt.legend([sample_inblock, sample_outblock, sample_cut, sample_match], ('write block endings', 'output block endings', 'cuts', 'matching endings'))
     plt.show()
