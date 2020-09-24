@@ -136,12 +136,14 @@ if __name__ == "__main__":
     I = (30, 30, 30)
     O = (20, 20, 20)
 
+    SUB = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+
     # create figure
     fig = plt.figure(figsize=(1400,1400))
     ax = fig.add_subplot(111, aspect='equal')
     ax.set(xlim=(0, R[0]), ylim=(0, R[1]))
-    ax.set_xlabel('X_1')
-    ax.set_ylabel('X_2')
+    ax.set_xlabel('X1'.translate(SUB), fontsize=20)
+    ax.set_ylabel('X2  '.translate(SUB), fontsize=20, rotation=0)
 
     # print
     costly, nocostly, match = get_cuts_lists(R, O, I)
@@ -209,15 +211,18 @@ if __name__ == "__main__":
     x_ticks_ = sorted(list(map(lambda x: (x, 'match'), match[1])) + list(map(lambda x: (x, 'cut'), costly[1])), key=lambda x: x[0])
     y_ticks_ = sorted(list(map(lambda x: (x, 'match'), match[2])) + list(map(lambda x: (x, 'cut'), costly[2])), key=lambda x: x[0])
 
+    
     l1 = list()
     m_index =0
     c_index = 0
     for x in x_ticks_:
         if x[1] == 'cut':
-            name = 'c' + '_' + str(c_index) + ',' + str(1)
+            name = 'c' + str(c_index) + ',' + str(2)
+            name = name.translate(SUB)
             c_index += 1
         else:
-            name = 'm' + '_' + str(m_index) + ',' + str(1)
+            name = 'm' + str(m_index) + ',' + str(2)
+            name = name.translate(SUB)
             m_index += 1
 
         l1.append( name )
@@ -227,16 +232,19 @@ if __name__ == "__main__":
     c_index = 0
     for x in y_ticks_:
         if x[1] == 'cut':
-            name = 'c' + '_' + str(c_index) + ',' + str(2)
+            
+            name = 'c' + str(c_index) + ',' + str(2)
+            name = name.translate(SUB)
             c_index += 1
         else:
-            name = 'm' + '_' + str(m_index) + ',' + str(2)
+            name = 'm' + str(m_index) + ',' + str(2)
+            name = name.translate(SUB)
             m_index += 1
 
         l2.append( name )
 
-    plt.xticks([x[0] for x in x_ticks_], l1)
-    plt.yticks([y[0] for y in y_ticks_], l2)
+    plt.xticks([x[0] for x in x_ticks_], l1, fontsize=16)
+    plt.yticks([y[0] for y in y_ticks_], l2, fontsize=16)
 
     plt.legend([sample_inblock, sample_outblock, sample_cut, sample_match], ('write block endings', 'output block endings', 'cuts', 'matching endings'))
     plt.show()
