@@ -169,8 +169,6 @@ if __name__ == "__main__":
             i_cuts = get_cuts(R, I)
 
             d, nb_nocostly = preprocess(i_cuts, o_cuts, O)
-            
-            alpha = [1 if d_tmp > 0 else 0 for d_tmp in d]
 
             print(f"d: {d}")
             print(f"nb_nocostly: {nb_nocostly}")
