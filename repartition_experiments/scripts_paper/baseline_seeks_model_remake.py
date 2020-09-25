@@ -53,49 +53,8 @@ def seeks(A, M, D):
 
 def compute_nb_seeks_model(A, I, O):
     ni = int(A[0]/I[0] * A[1]/I[1] * A[2]/I[2])
-    return seeks(A, shape_to_end_coords(I, A), shape_to_end_coords(O, A)), ni
-
-
-# ## Test cases
-
-# cases = { # cases used for the paper (table 1)
-#         "case 1_0": {
-#                 "A": [3500,3500,3500],
-#                 "I": [500,500,875],
-#                 "O": [500,500,500],
-#                 "ref": 0
-#         },
-#         "case 1_1": {
-#                 "A": [3500,3500,3500],
-#                 "I": [500,875,500],
-#                 "O": [500,500,500],
-#                 "ref": 1
-#         },
-#         "case 1_2": {
-#                 "A": [3500,3500,3500],
-#                 "I": [875,500,500],
-#                 "O": [500,500,500],
-#                 "ref": 2
-#         },
-#         "case 1_3": {
-#                 "A": [3500,3500,3500],
-#                 "I": [875,875,500],
-#                 "O": [500,500,500],
-#                 "ref": 3
-#         },
-#         "case 1_4": {
-#                 "A": [3500,3500,3500],
-#                 "I": [875,875,875],
-#                 "O": [500,500,500],
-#                 "ref": 4
-#         },
-#     }
-
-
-# for c in cases:
-#     A = cases[c]["A"]
-#     M = cases[c]["I"]  # for baseline, I=R=W
-#     D = cases[c]["O"]
-#     ni = int(math.prod( A[d]/M[d] for d in range(3)))
-#     s = seeks(A, shape_to_end_coords(M, A), shape_to_end_coords(D, A)) + ni
-#     print(s)
+    nb_outfile_openings = 0
+    nb_outfile_seeks = seeks(A, shape_to_end_coords(I, A), shape_to_end_coords(O, A))
+    nb_infile_openings = ni 
+    nb_infile_seeks = 0
+    return [nb_outfile_openings, nb_outfile_seeks, nb_infile_openings, nb_infile_seeks]

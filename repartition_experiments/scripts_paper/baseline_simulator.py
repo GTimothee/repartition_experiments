@@ -52,6 +52,6 @@ def baseline_rechunk(O, I, R):
             if hypercubes_overlap(read_buffer, outblock):
                 nb_outfile_seeks_tmp = write_buffer(read_buffer, outblock, O)
                 nb_outfile_seeks += nb_outfile_seeks_tmp
-                #nb_outfile_openings += 1
+                nb_outfile_openings += 1
 
     return [nb_outfile_openings, nb_outfile_seeks, nb_infile_openings, nb_infile_seeks]

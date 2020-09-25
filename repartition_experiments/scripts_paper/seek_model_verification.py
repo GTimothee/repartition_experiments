@@ -125,13 +125,16 @@ if __name__ == "__main__":
         for case in cases_list:
             print(f"Case: {case}")
             A, I, O, B = case
+
             print(f"Computing with model...")
-            outfile_seeks, ni = compute_nb_seeks_model(A, I, O)
-            model_total = outfile_seeks + ni
+            nb_outfile_openings_model, nb_outfile_seeks_model, nb_infile_openings_model, nb_infile_seeks_model = compute_nb_seeks_model(A, I, O)
+            model_total = nb_outfile_openings_model + nb_outfile_seeks_model + nb_infile_openings_model + nb_infile_seeks_model
+
             print(f"Simulating baseline...")
             nb_outfile_openings, nb_outfile_seeks, nb_infile_openings, nb_infile_seeks = baseline_rechunk(O, I, A)
             reality_total = nb_outfile_openings + nb_outfile_seeks + nb_infile_openings + nb_infile_seeks
-            print(f"Predicted: {model_total} seeks ({0} outfile openings, {outfile_seeks} outfile seeks, {ni} infile openings, {0} infile seeks)")
+
+            print(f"Predicted: {model_total} seeks ({nb_outfile_openings_model} outfile openings, {nb_outfile_seeks_model} outfile seeks, {nb_infile_openings_model} infile openings, {nb_infile_seeks_model} infile seeks)")
             print(f"Reality: {reality_total} seeks ({nb_outfile_openings} outfile openings, {nb_outfile_seeks} outfile seeks, {nb_infile_openings} infile openings, {nb_infile_seeks} infile seeks)")
 
             if model_total != reality_total:
