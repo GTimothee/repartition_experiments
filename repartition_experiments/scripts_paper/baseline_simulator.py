@@ -54,4 +54,4 @@ def baseline_rechunk(O, I, R):
                 nb_outfile_seeks += nb_outfile_seeks_tmp
                 #nb_outfile_openings += 1
 
-    return nb_outfile_openings + nb_outfile_seeks + nb_infile_openings + nb_infile_seeks
+    return [nb_outfile_openings, nb_outfile_seeks, nb_infile_openings, nb_infile_seeks]

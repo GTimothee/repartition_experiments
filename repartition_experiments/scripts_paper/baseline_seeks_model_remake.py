@@ -53,7 +53,7 @@ def seeks(A, M, D):
 
 def compute_nb_seeks_model(A, I, O):
     ni = int(A[0]/I[0] * A[1]/I[1] * A[2]/I[2])
-    return seeks(A, shape_to_end_coords(I, A), shape_to_end_coords(O, A)) + ni
+    return seeks(A, shape_to_end_coords(I, A), shape_to_end_coords(O, A)), ni
 
 
 # ## Test cases

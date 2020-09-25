@@ -126,13 +126,15 @@ if __name__ == "__main__":
             print(f"Case: {case}")
             A, I, O, B = case
             print(f"Computing with model...")
-            predicted = compute_nb_seeks_model(A, I, O)
+            outfile_seeks, ni = compute_nb_seeks_model(A, I, O)
+            model_total = outfile_seeks + ni
             print(f"Simulating baseline...")
-            reality = baseline_rechunk(O, I, A)
-            print(f"Predicted: {predicted}")
-            print(f"Reality: {reality}")
+            nb_outfile_openings, nb_outfile_seeks, nb_infile_openings, nb_infile_seeks = baseline_rechunk(O, I, A)
+            reality_total = nb_outfile_openings + nb_outfile_seeks + nb_infile_openings + nb_infile_seeks
+            print(f"Predicted: {model_total} seeks ({0} outfile openings, {outfile_seeks} outfile seeks, {ni} infile openings, {0} infile seeks)")
+            print(f"Reality: {reality_total} seeks ({nb_outfile_openings} outfile openings, {nb_outfile_seeks} outfile seeks, {nb_infile_openings} infile openings, {nb_infile_seeks} infile seeks)")
 
-            if predicted != reality:
+            if model_total != reality_total:
                 raise ValueError("Error")
 
         nb_tests += len(cases_list)
