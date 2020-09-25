@@ -1,4 +1,4 @@
-import math, argparse, json, sys, time
+import math, argparse, json, sys, time, copy
 from ..algorithms.keep_algorithm import get_input_aggregate
 from ..algorithms.utils import get_volumes, numeric_to_3d_pos, get_theta
 from ..algorithms.policy_remake import compute_zones_remake
@@ -45,8 +45,20 @@ def get_buffer_candidates(case):
 
     # buffer cannot be bigger than lambda
     lambd = get_input_aggregate(O, I)
-    limit_j = divisors.index(lambd[1])
-    limit_i = divisors.index(lambd[0])
+    if lambd[1] in divisors:
+        limit_j = divisors.index(lambd[1])
+        limit_i = divisors.index(lambd[0])
+    else:
+        divisors_copy = copy.deepcopy(divisors)
+        divisors_copy.sort(reverse=True)
+        for div in divisors_copy:
+            if div < lambd[1]:
+                limit_j = div 
+                break
+        for div in divisors_copy:
+            if div < lambd[0]:
+                limit_i = div 
+                break
     all_j = divisors[:limit_j+1]  
     all_i = divisors[:limit_i+1]
     all_j.sort(reverse=True)

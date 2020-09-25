@@ -51,10 +51,14 @@ def seeks(A, M, D):
     return s
 
 
-def compute_nb_seeks_model(A, I, O):
+def compute_baseline_seeks_model(A, I, O):
     ni = int(A[0]/I[0] * A[1]/I[1] * A[2]/I[2])
     nb_outfile_openings = 0
     nb_outfile_seeks = seeks(A, shape_to_end_coords(I, A), shape_to_end_coords(O, A))
     nb_infile_openings = ni 
     nb_infile_seeks = 0
     return [nb_outfile_openings, nb_outfile_seeks, nb_infile_openings, nb_infile_seeks]
+
+
+def compute_keep_seeks_model(A, R, I, O, W):
+    return seeks(A, shape_to_end_coords(R, A), shape_to_end_coords(I, A)) + seeks(A, shape_to_end_coords(W, A), shape_to_end_coords(O, A))
