@@ -24,13 +24,17 @@ def get_random_cases(limit, model):
     """
     A = get_random_array_shape()
     divisors = get_divisors(A[0])
-    random.shuffle(divisors)
+    divisors.sort(reverse=True)
+    divisors.remove(1)
+    if len(divisors) < 10:
+        return []
+        
     cases_list = list()
     print(f"Found A: {A}")
     print(f"Divisors: {divisors}")
 
     i = 0
-    while i < len(divisors):
+    while i+1 < len(divisors):
 
         I = (divisors[i], divisors[i], divisors[i])
         O = (divisors[i+1], divisors[i+1], divisors[i+1])
@@ -107,22 +111,24 @@ if __name__ == "__main__":
     # parameters
     seed = 42
     number_tests = 1000
-    nb_case_per_A = 10
+    nb_case_per_A = 5
     model = "baseline"
 
     nb_tests = 0
     random.seed(seed)
     while nb_tests < number_tests:
+        print(f"Number tests so far: {nb_tests}/{number_tests}")
         print(f"Computing new cases....")
         cases_list = get_random_cases(nb_case_per_A, model)
         print(f"End.")
 
         for case in cases_list:
-            A, I, O, B = case
-            predicted = compute_nb_seeks_model(A, I, O)
-            reality = baseline_rechunk(O, I, A)
-
             print(f"Case: {case}")
+            A, I, O, B = case
+            print(f"Computing with model...")
+            predicted = compute_nb_seeks_model(A, I, O)
+            print(f"Simulating baseline...")
+            reality = baseline_rechunk(O, I, A)
             print(f"Predicted: {predicted}")
             print(f"Reality: {reality}")
 

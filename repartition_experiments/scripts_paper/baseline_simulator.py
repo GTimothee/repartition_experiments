@@ -45,7 +45,6 @@ def baseline_rechunk(O, I, R):
     nb_outfile_seeks = 0
 
     for buffer_index in sorted(inblocks.keys()):
-        print(f"Nb elements: {len(inblocks.keys())}, index: {buffer_index}")
         read_buffer = inblocks[buffer_index]
         nb_infile_openings += 1
 
@@ -53,6 +52,6 @@ def baseline_rechunk(O, I, R):
             if hypercubes_overlap(read_buffer, outblock):
                 nb_outfile_seeks_tmp = write_buffer(read_buffer, outblock, O)
                 nb_outfile_seeks += nb_outfile_seeks_tmp
-                nb_outfile_openings += 1
+                #nb_outfile_openings += 1
 
     return nb_outfile_openings + nb_outfile_seeks + nb_infile_openings + nb_infile_seeks
