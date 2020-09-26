@@ -26,7 +26,7 @@ def seeks(A, M, D):
     c = [ 0 for i in range(len(A))] # number of cuts in each dimension
     m = [] # number of matches in each dimension
 
-    n = 0 # Total number of disk blocks
+    n = 1 # Total number of disk blocks
     for i in range(len(A)):
         n *= len(D[i])
 
@@ -61,4 +61,8 @@ def compute_baseline_seeks_model(A, I, O):
 
 
 def compute_keep_seeks_model(A, R, I, O, W):
-    return seeks(A, shape_to_end_coords(R, A), shape_to_end_coords(I, A)) + seeks(A, shape_to_end_coords(W, A), shape_to_end_coords(O, A))
+    s1 = seeks(A, shape_to_end_coords(R, A), shape_to_end_coords(I, A))
+    s2 = seeks(A, W, shape_to_end_coords(O, A))
+    print(f"[Model] total seeks due to read buffers: {s1}")
+    print(f"[Model] total seeks due to write buffers: {s2}")
+    return s1 + s2

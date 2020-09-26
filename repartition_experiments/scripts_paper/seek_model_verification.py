@@ -26,6 +26,7 @@ def get_random_cases(limit, model):
     divisors = get_divisors(A[0])
     divisors.sort(reverse=True)
     divisors.remove(1)
+    divisors = divisors[1:]
     if len(divisors) < 10:
         return []
         
@@ -42,13 +43,23 @@ def get_random_cases(limit, model):
         print(f"O: {O}")
 
         if model == "keep":
-            candidates = get_buffer_candidates({"R": A, "I": I, "O": O})
+            _, _, _, candidates = get_buffer_candidates({"R": A, "I": I, "O": O})
+            candidates_selected = list()
+
             print(f"Number candidates found: {len(candidates)}")
             _range = min(5, len(candidates))
             for i in range(_range):
-                cases_list.append((A, I, O, candidates[random.randint(0,len(candidates)-1)]))
+                one_candidate = candidates[random.randint(0,len(candidates)-1)]
+
+                if not type(one_candidate) is tuple:
+                    print(one_candidate)
+                    raise ValueError("")
+
+                print(f"one candidate: {one_candidate}")
+                cases_list.append((A, I, O, one_candidate))
+                candidates_selected.append(one_candidate)
               
-            print(f"Buffer candidates selected: {candidates}")
+            print(f"Buffer candidates selected: {candidates_selected}")
         else:
             cases_list.append((A, I, O, I))
 
@@ -59,12 +70,22 @@ def get_random_cases(limit, model):
         print(f"O: {O}")
 
         if model == "keep":
-            candidates = get_buffer_candidates({"R": A, "I": I, "O": O})
+            _, _, _, candidates = get_buffer_candidates({"R": A, "I": I, "O": O})
+            candidates_selected = list()
+
             print(f"Number candidates found: {len(candidates)}")
             _range = min(5, len(candidates))
             for i in range(_range):
-                cases_list.append((A, I, O, candidates[random.randint(0,len(candidates)-1)]))
-            print(f"Buffer candidates selected: {candidates}")
+                one_candidate = candidates[random.randint(0,len(candidates)-1)]
+
+                if not type(one_candidate) is tuple:
+                    print(one_candidate)
+                    raise ValueError("")
+
+                print(f"one candidate: {one_candidate}")
+                cases_list.append((A, I, O, one_candidate))
+                candidates_selected.append(one_candidate)
+            print(f"Buffer candidates selected: {candidates_selected}")
         else:
             cases_list.append((A, I, O, I))
 
@@ -127,18 +148,34 @@ def get_volumes_to_keep(A, B, O):
     return volumestokeep
 
 
-def get_seeks_keep(A, B, I, O):
-    volumestokeep = get_volumes_to_keep(A, B, O)
-    outfiles_partition = get_blocks_shape(A, O)
-    outblocks = get_named_volumes(outfiles_partition, O)
-    buffers = get_named_volumes(get_blocks_shape(A, B), B)
+def keep_reading(B, I, R):
+    """
+    b: read buffer shape
+    i: inblock shape
+    r: original image shape
+    """
 
-    _, _, nb_file_openings, nb_inside_seeks = compute_zones_remake(B, O, A, volumestokeep, outfiles_partition, outblocks, buffers, False)
-    nb_infile_seeks = baseline_rechunk(I, B, A)
-    nb_infile_seeks = nb_infile_seeks[0] + nb_infile_seeks[1] + nb_infile_seeks[2] + nb_infile_seeks[3]
-    reality_total = nb_file_openings + nb_inside_seeks + nb_infile_seeks
+    buffer_partition = get_blocks_shape(R, B)
+    read_buffers = get_named_volumes(buffer_partition, B)
+    
+    infiles_partition = get_blocks_shape(R, I)
+    inblocks = get_named_volumes(infiles_partition, I)
 
-    return reality_total
+    nb_inblocks_openings = 0
+    nb_inblocks_seeks = 0
+
+    for buffer_index in sorted(read_buffers.keys()):
+        read_buffer = read_buffers[buffer_index]
+
+        for inblock in inblocks.values():
+            if hypercubes_overlap(read_buffer, inblock):
+                nb_inblock_seeks_tmp = write_buffer(read_buffer, inblock, I)
+                nb_inblocks_seeks += nb_inblock_seeks_tmp
+                nb_inblocks_openings += 1
+
+    print(f"[Reality] Number inblocks opening: {nb_inblocks_openings}")
+    print(f"[Reality] Number inblocks seeks: {nb_inblocks_seeks}")
+    return nb_inblocks_openings + nb_inblocks_seeks
 
 
 if __name__ == "__main__":
@@ -149,14 +186,14 @@ if __name__ == "__main__":
         if "PYTHONPATH" in k:
             sys.path.insert(0, v)
 
-    from repartition_experiments.algorithms.utils import get_partition, get_blocks_shape, get_named_volumes, numeric_to_3d_pos, Volume, get_volumes, get_theta
+    from repartition_experiments.algorithms.utils import get_partition, get_blocks_shape, get_named_volumes, numeric_to_3d_pos, Volume, get_volumes, get_theta, hypercubes_overlap
     from repartition_experiments.scripts_paper.baseline_seeks_model_remake import compute_baseline_seeks_model, compute_keep_seeks_model
     from repartition_experiments.scripts_exp.seek_calculator import get_buffer_candidates, get_divisors, compute_nb_seeks
-    from repartition_experiments.scripts_paper.baseline_simulator import baseline_rechunk
+    from repartition_experiments.scripts_paper.baseline_simulator import baseline_rechunk, write_buffer
     from repartition_experiments.algorithms.policy_remake import compute_zones_remake
 
     # parameters
-    seed = 42
+    seed = 25
     number_tests = 1000
     nb_case_per_A = 5
     model = args.model
@@ -186,16 +223,38 @@ if __name__ == "__main__":
                 print(f"Reality: {reality_total} seeks ({nb_outfile_openings} outfile openings, {nb_outfile_seeks} outfile seeks, {nb_infile_openings} infile openings, {nb_infile_seeks} infile seeks)")
 
             else:  # model == "keep"
-                # model_total = compute_keep_seeks_model(A, B, I, O, W)
-                data, _, _ = compute_nb_seeks(B, O, A, I)  # model tim
-                nb_file_openings, nb_inside_seeks, nb_infile_seeks = data
-                model_total = nb_file_openings + nb_inside_seeks + nb_infile_seeks
-                reality_total = get_seeks_keep(A, B, I, O) 
+
+                # compute_zones_remake
+                volumestokeep = get_volumes_to_keep(A, B, O)
+                outfiles_partition = get_blocks_shape(A, O)
+                outblocks = get_named_volumes(outfiles_partition, O)
+                buffers = get_named_volumes(get_blocks_shape(A, B), B)
+                arrays_dict, _, nb_file_openings, nb_inside_seeks = compute_zones_remake(B, O, A, volumestokeep, outfiles_partition, outblocks, buffers, False)
+                
+                print(f"[Reality] nb outblock openings due to write buffers: {nb_file_openings}")
+                print(f"[Reality] nb seeks inside outblocks: {nb_inside_seeks}")
+
+                W = [list(), list(), list()]
+                for outblock_index, write_buffers in arrays_dict.items():
+                    for write_buff in write_buffers:
+                        p1, p2 = write_buff.get_corners()
+                        for d in range(3):
+                            if not p2[d] in W[d]:
+                                W[d].append(p2[d])
+                for d in range(3):
+                    W[d].sort()
+
+                nb_infile_seeks = keep_reading(B, I, A)
+                print(f"[Reality] total seeks due to write buffers: {nb_inside_seeks + nb_file_openings}")
+                print(f"[Reality] total seeks due to read buffers: {nb_infile_seeks}")
+
+                reality_total = nb_file_openings + nb_inside_seeks + nb_infile_seeks
+                model_total = compute_keep_seeks_model(A, B, I, O, W)
 
                 print(f"Predicted: {model_total} seeks")
                 print(f"Reality: {reality_total} seeks")
 
             if model_total != reality_total:
-                raise ValueError("Error")
+                print(f"ERROR---------")
 
         nb_tests += len(cases_list)
