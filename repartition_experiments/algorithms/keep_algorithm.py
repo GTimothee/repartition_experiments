@@ -631,7 +631,6 @@ def end_sanity_check():
 start_mem = None
 
 
-
 def keep_algorithm(arg_R, arg_O, arg_I, arg_B, volumestokeep, arg_file_format, arg_outdir_path, arg_input_dirpath, arg_addition, arg_global_distributed, arg_sanity_check=False):
     """
 

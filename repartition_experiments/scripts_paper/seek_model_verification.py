@@ -178,6 +178,28 @@ def keep_reading(B, I, R):
     return nb_inblocks_openings + nb_inblocks_seeks
 
 
+def keep_model_seeks(A, B, O):
+    volumestokeep = get_volumes_to_keep(A, B, O)
+    outfiles_partition = get_blocks_shape(A, O)
+    outblocks = get_named_volumes(outfiles_partition, O)
+    buffers = get_named_volumes(get_blocks_shape(A, B), B)
+    arrays_dict, _, nb_file_openings, nb_inside_seeks = compute_zones_remake(B, O, A, volumestokeep, outfiles_partition, outblocks, buffers, False)
+
+    W = [list(), list(), list()]
+    for outblock_index, write_buffers in arrays_dict.items():
+        for write_buff in write_buffers:
+            p1, p2 = write_buff.get_corners()
+            for d in range(3):
+                if not p2[d] in W[d]:
+                    W[d].append(p2[d])
+    for d in range(3):
+        W[d].sort()
+
+    model_total = compute_keep_seeks_model(A, B, I, O, W)
+    
+    return model_total
+
+
 if __name__ == "__main__":
 
     args = get_arguments()
@@ -191,6 +213,7 @@ if __name__ == "__main__":
     from repartition_experiments.scripts_exp.seek_calculator import get_buffer_candidates, get_divisors, compute_nb_seeks
     from repartition_experiments.scripts_paper.baseline_simulator import baseline_rechunk, write_buffer
     from repartition_experiments.algorithms.policy_remake import compute_zones_remake
+    from repartition_experiments.scripts_paper.keep_algorithm_simulator import keep_algorithm
 
     # parameters
     seed = 25
@@ -224,32 +247,16 @@ if __name__ == "__main__":
 
             else:  # model == "keep"
 
-                # compute_zones_remake
+                # compute keep simulator
                 volumestokeep = get_volumes_to_keep(A, B, O)
-                outfiles_partition = get_blocks_shape(A, O)
-                outblocks = get_named_volumes(outfiles_partition, O)
-                buffers = get_named_volumes(get_blocks_shape(A, B), B)
-                arrays_dict, _, nb_file_openings, nb_inside_seeks = compute_zones_remake(B, O, A, volumestokeep, outfiles_partition, outblocks, buffers, False)
+                nb_outfile_openings, nb_outfile_inside_seeks, nb_infile_openings, nb_infile_inside_seeks = keep_algorithm(A, O, I, B, volumestokeep)
+
+                print(f"[Reality] total seeks due to read buffers: {nb_infile_openings + nb_infile_inside_seeks} ({nb_infile_openings} seeks from files openings, {nb_infile_inside_seeks} infile seeks)")
+                print(f"[Reality] total seeks due to write buffers: {nb_outfile_openings + nb_outfile_inside_seeks} ({nb_outfile_openings} seeks from files openings, {nb_outfile_inside_seeks} infile seeks)")
                 
-                print(f"[Reality] nb outblock openings due to write buffers: {nb_file_openings}")
-                print(f"[Reality] nb seeks inside outblocks: {nb_inside_seeks}")
+                reality_total = nb_outfile_openings + nb_outfile_inside_seeks + nb_infile_openings + nb_infile_inside_seeks
 
-                W = [list(), list(), list()]
-                for outblock_index, write_buffers in arrays_dict.items():
-                    for write_buff in write_buffers:
-                        p1, p2 = write_buff.get_corners()
-                        for d in range(3):
-                            if not p2[d] in W[d]:
-                                W[d].append(p2[d])
-                for d in range(3):
-                    W[d].sort()
-
-                nb_infile_seeks = keep_reading(B, I, A)
-                print(f"[Reality] total seeks due to write buffers: {nb_inside_seeks + nb_file_openings}")
-                print(f"[Reality] total seeks due to read buffers: {nb_infile_seeks}")
-
-                reality_total = nb_file_openings + nb_inside_seeks + nb_infile_seeks
-                model_total = compute_keep_seeks_model(A, B, I, O, W)
+                model_total = keep_model_seeks(A, B, O)
 
                 print(f"Predicted: {model_total} seeks")
                 print(f"Reality: {reality_total} seeks")
