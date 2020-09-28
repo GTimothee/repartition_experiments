@@ -179,8 +179,11 @@ if __name__ == "__main__":
 
     nb_tests = 0
     random.seed(seed)
+    nb_match = 0
     while nb_tests < number_tests:
         print(f"Number tests so far: {nb_tests}/{number_tests}")
+        print(f"Number match so far: {nb_match}/{nb_tests}")
+
         print(f"Computing new cases....")
         cases_list = get_random_cases(nb_case_per_A, model)
         print(f"End.")
@@ -221,5 +224,9 @@ if __name__ == "__main__":
                 print(f"---------ERROR---------")
             else:
                 print(f"---------MATCH---------")
+                nb_match += 1
+                
 
         nb_tests += len(cases_list)
+
+    print(f"Ends. Number match: {nb_match}/{nb_tests}")
