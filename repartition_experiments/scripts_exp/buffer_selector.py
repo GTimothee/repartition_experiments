@@ -61,13 +61,14 @@ def find_best_buffer(m, case, nb_bytes_per_voxel):
 
         if max_mem <= m:
             print("Computing nb seeks...")
-            seeks_tuple, seek_time, volumestokeep = compute_nb_seeks(B, O, R, I)
-            nb_file_openings, nb_inside_seeks, nb_infile_seeks = seeks_tuple
-            nb_seeks = nb_file_openings + nb_inside_seeks + nb_infile_seeks
+            # seeks_tuple, seek_time, volumestokeep = compute_nb_seeks(B, O, R, I)
+            # nb_file_openings, nb_inside_seeks, nb_infile_seeks = seeks_tuple
+            # nb_seeks = nb_file_openings + nb_inside_seeks + nb_infile_seeks
+            nb_seeks, volumestokeep = keep_model_seeks(R, B, O, I) # new model
 
-            print(f"Seek computation time: {seek_time} seconds.")
+            # print(f"Seek computation time: {seek_time} seconds.")
             if min_seeks != -1 and nb_seeks < min_seeks or min_seeks == -1:
-                print(f"New optimal buffer shape found: {B} => {nb_seeks} seeks. Processing time: {seek_time} seconds.")
+                print(f"New optimal buffer shape found: {B} => {nb_seeks} seeks.") # Processing time: {seek_time} seconds.")
                 min_seeks = nb_seeks
                 best_buff = B
                 max_mem_consumed = max_mem
@@ -96,6 +97,7 @@ if __name__ == "__main__":
         if "PYTHONPATH" in k:
             sys.path.insert(0, v)
             
+    from repartition_experiments.scripts_paper.baseline_seeks_model_remake import keep_model_seeks
     from repartition_experiments.scripts_exp.seek_calculator import compute_nb_seeks, get_buffer_candidates
     from repartition_experiments.scripts_exp.memory_estimation import compute_max_mem
     from repartition_experiments.algorithms.keep_algorithm import get_input_aggregate

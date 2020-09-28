@@ -8,8 +8,8 @@ def get_random_array_shape():
     POWERS = [1, 2]
 
     length = 0
-    for _ in range(5):
-        number = PRIME_NUMBERS[random.randint(0,3)]
+    for _ in range(4):
+        number = PRIME_NUMBERS[random.randint(0,2)]
         power = POWERS[random.randint(0,1)]
         if length == 0:
             length = number**power
@@ -123,29 +123,7 @@ def load_json(filepath):
         return json.load(f)
 
 
-def get_volumes_to_keep(A, B, O):
-    # compute theta max
-    buffers_partition, buffers = get_volumes(A, B)
-    T_max = [0,0,0]
-    for buffer_index in buffers.keys():
-        _3d_index = numeric_to_3d_pos(buffer_index, buffers_partition, order='C')
-        T, Cs = get_theta(buffers, buffer_index, _3d_index, O, B)
-        for i in range(3):
-            if T[i] > T_max[i]:
-                T_max[i] = T[i]
-    print(f"Found theta max: {T_max}")
 
-    # get volumes to keep
-    volumestokeep = [1]
-    if B[1] > T_max[1]:
-        print(f"{B[1]} > {T_max[1]}")
-        volumestokeep.extend([2,3])
-    if B[0] > T_max[0]:
-        print(f"{B[0]} > {T_max[0]}")
-        volumestokeep.extend([4,5,6,7])
-    print(f"volumes to keep: {volumestokeep}")
-
-    return volumestokeep
 
 
 def keep_reading(B, I, R):
@@ -178,28 +156,6 @@ def keep_reading(B, I, R):
     return nb_inblocks_openings + nb_inblocks_seeks
 
 
-def keep_model_seeks(A, B, O):
-    volumestokeep = get_volumes_to_keep(A, B, O)
-    outfiles_partition = get_blocks_shape(A, O)
-    outblocks = get_named_volumes(outfiles_partition, O)
-    buffers = get_named_volumes(get_blocks_shape(A, B), B)
-    arrays_dict, _, nb_file_openings, nb_inside_seeks = compute_zones_remake(B, O, A, volumestokeep, outfiles_partition, outblocks, buffers, False)
-
-    W = [list(), list(), list()]
-    for outblock_index, write_buffers in arrays_dict.items():
-        for write_buff in write_buffers:
-            p1, p2 = write_buff.get_corners()
-            for d in range(3):
-                if not p2[d] in W[d]:
-                    W[d].append(p2[d])
-    for d in range(3):
-        W[d].sort()
-
-    model_total = compute_keep_seeks_model(A, B, I, O, W)
-    
-    return model_total
-
-
 if __name__ == "__main__":
 
     args = get_arguments()
@@ -209,10 +165,10 @@ if __name__ == "__main__":
             sys.path.insert(0, v)
 
     from repartition_experiments.algorithms.utils import get_partition, get_blocks_shape, get_named_volumes, numeric_to_3d_pos, Volume, get_volumes, get_theta, hypercubes_overlap
-    from repartition_experiments.scripts_paper.baseline_seeks_model_remake import compute_baseline_seeks_model, compute_keep_seeks_model
+    from repartition_experiments.scripts_paper.baseline_seeks_model_remake import compute_baseline_seeks_model, keep_model_seeks, get_volumes_to_keep
     from repartition_experiments.scripts_exp.seek_calculator import get_buffer_candidates, get_divisors, compute_nb_seeks
     from repartition_experiments.scripts_paper.baseline_simulator import baseline_rechunk, write_buffer
-    from repartition_experiments.algorithms.policy_remake import compute_zones_remake
+    
     from repartition_experiments.scripts_paper.keep_algorithm_simulator import keep_algorithm
 
     # parameters
@@ -256,12 +212,14 @@ if __name__ == "__main__":
                 
                 reality_total = nb_outfile_openings + nb_outfile_inside_seeks + nb_infile_openings + nb_infile_inside_seeks
 
-                model_total = keep_model_seeks(A, B, O)
+                model_total, _ = keep_model_seeks(A, B, O, I)
 
                 print(f"Predicted: {model_total} seeks")
                 print(f"Reality: {reality_total} seeks")
 
             if model_total != reality_total:
-                print(f"ERROR---------")
+                print(f"---------ERROR---------")
+            else:
+                print(f"---------MATCH---------")
 
         nb_tests += len(cases_list)
