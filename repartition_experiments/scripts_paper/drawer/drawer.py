@@ -141,7 +141,7 @@ if __name__ == "__main__":
     # create figure
     fig = plt.figure(figsize=(1400,1400))
     ax = fig.add_subplot(111, aspect='equal')
-    ax.set(xlim=(0, R[0]), ylim=(0, R[1]))
+    ax.set(xlim=(0, R[0]), ylim=(R[1], 0))
     ax.set_xlabel('X1'.translate(SUB), fontsize=20)
     ax.set_ylabel('X2  '.translate(SUB), fontsize=20, rotation=0)
 
@@ -166,11 +166,11 @@ if __name__ == "__main__":
         if sample_inblock == None:
             sample_inblock = line
     dim = 2
-    x = 0
-    while x != R[dim]:
-        x += I[dim]
+    x = R[dim]
+    while x > 0:
         line = Line2D([x,x], [0,R[dim]], color=color_input, linewidth=10)
         ax.add_line(line)
+        x -= I[dim]
 
     sample_outblock = None
     dim = 1
@@ -182,11 +182,11 @@ if __name__ == "__main__":
         if sample_outblock == None:
             sample_outblock = line
     dim = 2
-    x = 0
-    while x != R[dim]:
-        x += O[dim]
+    x = R[dim]
+    while x > 0:
         line = Line2D([x,x], [0,R[dim]], color=color_output, linewidth=8)
         ax.add_line(line)
+        x -= O[dim]
 
     sample_cut = None
     for c in costly[0]:
