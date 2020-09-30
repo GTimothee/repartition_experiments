@@ -47,7 +47,6 @@ def get_cuts_lists(R, O, I):
     buffer_cuts = get_cuts(R, I)
     block_shape = O
 
-    nocostly = [list(), list(), list()]
     costly = [list(), list(), list()]
     match = [list(), list(), list()]
     dim_index = 0
@@ -83,7 +82,7 @@ def get_cuts_lists(R, O, I):
                 j += 1  
 
         dim_index += 1
-    return costly, nocostly, match
+    return costly, match
 
 
 def get_arguments():
@@ -140,72 +139,77 @@ if __name__ == "__main__":
 
     # create figure
     fig = plt.figure(figsize=(1400,1400))
-    ax = fig.add_subplot(111, aspect='equal')
+    ax = fig.add_subplot(111)
+    ax.set_aspect('equal')
     ax.set(xlim=(0, R[0]), ylim=(R[1], 0))
     ax.set_xlabel('X1'.translate(SUB), fontsize=20)
     ax.set_ylabel('X2  '.translate(SUB), fontsize=20, rotation=0)
 
     # print
-    costly, nocostly, match = get_cuts_lists(R, O, I)
-    print("Costly: ", costly[0])
-    print("Not costly: ", nocostly[0])
+    costly, match = get_cuts_lists(R, O, I)
     
-    color_input = "tab:blue"
-    color_output = "tab:gray"
+    color_input = "black"
+    color_output = "darkgray"
     color_cuts = "tab:red"
-    color_match = "tab:green"
-    color_nocostly = 'tab:orange'
+    color_match = "tab:blue"
 
     sample_inblock = None
+
     dim = 1
     x = 0
     while x != R[dim]:
         x += I[dim]
-        line = Line2D([0,R[dim]], [x,x], color=color_input, linewidth=10)
+        line = Line2D([x,x], [0,R[dim]], color=color_input, linewidth=12)
+        ax.add_line(line)
+        
+    dim = 2
+    y = R[dim]
+    while y > 0:
+        line = Line2D([0,R[dim]], [y,y], color=color_input, linewidth=12)
         ax.add_line(line)
         if sample_inblock == None:
             sample_inblock = line
-    dim = 2
-    x = R[dim]
-    while x > 0:
-        line = Line2D([x,x], [0,R[dim]], color=color_input, linewidth=10)
-        ax.add_line(line)
-        x -= I[dim]
+        y -= I[dim]
 
     sample_outblock = None
+
     dim = 1
     x = 0
     while x != R[dim]:
         x += O[dim]
-        line = Line2D([0,R[dim]], [x,x], color=color_output, linewidth=8)
+        line = Line2D([x,x], [0,R[dim]], color=color_output, linewidth=8)
+        ax.add_line(line)
+
+    dim = 2
+    y = R[dim]
+    while y > 0 :
+        print(y)
+        line = Line2D([0,R[dim]], [y,y], color=color_output, linewidth=8)
         ax.add_line(line)
         if sample_outblock == None:
             sample_outblock = line
-    dim = 2
-    x = R[dim]
-    while x > 0:
-        line = Line2D([x,x], [0,R[dim]], color=color_output, linewidth=8)
-        ax.add_line(line)
-        x -= O[dim]
+
+        y -= O[dim]
+        
 
     sample_cut = None
     for c in costly[0]:
-        line = Line2D([c,c], [0,R[0]], color=color_cuts, linewidth=1)
+        line = Line2D([c,c], [0,R[0]], color=color_cuts, linewidth=2)
         ax.add_line(line)
         if sample_cut == None:
             sample_cut = line
     for c in costly[1]:
-        line = Line2D([0,R[0]], [c,c], color=color_cuts, linewidth=1)
+        line = Line2D([0,R[0]], [c,c], color=color_cuts, linewidth=2)
         ax.add_line(line)
 
     sample_match = None
     for c in match[0]:
-        line = Line2D([c,c], [0,R[0]], color=color_match, linewidth=1)
+        line = Line2D([c,c], [0,R[0]], color=color_match, linewidth=2)
         ax.add_line(line)
         if sample_match == None:
             sample_match = line
     for c in match[1]:
-        line = Line2D([0,R[0]], [c,c], color=color_match, linewidth=1)
+        line = Line2D([0,R[0]], [c,c], color=color_match, linewidth=2)
         ax.add_line(line)
 
     x_ticks_ = sorted(list(map(lambda x: (x, 'match'), match[1])) + list(map(lambda x: (x, 'cut'), costly[1])), key=lambda x: x[0])
@@ -226,6 +230,8 @@ if __name__ == "__main__":
             m_index += 1
 
         l1.append( name )
+    l1.insert(0,str(0))
+    x_ticks_.insert(0,(0, None))
 
     l2 = list()
     m_index =0
@@ -242,9 +248,18 @@ if __name__ == "__main__":
             m_index += 1
 
         l2.append( name )
+    l2.insert(0,str(0))
+    y_ticks_.insert(0,(0, None))
 
-    plt.xticks([x[0] for x in x_ticks_], l1, fontsize=16)
-    plt.yticks([y[0] for y in y_ticks_], l2, fontsize=16)
+    ax.xaxis.tick_top()
 
-    plt.legend([sample_inblock, sample_outblock, sample_cut, sample_match], ('write block endings', 'output block endings', 'cuts', 'matching endings'))
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width, box.height * 0.8])
+
+    plt.xticks([x[0] for x in x_ticks_], l1, fontsize=14)
+    plt.yticks([y[0] for y in y_ticks_], l2, fontsize=14)
+
+    plt.legend([sample_inblock, sample_outblock, sample_cut, sample_match],  
+        ('write block', 'output block', 'cuts', 'matches'),  
+        ncol=4, bbox_to_anchor=(1., 1.15))
     plt.show()
