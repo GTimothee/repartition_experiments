@@ -4,13 +4,13 @@ import random, json, argparse, os, sys
 def get_random_array_shape():
     """ Generate a random original array shape.
     """
-    PRIME_NUMBERS = [2, 3, 5, 7]
+    PRIME_NUMBERS = [3, 5, 7]
     POWERS = [1, 2]
 
-    length = 0
+    length = 1
     for _ in range(4):
         number = PRIME_NUMBERS[random.randint(0,2)]
-        power = POWERS[random.randint(0,1)]
+        power = 1 #  POWERS[random.randint(0,1)]
         if length == 0:
             length = number**power
         else:
@@ -172,7 +172,7 @@ if __name__ == "__main__":
     from repartition_experiments.scripts_paper.keep_algorithm_simulator import keep_algorithm
 
     # parameters
-    seed = 25
+    seed = 1
     number_tests = 1000
     nb_case_per_A = 5
     model = args.model

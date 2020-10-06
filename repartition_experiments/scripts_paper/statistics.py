@@ -96,7 +96,7 @@ def compute_graph_results(results_path, outdir_path, title_main, title_seeks):
     ax.legend()
 
     fig.tight_layout()
-    fig.savefig(os.path.join(outdir_path, 'results.png'))
+    fig.savefig(os.path.join(outdir_path, 'results.pdf'))
 
     # COMPUTE GRAPH SEEKS
     
@@ -139,7 +139,7 @@ def compute_graph_results(results_path, outdir_path, title_main, title_seeks):
     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
     fig.tight_layout()
-    fig.savefig(os.path.join(outdir_path, 'results_seeks.png'))
+    fig.savefig(os.path.join(outdir_path, 'results_seeks.pdf'))
 
 
 if __name__ == "__main__":

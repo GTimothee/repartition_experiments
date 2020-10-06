@@ -131,9 +131,9 @@ if __name__ == "__main__":
     from repartition_experiments.scripts_paper.drawer.customRectangle import CustomRectangle
     from repartition_experiments.scripts_paper.baseline_seek_model import get_cuts
 
-    R = (120, 120, 120)
-    I = (30, 30, 30)
-    O = (20, 20, 20)
+    R = (240, 240, 240)
+    I = (60, 60, 60)
+    O = (40, 40, 40)
 
     SUB = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
 
@@ -149,7 +149,7 @@ if __name__ == "__main__":
     costly, match = get_cuts_lists(R, O, I)
     
     color_input = "black"
-    color_output = "darkgray"
+    color_output = "black"
     color_cuts = "tab:red"
     color_match = "tab:blue"
 
@@ -159,13 +159,15 @@ if __name__ == "__main__":
     x = 0
     while x != R[dim]:
         x += I[dim]
-        line = Line2D([x,x], [0,R[dim]], color=color_input, linewidth=12)
+        line = Line2D([x,x], [0,R[dim]], color=color_input, linewidth=8)
+        line.set_dashes([15, 5])
         ax.add_line(line)
         
     dim = 2
     y = R[dim]
     while y > 0:
-        line = Line2D([0,R[dim]], [y,y], color=color_input, linewidth=12)
+        line = Line2D([0,R[dim]], [y,y], color=color_input, linewidth=8)
+        line.set_dashes([15, 5])
         ax.add_line(line)
         if sample_inblock == None:
             sample_inblock = line
@@ -221,11 +223,11 @@ if __name__ == "__main__":
     c_index = 0
     for x in x_ticks_:
         if x[1] == 'cut':
-            name = 'c' + str(c_index) + ',' + str(2)
+            name = 'c' + str(c_index) + ',' + str(1)
             name = name.translate(SUB)
             c_index += 1
         else:
-            name = 'm' + str(m_index) + ',' + str(2)
+            name = 'm' + str(m_index) + ',' + str(1)
             name = name.translate(SUB)
             m_index += 1
 
@@ -256,10 +258,11 @@ if __name__ == "__main__":
     box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width, box.height * 0.8])
 
-    plt.xticks([x[0] for x in x_ticks_], l1, fontsize=14)
-    plt.yticks([y[0] for y in y_ticks_], l2, fontsize=14)
+    plt.xticks([x[0] for x in x_ticks_], l1, fontsize=18)
+    plt.yticks([y[0] for y in y_ticks_], l2, fontsize=18)
 
     plt.legend([sample_inblock, sample_outblock, sample_cut, sample_match],  
-        ('write block', 'output block', 'cuts', 'matches'),  
-        ncol=4, bbox_to_anchor=(1., 1.15))
+        ('write blocks', 'output blocks', 'cuts', 'matches'),  
+        ncol=4, bbox_to_anchor=(1.1, 1.15), prop={'size': 18})
+    plt.setp(plt.gca().get_legend().get_texts(), fontsize='16')
     plt.show()

@@ -57,19 +57,85 @@ def get_grads(R, O, B):
     # creates a list of thetas values (see the nomenclature in paper)
     remainder_markers = grads_b
     grads = [sorted(g, key=lambda e: e[0]) for g in grads]
-    for i in range(3): # in each dimension
-        for j, e in enumerate(grads[i]): # for each grad of grads
-            if j == len(grads[i]) - 1: 
+    for dim in range(3): # in each dimension
+        for j, e in enumerate(grads[dim]): # for each list of cuts 
+            if j == len(grads[dim]) - 1: # stop before the last because condition below tests the j+1 element in the list
                 break 
 
             # mark the thetas
-            if (grads[i][j+1][1] == "b" or grads[i][j+1][1] == "ob") and e[1] != "b" and e[1] != "ob":
-                remainder_markers[i].add((e[0], "t")) # theta
+            if (grads[dim][j+1][1] == "b" or grads[dim][j+1][1] == "ob") and e[1] != "b" and e[1] != "ob":
+                remainder_markers[dim].add((e[0], "t")) # theta
 
     return grads, [sorted(g) for g in grads_o], [sorted(g) for g in remainder_markers]
 
 
 def get_outfiles_parts(grads, grads_o, remainder_markers, _3d_to_numeric_pos_dict, dims_to_keep):
+    """ Using only grads.
+    """
+
+    if DEBUG:
+        print(f"grads i : {grads[0]}")
+        print(f"grads j : {grads[1]}")
+        print(f"grads k : {grads[2]}")
+
+    d = dict()
+    prev_i, prev_j, prev_k = 0, 0, 0
+    mark_i, mar_j, mark_k = None, None, None
+
+    for i in range(0, len(grads[0])):
+        grad_i = grads[0][i]
+        if DEBUG:
+            print(f"grad_i: {grad_i}")
+
+        if grad_i[1] == "b":  # maybe we can pass it
+            if i > 0:
+                prec_i = grads[0][i-1]
+                if prec_i[1] == "o" and 0 in dims_to_keep:
+                    if DEBUG:
+                        print(f"pass in i")
+                    continue
+        
+        prev_j = 0
+        for j in range(0, len(grads[1])):
+            grad_j = grads[1][j]
+            if DEBUG:
+                print(f"grad_j: {grad_j}")
+
+            if grad_j[1] == "b":  # maybe we can pass it
+                if j > 0:
+                    prec_j = grads[1][j-1]
+                    if prec_j[1] == "o" and (0 in dims_to_keep or 1 in dims_to_keep):
+                        if DEBUG:
+                            print(f"pass in j")
+                        continue
+        
+            prev_k = 0
+            for k in range(0, len(grads[2])):
+                grad_k = grads[2][k]
+                if DEBUG:
+                    print(f"grad_k: {grad_k}")
+
+                if grad_k[1] == "b":  # maybe we can pass it
+                    if k > 0:
+                        prec_k = grads[2][k-1]
+                        if prec_k[1] == "o" and (0 in dims_to_keep or 1 in dims_to_keep or 2 in dims_to_keep):
+                            if DEBUG:
+                                print(f"pass in k")
+                            continue
+
+                position = ((prev_i, prev_j, prev_k), (grads[0][i][0], grads[1][j][0], grads[2][k][0]))
+                if DEBUG:
+                    print("position of new wb : ", position)
+                d = add_to_dict(d, grads_o, Volume(0, position[0], position[1]), _3d_to_numeric_pos_dict)
+                prev_k = grads[2][k][0]
+
+            prev_j = grads[1][j][0]
+
+        prev_i = grads[0][i][0]
+    return d
+
+
+def old_get_outfiles_parts(grads, grads_o, remainder_markers, _3d_to_numeric_pos_dict, dims_to_keep):
     """ Actually computes the write buffers.
 
     Arguments: 
